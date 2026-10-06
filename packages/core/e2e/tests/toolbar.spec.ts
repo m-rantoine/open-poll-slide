@@ -65,49 +65,52 @@ async function closeTools(page: Page) {
 }
 
 test.describe('responsive slide toolbar', () => {
+  const createdSlides: string[] = [];
+
+  test.afterEach(async ({ page, request }) => {
+    await page.close();
+    for (const id of createdSlides.splice(0)) await deleteSlide(request, id);
+  });
+
   for (const width of [320, 390, 640, 768, 1018, 1024, 1440]) {
     test(`keeps long titles and controls separate at ${width}px`, async ({
       page,
       request,
     }, testInfo) => {
       const slideId = `toolbar-${width}`;
+      createdSlides.push(slideId);
       await page.setViewportSize({ width, height: 900 });
-      try {
-        await duplicateSlide(request, 'alpha', slideId);
-        await openSlide(page, slideId);
+      await duplicateSlide(request, 'alpha', slideId);
+      await openSlide(page, slideId);
 
-        const toolbar = page.getByRole('banner');
-        const title = toolbar.getByRole('button', { name: 'Rename slide', exact: true });
-        await title.click();
-        await toolbar.getByRole('textbox').fill(longTitle);
-        await toolbar.getByRole('textbox').press('Enter');
-        await expect(title).toContainText(longTitle);
-        await expect(toolbar.getByRole('button', { name: 'Present', exact: true })).toBeVisible();
-        await expectToolbarToFit(page);
-        await testInfo.attach(`toolbar-${width}px.png`, {
-          body: await page.screenshot(),
-          contentType: 'image/png',
-        });
+      const toolbar = page.getByRole('banner');
+      const title = toolbar.getByRole('button', { name: 'Rename slide', exact: true });
+      await title.click();
+      await toolbar.getByRole('textbox').fill(longTitle);
+      await toolbar.getByRole('textbox').press('Enter');
+      await expect(title).toContainText(longTitle);
+      await expect(toolbar.getByRole('button', { name: 'Present', exact: true })).toBeVisible();
+      await expectToolbarToFit(page);
+      await testInfo.attach(`toolbar-${width}px.png`, {
+        body: await page.screenshot(),
+        contentType: 'image/png',
+      });
 
-        await title.click();
-        const input = toolbar.getByRole('textbox');
-        await input.fill('W'.repeat(80));
-        await expect(input).toBeFocused();
-        await expectToolbarToFit(page);
-        await input.press('Escape');
-        await expect(title).toContainText(longTitle);
+      await title.click();
+      const input = toolbar.getByRole('textbox');
+      await input.fill('W'.repeat(80));
+      await expect(input).toBeFocused();
+      await expectToolbarToFit(page);
+      await input.press('Escape');
+      await expect(title).toContainText(longTitle);
 
-        await toolbar.getByRole('tab', { name: 'Assets', exact: true }).click();
-        await expect(page).toHaveURL(/[?&]view=assets/);
-        await expect(title).toBeVisible();
-        await expectToolbarToFit(page);
-        await toolbar.getByRole('tab', { name: 'Slides', exact: true }).click();
-        await expect(editorCanvas(page)).toBeVisible();
-        await expectToolbarToFit(page);
-      } finally {
-        await page.close();
-        await deleteSlide(request, slideId);
-      }
+      await toolbar.getByRole('tab', { name: 'Assets', exact: true }).click();
+      await expect(page).toHaveURL(/[?&]view=assets/);
+      await expect(title).toBeVisible();
+      await expectToolbarToFit(page);
+      await toolbar.getByRole('tab', { name: 'Slides', exact: true }).click();
+      await expect(editorCanvas(page)).toBeVisible();
+      await expectToolbarToFit(page);
     });
   }
 
