@@ -18,7 +18,14 @@ import { cn, pad2 } from '@/lib/utils';
 import { CommandMenuTrigger } from '../components/command/command-menu';
 import { HomeCommandMenu } from '../components/command/home-command-menu';
 import { SystemViewIcon } from '../components/sidebar/folder-item';
-import { ALL_SLIDES_ID, ASSETS_ID, Sidebar, THEMES_ID } from '../components/sidebar/sidebar';
+import {
+  ALL_SLIDES_ID,
+  ASSETS_ID,
+  RESULTS_ID,
+  SESSIONS_ID,
+  Sidebar,
+  THEMES_ID,
+} from '../components/sidebar/sidebar';
 import type { FoldersManifest } from '../lib/sdk';
 import { slideIds } from '../lib/slides';
 import { themes as themeRegistry } from '../lib/themes';
@@ -42,6 +49,8 @@ export type HomeOutletContext = {
 function pathToSelectedId(pathname: string, search: URLSearchParams): string {
   if (pathname === '/themes' || pathname.startsWith('/themes/')) return THEMES_ID;
   if (pathname === '/assets') return ASSETS_ID;
+  if (pathname === '/sessions') return SESSIONS_ID;
+  if (pathname === '/results' || pathname.startsWith('/results/')) return RESULTS_ID;
   return search.get('f') ?? ALL_SLIDES_ID;
 }
 
@@ -83,6 +92,8 @@ export function HomeShell() {
     (id: string) => {
       if (id === THEMES_ID) navigate('/themes', { replace: true });
       else if (id === ASSETS_ID) navigate('/assets', { replace: true });
+      else if (id === SESSIONS_ID) navigate('/sessions', { replace: true });
+      else if (id === RESULTS_ID) navigate('/results', { replace: true });
       else if (id === ALL_SLIDES_ID) navigate('/', { replace: true });
       else navigate(`/?f=${encodeURIComponent(id)}`, { replace: true });
     },

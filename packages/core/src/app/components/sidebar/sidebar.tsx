@@ -6,6 +6,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import type { Folder, FolderIcon } from '@/lib/sdk';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
+import { useAuth } from '../../live/auth';
+import { liveConfigured } from '../../live/client';
 import { COMMAND_MENU_SHORTCUT } from '../command/command-menu';
 import { FolderIconChip, FolderItem } from './folder-item';
 import { IconPicker, PRESET_COLORS } from './icon-picker';
@@ -15,6 +17,8 @@ export const ALL_SLIDES_ID = '__all__';
 export const DRAFT_ID = 'draft';
 export const THEMES_ID = '__themes__';
 export const ASSETS_ID = '__assets__';
+export const SESSIONS_ID = '__sessions__';
+export const RESULTS_ID = '__results__';
 
 export const FOLDER_DND_MIME = 'application/x-folder-id';
 
@@ -75,6 +79,7 @@ export function Sidebar({
   const [iconOpen, setIconOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const t = useLocale();
+  const { isHost, session: authSession } = useAuth();
 
   const startCreating = () => {
     const color = PRESET_COLORS[folders.length % PRESET_COLORS.length];
@@ -178,6 +183,22 @@ export function Sidebar({
           onSelect={() => onSelect(THEMES_ID)}
           onDropSlide={() => {}}
         />
+        {liveConfigured && (
+          <FolderItem
+            row={{ kind: 'sessions' }}
+            selected={selectedId === SESSIONS_ID}
+            onSelect={() => onSelect(SESSIONS_ID)}
+            onDropSlide={() => {}}
+          />
+        )}
+        {liveConfigured && authSession && isHost && (
+          <FolderItem
+            row={{ kind: 'results' }}
+            selected={selectedId === RESULTS_ID}
+            onSelect={() => onSelect(RESULTS_ID)}
+            onDropSlide={() => {}}
+          />
+        )}
         {import.meta.env.DEV && (
           <FolderItem
             row={{ kind: 'assets' }}

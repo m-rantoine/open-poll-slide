@@ -15,6 +15,7 @@ declare module 'virtual:open-slide/config' {
     port?: number;
     locale?: Locale;
     version: string;
+    live?: { supabaseUrl: string; supabaseKey: string; allowedEmailDomains?: string[] };
     build: {
       showSlideBrowser: boolean;
       showSlideUi: boolean;

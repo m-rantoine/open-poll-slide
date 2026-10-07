@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
   Play,
   Presentation,
+  Radio,
   Terminal,
 } from 'lucide-react';
 import {
@@ -89,6 +90,7 @@ import { remapNotesSessionCacheAfterReorder } from '../lib/inspector/use-notes';
 import type { SlideModule } from '../lib/sdk';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
 import { useSlideModule } from '../lib/use-slide-module';
+import { useStartSession } from '../live/start-session';
 
 const { showSlideUi, showSlideBrowser, allowHtmlDownload } = config.build;
 
@@ -109,6 +111,7 @@ export function Slide() {
     }
   }, [navigate]);
   const { slide, error } = useSlideModule(slideId);
+  const liveStart = useStartSession(slideId, slide);
   useDocumentTitle(slide?.meta?.title);
   const [playMode, setPlayMode] = useState<'window' | 'fullscreen' | null>(null);
   // Last deck the Player showed. During a presenter-driven deck switch the
@@ -801,6 +804,25 @@ export function Slide() {
                         {t.slide.presentPresenter}
                         <DropdownMenuShortcut>P</DropdownMenuShortcut>
                       </DropdownMenuItem>
+                      {liveStart.available && <DropdownMenuSeparator />}
+                      {liveStart.canStart && (
+                        <>
+                          <DropdownMenuItem onClick={() => void liveStart.start('host')}>
+                            <Radio />
+                            Start host-paced session
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => void liveStart.start('self')}>
+                            <Radio />
+                            Start self-paced session
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {liveStart.available && !liveStart.signedIn && (
+                        <DropdownMenuItem onClick={liveStart.goSignIn}>
+                          <Radio />
+                          Sign in to start a session
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

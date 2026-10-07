@@ -17,7 +17,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
@@ -36,8 +36,15 @@ import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from '../lib/sdk';
 import { loadSlide, slideIds } from '../lib/slides';
 import { type StepController, StepHost } from '../lib/step-context';
 import { useSlideModule } from '../lib/use-slide-module';
+import { LivePresenter } from '../live/presenter-live';
 
 export function Presenter() {
+  const [searchParams] = useSearchParams();
+  const liveSessionId = searchParams.get('session');
+  return liveSessionId ? <LivePresenter sessionId={liveSessionId} /> : <ClassicPresenter />;
+}
+
+function ClassicPresenter() {
   const { slideId = '' } = useParams();
   const { slide, error } = useSlideModule(slideId);
   useDocumentTitle(slide?.meta?.title);

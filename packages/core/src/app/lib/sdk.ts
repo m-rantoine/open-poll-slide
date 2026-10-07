@@ -11,12 +11,28 @@ export type SlideMeta = {
   createdAt?: string;
 };
 
+export type QuestionOption = { id: string; label: string };
+
+export type MultipleChoiceQuestion = {
+  id: string;
+  type: 'multiple_choice';
+  question: string;
+  options: QuestionOption[];
+  /** Ids of correct options. Omit to let the host mark them live. */
+  correct?: string[];
+  /** Host-paced sessions: start with the padlock down. Default true. */
+  startLocked?: boolean;
+  /** Reveal correctness to participants once the answer period ends. */
+  showResults?: boolean;
+};
+
 export type SlideModule = {
   default: Page[];
   meta?: SlideMeta;
   design?: DesignSystem;
   // Index-aligned with `default`.
   notes?: (string | undefined)[];
+  questions?: Record<string, MultipleChoiceQuestion>;
   transition?: SlideTransition;
 };
 
