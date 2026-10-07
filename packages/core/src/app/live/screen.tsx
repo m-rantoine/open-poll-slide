@@ -122,13 +122,13 @@ function Screen() {
         <div className="pointer-events-auto flex gap-2 opacity-0 transition-opacity group-hover/screen:opacity-100 [@media(hover:none)]:opacity-100">
           <Button
             variant="outline"
-            className="[@media(hover:none)]:hidden"
-            onClick={() =>
-              window.open(
-                `${import.meta.env.BASE_URL.replace(/\/$/, '')}/s/${encodeURIComponent(slideId)}/presenter?session=${session.id}`,
-                'open-slide-presenter',
-                'popup,width=1280,height=800',
-              )
+            nativeButton={false}
+            render={
+              <a
+                href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/s/${encodeURIComponent(slideId)}/presenter?session=${session.id}`}
+                target="_blank"
+                rel="noreferrer"
+              />
             }
           >
             {t.live.openPresenterView}
