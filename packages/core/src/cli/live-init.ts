@@ -76,14 +76,15 @@ function accessToken(): string | null {
   }
 }
 
+// Same upward search the Supabase CLI does, so a workspace nested in a linked repo works.
 function linkedRef(): string | null {
-  try {
-    return readFileSync(
-      path.join(process.cwd(), 'supabase', '.temp', 'project-ref'),
-      'utf8',
-    ).trim();
-  } catch {
-    return null;
+  let dir = process.cwd();
+  for (;;) {
+    const file = path.join(dir, 'supabase', '.temp', 'project-ref');
+    if (existsSync(file)) return readFileSync(file, 'utf8').trim();
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
   }
 }
 
