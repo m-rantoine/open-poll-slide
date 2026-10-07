@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useDocumentTitle } from '@/lib/use-document-title';
 import type { StepController } from '../lib/step-context';
+import { useIsMobile } from '../lib/use-is-mobile';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireAuth, useAuth } from './auth';
-import { LiveProvider } from './live-context';
+import { LiveProvider, useQuestionRegistry } from './live-context';
+import { ParticipantQuestionCard } from './participant-card';
 import { clampIndex, LiveStage } from './stage';
 import { useLiveSession, useParticipantPresence } from './use-live-session';
 
@@ -33,6 +35,8 @@ function Play() {
   const isSelf = session?.mode === 'self';
   const [localIndex, setLocalIndex] = useState(0);
   const controllerRef = useRef<StepController | null>(null);
+  const isMobile = useIsMobile();
+  const { ids, Provider } = useQuestionRegistry();
 
   const index = clampIndex(isSelf ? localIndex : (session?.current_index ?? 0), total);
   const { setPosition } = data.actions;
@@ -81,18 +85,37 @@ function Play() {
   }
   if (!slide || data.loading || !session) return <LoadingLine />;
 
+  const questions = {
+    ...(slide.questions ?? {}),
+    ...((session.questions ?? {}) as NonNullable<typeof slide.questions>),
+  };
+
   return (
     <div className="dark flex h-dvh w-screen flex-col bg-background text-foreground">
-      <div className="min-h-0 flex-1">
-        <LiveProvider view="participant" data={data} deckId={slideId}>
+      <LiveProvider view="participant" compact={isMobile} data={data} deckId={slideId}>
+        <div
+          className={isMobile ? 'shrink-0' : 'min-h-0 flex-1'}
+          style={isMobile ? { aspectRatio: '16 / 9' } : undefined}
+        >
           <LiveStage
             slide={slide}
             index={index}
             step={isSelf ? undefined : session.current_step}
             controllerRef={controllerRef}
+            wrap={(children) => <Provider>{children}</Provider>}
           />
-        </LiveProvider>
-      </div>
+        </div>
+        {isMobile && (
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+            {ids
+              .map((id) => questions[id])
+              .filter(Boolean)
+              .map((q) => (
+                <ParticipantQuestionCard key={q.id} question={q} />
+              ))}
+          </div>
+        )}
+      </LiveProvider>
       <footer className="flex h-11 shrink-0 items-center justify-between border-t border-hairline px-4 text-[12.5px]">
         <span className="font-mono text-muted-foreground">
           {session.code} · {index + 1}/{total}

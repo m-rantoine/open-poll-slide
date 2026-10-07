@@ -203,6 +203,10 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
     };
   }, [sessionId, asHost, loadAll]);
 
+  const positionQueue = useRef<{ busy: boolean; next: { index: number; step: number } | null }>({
+    busy: false,
+    next: null,
+  });
   const offsetRef = useRef(serverOffset);
   offsetRef.current = serverOffset;
   const statesRef = useRef(states);
@@ -248,12 +252,25 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
       async setPosition(index, step = 0) {
         if (!sessionId) return;
         setSession((cur) => (cur ? { ...cur, current_index: index, current_step: step } : cur));
-        const { error: err } = await getClient().rpc('set_position', {
-          p_session: sessionId,
-          p_index: index,
-          p_step: step,
-        });
-        if (err) throw err;
+        // Concurrent requests can be applied out of order by Postgres, leaving
+        // the database behind the host's screen. Send one at a time, latest only.
+        positionQueue.current.next = { index, step };
+        if (positionQueue.current.busy) return;
+        positionQueue.current.busy = true;
+        try {
+          while (positionQueue.current.next) {
+            const target = positionQueue.current.next;
+            positionQueue.current.next = null;
+            const { error: err } = await getClient().rpc('set_position', {
+              p_session: sessionId,
+              p_index: target.index,
+              p_step: target.step,
+            });
+            if (err) throw err;
+          }
+        } finally {
+          positionQueue.current.busy = false;
+        }
       },
       questionAction,
       async setShowResults(questionId, value) {
@@ -327,18 +344,22 @@ export function useParticipantPresence(sessionId: string | undefined, enabled: b
     if (!sessionId || !enabled) return;
     const supabase = getClient();
     let last: boolean | null = null;
+    // rpc() is lazy: the request only goes out once the builder is awaited.
+    const send = async (active: boolean) => {
+      await supabase.rpc('set_presence', { p_session: sessionId, p_active: active });
+    };
     const report = (force = false) => {
       const active = document.visibilityState === 'visible' && document.hasFocus();
       if (!force && active === last) return;
       last = active;
-      void supabase.rpc('set_presence', { p_session: sessionId, p_active: active });
+      void send(active);
     };
     report(true);
     const heartbeat = window.setInterval(() => report(true), 20_000);
     const onChange = () => report();
     const onHide = () => {
       last = false;
-      void supabase.rpc('set_presence', { p_session: sessionId, p_active: false });
+      void send(false);
     };
     document.addEventListener('visibilitychange', onChange);
     window.addEventListener('focus', onChange);
