@@ -4,18 +4,21 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useDocumentTitle } from '@/lib/use-document-title';
+import { format, useLocale } from '@/lib/use-locale';
 import type { StepController } from '../lib/step-context';
 import { useIsMobile } from '../lib/use-is-mobile';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireAuth, useAuth } from './auth';
+import { liveErrorMessage } from './errors';
 import { LiveProvider, useQuestionRegistry } from './live-context';
 import { ParticipantQuestionCard } from './participant-card';
 import { clampIndex, LiveStage } from './stage';
 import { useLiveSession, useParticipantPresence } from './use-live-session';
 
 export function PlayPage() {
+  const t = useLocale();
   return (
-    <RequireAuth heading="Sign in to join">
+    <RequireAuth heading={t.live.signInToJoin}>
       <Play />
     </RequireAuth>
   );
@@ -24,6 +27,7 @@ export function PlayPage() {
 function Play() {
   const { slideId = '', sessionId } = useParams();
   const navigate = useNavigate();
+  const t = useLocale();
   const { isHost } = useAuth();
   const { slide, error } = useSlideModule(slideId);
   const data = useLiveSession(sessionId, false);
@@ -34,6 +38,12 @@ function Play() {
   const total = slide?.default.length ?? 0;
   const isSelf = session?.mode === 'self';
   const [localIndex, setLocalIndex] = useState(0);
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || data.selfIndex === null) return;
+    restored.current = true;
+    setLocalIndex(data.selfIndex);
+  }, [data.selfIndex]);
   const controllerRef = useRef<StepController | null>(null);
   const isMobile = useIsMobile();
   const { ids, Provider } = useQuestionRegistry();
@@ -74,12 +84,12 @@ function Play() {
     return () => window.removeEventListener('keydown', onKey);
   }, [isSelf, goNext, goPrev]);
 
-  if (error) return <LiveMessage title="Could not load this deck" body={error} />;
+  if (error) return <LiveMessage title={t.live.couldNotLoadDeck} body={error} />;
   if (data.error) {
     return (
       <LiveMessage
-        title="Session unavailable"
-        body={isHost ? data.error : 'Use the code from your host to join.'}
+        title={t.live.sessionUnavailable}
+        body={isHost ? liveErrorMessage(t, data.error) : t.live.useCodeFromHost}
       />
     );
   }
@@ -119,26 +129,26 @@ function Play() {
       <footer className="flex h-11 shrink-0 items-center justify-between border-t border-hairline px-4 text-[12.5px]">
         <span className="font-mono text-muted-foreground">
           {session.code} · {index + 1}/{total}
-          {session.status === 'ended' && ' · session ended'}
+          {session.status === 'ended' && ` · ${t.live.sessionEndedTag}`}
         </span>
         <div className="flex items-center gap-2">
           {data.score && data.score.graded > 0 && (
             <span className="font-mono text-muted-foreground">
-              Score {data.score.correct}/{data.score.graded}
+              {format(t.live.score, { correct: data.score.correct, graded: data.score.graded })}
             </span>
           )}
           {isSelf && (
             <>
-              <Button variant="outline" size="icon" aria-label="Previous" onClick={goPrev}>
+              <Button variant="outline" size="icon" aria-label={t.live.previous} onClick={goPrev}>
                 <ChevronLeft />
               </Button>
-              <Button variant="outline" size="icon" aria-label="Next" onClick={goNext}>
+              <Button variant="outline" size="icon" aria-label={t.live.next} onClick={goNext}>
                 <ChevronRight />
               </Button>
             </>
           )}
           <Button variant="ghost" onClick={() => navigate('/join')}>
-            Leave
+            {t.live.leave}
           </Button>
         </div>
       </footer>

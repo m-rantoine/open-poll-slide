@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getClient } from './client';
+import { errorText } from './errors';
 import type {
   AnswerRow,
   MyAnswer,
@@ -30,10 +31,29 @@ export type LiveData = {
   answers: AnswerRow[];
   mine: Record<string, MyAnswer>;
   score: MyScore | null;
+  /** The participant's own saved slide in a self-paced session. */
+  selfIndex: number | null;
   /** Add to Date.now() to get server time. */
   serverOffset: number;
   actions: LiveActions;
 };
+
+// Matches PostgREST's default max_rows, so a short page means the end.
+const PAGE_SIZE = 1000;
+
+async function fetchAll<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (;;) {
+    const { data, error } = await page(rows.length, rows.length + PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE_SIZE) return rows;
+  }
+}
+
+type Slice = 'session' | 'states' | 'participants' | 'answers' | 'keys';
 
 function upsertBy<T>(list: T[], row: T, same: (a: T) => boolean): T[] {
   const i = list.findIndex(same);
@@ -51,6 +71,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
   const [answers, setAnswers] = useState<AnswerRow[]>([]);
   const [mine, setMine] = useState<Record<string, MyAnswer>>({});
   const [score, setScore] = useState<MyScore | null>(null);
+  const [selfIndex, setSelfIndex] = useState<number | null>(null);
   const [serverOffset, setServerOffset] = useState(0);
   const [loading, setLoading] = useState(Boolean(sessionId));
   const [error, setError] = useState<string | null>(null);
@@ -75,42 +96,98 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
     setScore(s ? { correct: s.correct, graded: s.graded, class_average: s.class_average } : null);
   }, [sessionId]);
 
+  // A background reload must not overwrite a slice that a realtime event or an
+  // optimistic write has touched since the reload started.
+  const versions = useRef<Record<Slice, number>>({
+    session: 0,
+    states: 0,
+    participants: 0,
+    answers: 0,
+    keys: 0,
+  });
+  const bump = useCallback((slice: Slice) => {
+    versions.current[slice]++;
+  }, []);
+  const generation = useRef(0);
+  const inFlight = useRef<number | null>(null);
+  const loaded = useRef(false);
+
   const loadAll = useCallback(async () => {
-    if (!sessionId) return;
+    const gen = generation.current;
+    if (!sessionId || inFlight.current === gen) return;
+    inFlight.current = gen;
+    const start = { ...versions.current };
+    const fresh = (slice: Slice) =>
+      generation.current === gen && versions.current[slice] === start[slice];
     const supabase = getClient();
-    const sent = Date.now();
-    const [sessionRes, stateRes, timeRes] = await Promise.all([
-      supabase.from('sessions').select('*').eq('id', sessionId).maybeSingle(),
-      supabase.from('session_question_state').select('*').eq('session_id', sessionId),
-      supabase.rpc('server_time'),
-    ]);
-    if (sessionRes.error || !sessionRes.data) {
-      setError(sessionRes.error?.message ?? 'Session not found');
-      setLoading(false);
-      return;
-    }
-    setSession(sessionRes.data);
-    setStates(Object.fromEntries((stateRes.data ?? []).map((r) => [r.question_id, r])));
-    if (typeof timeRes.data === 'string') {
-      const rtt = Date.now() - sent;
-      setServerOffset(new Date(timeRes.data).getTime() + rtt / 2 - Date.now());
-    }
-    if (asHost) {
-      const [pRes, aRes, kRes] = await Promise.all([
-        supabase.from('session_participants').select('*').eq('session_id', sessionId),
-        supabase.from('answers').select('*').eq('session_id', sessionId),
-        supabase.from('answer_keys').select('*').eq('session_id', sessionId),
+    try {
+      const sent = Date.now();
+      const [sessionRes, stateRes, timeRes] = await Promise.all([
+        supabase.from('sessions').select('*').eq('id', sessionId).maybeSingle(),
+        supabase.from('session_question_state').select('*').eq('session_id', sessionId),
+        supabase.rpc('server_time'),
       ]);
-      setParticipants(pRes.data ?? []);
-      setAnswers(aRes.data ?? []);
-      setKeys(
-        Object.fromEntries((kRes.data ?? []).map((r) => [r.question_id, r.correct_option_ids])),
-      );
-    } else {
-      await loadMine();
+      if (sessionRes.error || !sessionRes.data) {
+        if (!loaded.current) setError(sessionRes.error?.message ?? 'session_not_found');
+        return;
+      }
+      if (fresh('session')) setSession(sessionRes.data);
+      if (fresh('states') && stateRes.data) {
+        setStates(Object.fromEntries(stateRes.data.map((r) => [r.question_id, r])));
+      }
+      if (typeof timeRes.data === 'string') {
+        const rtt = Date.now() - sent;
+        setServerOffset(new Date(timeRes.data).getTime() + rtt / 2 - Date.now());
+      }
+      if (asHost) {
+        const [pRows, aRows, kRes] = await Promise.all([
+          fetchAll<ParticipantRow>((from, to) =>
+            supabase
+              .from('session_participants')
+              .select('*')
+              .eq('session_id', sessionId)
+              .order('user_id')
+              .range(from, to),
+          ),
+          fetchAll<AnswerRow>((from, to) =>
+            supabase
+              .from('answers')
+              .select('*')
+              .eq('session_id', sessionId)
+              .order('id')
+              .range(from, to),
+          ),
+          supabase.from('answer_keys').select('*').eq('session_id', sessionId),
+        ]);
+        if (fresh('participants')) setParticipants(pRows);
+        if (fresh('answers')) setAnswers(aRows);
+        if (fresh('keys') && kRes.data) {
+          setKeys(Object.fromEntries(kRes.data.map((r) => [r.question_id, r.correct_option_ids])));
+        }
+      } else {
+        if (!loaded.current && sessionRes.data.mode === 'self') {
+          const { data: auth } = await supabase.auth.getSession();
+          const userId = auth.session?.user.id;
+          if (userId) {
+            const { data: me } = await supabase
+              .from('session_participants')
+              .select('self_index')
+              .eq('session_id', sessionId)
+              .eq('user_id', userId)
+              .maybeSingle();
+            setSelfIndex(me?.self_index ?? null);
+          }
+        }
+        await loadMine();
+      }
+      loaded.current = true;
+      setError(null);
+    } catch (e) {
+      if (!loaded.current) setError(errorText(e));
+    } finally {
+      if (inFlight.current === gen) inFlight.current = null;
+      if (generation.current === gen) setLoading(false);
     }
-    setError(null);
-    setLoading(false);
   }, [sessionId, asHost, loadMine]);
 
   const loadMineRef = useRef(loadMine);
@@ -118,6 +195,8 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
 
   useEffect(() => {
     if (!sessionId) return;
+    generation.current++;
+    loaded.current = false;
     setLoading(true);
     const supabase = getClient();
     const channel = supabase
@@ -128,7 +207,9 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
         'postgres_changes',
         { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` },
         (p) => {
-          if (p.eventType !== 'DELETE') setSession(p.new as SessionRow);
+          if (p.eventType === 'DELETE') return;
+          bump('session');
+          setSession(p.new as SessionRow);
         },
       )
       .on(
@@ -141,6 +222,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
         },
         (p) => {
           if (p.eventType === 'DELETE') return;
+          bump('states');
           const row = p.new as QuestionStateRow;
           setStates((cur) => ({ ...cur, [row.question_id]: row }));
           if (!asHost) void loadMineRef.current();
@@ -159,6 +241,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
           },
           (p) => {
             if (p.eventType === 'DELETE') return;
+            bump('participants');
             const row = p.new as ParticipantRow;
             setParticipants((cur) => upsertBy(cur, row, (x) => x.user_id === row.user_id));
           },
@@ -167,6 +250,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
           'postgres_changes',
           { event: '*', schema: 'public', table: 'answers', filter: `session_id=eq.${sessionId}` },
           (p) => {
+            bump('answers');
             if (p.eventType === 'DELETE') {
               const id = (p.old as { id?: string }).id;
               setAnswers((cur) => cur.filter((a) => a.id !== id));
@@ -186,6 +270,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
           },
           (p) => {
             if (p.eventType === 'DELETE') return;
+            bump('keys');
             const row = p.new as { question_id: string; correct_option_ids: string[] };
             setKeys((cur) => ({ ...cur, [row.question_id]: row.correct_option_ids }));
           },
@@ -201,7 +286,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
       window.clearInterval(resync);
       void supabase.removeChannel(channel);
     };
-  }, [sessionId, asHost, loadAll]);
+  }, [sessionId, asHost, loadAll, bump]);
 
   const positionQueue = useRef<{ busy: boolean; next: { index: number; step: number } | null }>({
     busy: false,
@@ -222,9 +307,12 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
         p_seconds: seconds,
       });
       if (err) throw err;
-      if (data) setStates((cur) => ({ ...cur, [questionId]: data }));
+      if (data) {
+        bump('states');
+        setStates((cur) => ({ ...cur, [questionId]: data }));
+      }
     },
-    [sessionId],
+    [sessionId, bump],
   );
 
   useEffect(() => {
@@ -251,6 +339,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
     () => ({
       async setPosition(index, step = 0) {
         if (!sessionId) return;
+        bump('session');
         setSession((cur) => (cur ? { ...cur, current_index: index, current_step: step } : cur));
         // Concurrent requests can be applied out of order by Postgres, leaving
         // the database behind the host's screen. Send one at a time, latest only.
@@ -281,6 +370,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
           p_value: value,
         });
         if (err) throw err;
+        bump('states');
         setStates((cur) =>
           cur[questionId]
             ? { ...cur, [questionId]: { ...cur[questionId], show_results: value } }
@@ -295,7 +385,10 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
           p_option: optionId,
         });
         if (err) throw err;
-        if (data) setKeys((cur) => ({ ...cur, [questionId]: data }));
+        if (data) {
+          bump('keys');
+          setKeys((cur) => ({ ...cur, [questionId]: data }));
+        }
       },
       async submitAnswer(questionId, optionId) {
         if (!sessionId) throw new Error('No session');
@@ -321,7 +414,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
         if (err) throw err;
       },
     }),
-    [sessionId, questionAction],
+    [sessionId, questionAction, bump],
   );
 
   return {
@@ -334,6 +427,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
     answers,
     mine,
     score,
+    selfIndex,
     serverOffset,
     actions,
   };

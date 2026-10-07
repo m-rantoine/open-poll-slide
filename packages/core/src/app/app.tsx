@@ -3,7 +3,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { TooltipProvider } from './components/ui/tooltip';
 import { useLocale } from './lib/use-locale';
-import { AuthProvider } from './live/auth';
+import { AuthProvider, LivePageFrame } from './live/auth';
 import { JoinPage } from './live/join';
 import { PlayPage } from './live/play';
 import { ResultsDetailPage, ResultsListPage } from './live/results';
@@ -30,6 +30,13 @@ export function App() {
                 <Route path="/themes" element={<ThemesGalleryPage />} />
                 <Route path="/themes/:themeId" element={<ThemeDetailPage />} />
                 <Route path="/assets" element={<AssetsPage />} />
+                <Route path="/sessions" element={<SessionsPage />} />
+                <Route path="/results" element={<ResultsListPage />} />
+                <Route path="/results/:sessionId" element={<ResultsDetailPage />} />
+              </Route>
+            )}
+            {!config.build.showSlideBrowser && (
+              <Route element={<LivePageFrame />}>
                 <Route path="/sessions" element={<SessionsPage />} />
                 <Route path="/results" element={<ResultsListPage />} />
                 <Route path="/results/:sessionId" element={<ResultsDetailPage />} />

@@ -14,7 +14,7 @@ Ask these in one `AskUserQuestion` call, together with or right after the `creat
 1. **Questions** — how many, and the question text with options. If the user gave a topic only, draft the questions yourself and show them for confirmation.
 2. **Correct answers** — known now, or leave unset so the host marks them live (clicking an option on the Screen or Presenter view while results are showing)?
 3. **Pacing default** — `startLocked` per question: `true` (host opens each question, default) or `false` (open as soon as the slide appears). This only affects host-paced sessions.
-4. **Show results** — `showResults` per question: reveal correctness to participants once answers close (default `true`), or keep hidden until the host flips it.
+4. **Show results** — `showResults` per question: reveal correctness to participants once answers close, or keep hidden until the host flips it (default `false`).
 
 ## The question contract
 
@@ -55,7 +55,7 @@ export default [
 Rules:
 
 - `id` must equal its key in `questions`, and be unique within the deck. Option `id`s are stable slugs (`ottawa`), never positions — answers are stored by option id, so reordering or rewording later does not corrupt past results.
-- `correct` is an array of option ids; omit it entirely when unknown. Several correct options are allowed.
+- `correct` is an array of string literal option ids; omit it entirely when unknown. Several correct options are allowed. It never reaches the browser: the build strips it, and `open-slide live keys` uploads it to the database, so tell the user to run that command after adding or changing answer keys.
 - One question per page. The component fills the whole 1920×1080 page itself (it brings its own frame, heading and options), so do not wrap it in a padded container. It uses `--osd-*` design variables when the deck exports `design`, so declare `design` as `create-slide` recommends.
 - Only multiple choice exists today (`type: 'multiple_choice'`).
 
@@ -73,4 +73,4 @@ In a regular "Present" (no session) all of these render inertly: options are vis
 - Every `<MultipleChoice>` receives an object from `questions`, never an inline literal.
 - `questions` keys, `id` fields and option ids are unique and kebab/snake-case slugs.
 - Option labels are short enough to fit one or two lines at the component's 40px size (about 50 characters).
-- Hand-off: tell the user to run a session from the slide's **Present ▾ → Start host-paced / self-paced session** (hosts only), that participants join at `/join` with the session code, and that correct answers left unset can be marked live. If sessions are not set up yet, point them to `LIVE-SESSIONS.md` (`open-slide live init`, then `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`).
+- Hand-off: tell the user to run a session from the slide's **Present ▾ → Start host-paced / self-paced session** (hosts only), that participants join at `/join` with the session code, that `open-slide live keys` must be run after adding or changing `correct`, and that correct answers left unset can be marked live (marking is remembered for the deck). If sessions are not set up yet, point them to `LIVE-SESSIONS.md` (`open-slide live init`, then `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`).

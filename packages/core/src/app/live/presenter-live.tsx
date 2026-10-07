@@ -4,11 +4,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useDocumentTitle } from '@/lib/use-document-title';
+import { useLocale } from '@/lib/use-locale';
 import { pad2 } from '@/lib/utils';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlidePageProvider } from '../lib/page-context';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireHost } from './auth';
+import { EndSessionButton } from './end-session';
+import { liveErrorMessage } from './errors';
 import { LiveProvider, useQuestionRegistry } from './live-context';
 import { QuestionPanel, ResultsPanel, StudentsPanel } from './presenter-panels';
 import { LiveStage, useHostNavigation } from './stage';
@@ -25,6 +28,7 @@ export function LivePresenter({ sessionId }: { sessionId: string }) {
 function Inner({ sessionId }: { sessionId: string }) {
   const { slideId = '' } = useParams();
   const navigate = useNavigate();
+  const t = useLocale();
   const { slide, error } = useSlideModule(slideId);
   const data = useLiveSession(sessionId, true);
   const { ids, Provider } = useQuestionRegistry();
@@ -48,10 +52,16 @@ function Inner({ sessionId }: { sessionId: string }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [next, prev]);
 
-  if (error) return <LiveMessage title="Could not load this deck" body={error} />;
+  if (error) return <LiveMessage title={t.live.couldNotLoadDeck} body={error} />;
   if (!slide || data.loading) return <LoadingLine />;
-  if (data.error || !data.session)
-    return <LiveMessage title="Session unavailable" body={data.error ?? ''} />;
+  if (data.error || !data.session) {
+    return (
+      <LiveMessage
+        title={t.live.sessionUnavailable}
+        body={data.error ? liveErrorMessage(t, data.error) : ''}
+      />
+    );
+  }
 
   const session = data.session;
   const questions = {
@@ -65,12 +75,12 @@ function Inner({ sessionId }: { sessionId: string }) {
     <div className="dark flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-hairline px-6">
         <div className="flex items-center gap-3">
-          <span className="eyebrow text-white/45">Live presenter</span>
+          <span className="eyebrow text-white/45">{t.live.livePresenter}</span>
           <span className="font-heading text-[14px] font-semibold">
             {slide.meta?.title ?? slideId}
           </span>
           <span className="rounded-[3px] border border-border px-1.5 py-0.5 font-mono text-[11px]">
-            {session.mode === 'host' ? 'host-paced' : 'self-paced'} · {session.code}
+            {session.mode === 'host' ? t.live.hostPaced : t.live.selfPaced} · {session.code}
           </span>
         </div>
         <div className="flex items-center gap-4">
@@ -78,15 +88,9 @@ function Inner({ sessionId }: { sessionId: string }) {
             {pad2(nav.index + 1)} / {pad2(total)}
           </span>
           <Button variant="outline" onClick={() => navigate(`/results/${session.id}`)}>
-            Results
+            {t.live.results}
           </Button>
-          <Button
-            variant="outline"
-            disabled={session.status === 'ended'}
-            onClick={() => void data.actions.endSession()}
-          >
-            {session.status === 'ended' ? 'Ended' : 'End session'}
-          </Button>
+          <EndSessionButton data={data} />
         </div>
       </header>
 
@@ -107,10 +111,10 @@ function Inner({ sessionId }: { sessionId: string }) {
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" onClick={prev} disabled={nav.index === 0 && nav.step === 0}>
-              <ChevronLeft /> Previous
+              <ChevronLeft /> {t.live.previous}
             </Button>
             <Button variant="outline" onClick={next}>
-              Next <ChevronRight />
+              {t.live.next} <ChevronRight />
             </Button>
             {NextPage && (
               <div

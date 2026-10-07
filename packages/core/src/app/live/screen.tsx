@@ -3,9 +3,12 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useDocumentTitle } from '@/lib/use-document-title';
+import { useLocale } from '@/lib/use-locale';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireHost } from './auth';
 import { getClient } from './client';
+import { EndSessionButton } from './end-session';
+import { liveErrorMessage } from './errors';
 import { LiveProvider } from './live-context';
 import { joinUrl } from './lobby';
 import { LiveStage, useHostNavigation } from './stage';
@@ -52,6 +55,7 @@ export function ScreenPage() {
 function Screen() {
   const { slideId = '' } = useParams();
   const navigate = useNavigate();
+  const t = useLocale();
   const sessionId = useResolvedSessionId(slideId);
   const { slide, error } = useSlideModule(slideId);
   const data = useLiveSession(sessionId ?? undefined, true);
@@ -75,18 +79,19 @@ function Screen() {
     return () => window.removeEventListener('keydown', onKey);
   }, [next, prev]);
 
-  if (error) return <LiveMessage title="Could not load this deck" body={error} />;
+  if (error) return <LiveMessage title={t.live.couldNotLoadDeck} body={error} />;
   if (sessionId === null) {
+    return <LiveMessage title={t.live.noActiveHostSession} body={t.live.startFromPresentMenu} />;
+  }
+  if (sessionId === undefined || !slide || data.loading) return <LoadingLine />;
+  if (data.error || !data.session) {
     return (
       <LiveMessage
-        title="No active host-paced session"
-        body="Start a session from the slide's Present menu first."
+        title={t.live.sessionUnavailable}
+        body={data.error ? liveErrorMessage(t, data.error) : ''}
       />
     );
   }
-  if (sessionId === undefined || !slide || data.loading) return <LoadingLine />;
-  if (data.error || !data.session)
-    return <LiveMessage title="Session unavailable" body={data.error ?? ''} />;
 
   const session = data.session;
   return (
@@ -119,21 +124,13 @@ function Screen() {
             )
           }
         >
-          Open presenter view
+          {t.live.openPresenterView}
         </Button>
-        <Button
-          variant="outline"
-          onClick={async () => {
-            await data.actions.endSession();
-            navigate(`/results/${session.id}`);
-          }}
-        >
-          End session
-        </Button>
+        <EndSessionButton data={data} onEnded={() => navigate(`/results/${session.id}`)} />
       </div>
       {session.status === 'ended' && (
         <div className="absolute inset-0 grid place-items-center bg-black/80 text-white">
-          Session ended
+          {t.live.sessionEnded}
         </div>
       )}
     </div>

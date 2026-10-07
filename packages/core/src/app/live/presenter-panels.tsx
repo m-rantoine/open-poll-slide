@@ -1,11 +1,15 @@
 import { Check, Lock, LockOpen, Square } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import type { MultipleChoiceQuestion } from '../lib/sdk';
 import {
   answeredCount,
   classAverage,
+  expectedCount,
+  formatClock,
   formatDuration,
   inactiveSeconds,
   isParticipantActive,
@@ -13,6 +17,7 @@ import {
   pct,
   studentResults,
 } from './derive';
+import { liveErrorMessage } from './errors';
 import { useLive } from './live-context';
 
 function Section({
@@ -35,23 +40,25 @@ function Section({
   );
 }
 
-function clock(ms: number) {
-  const s = Math.max(0, Math.ceil(ms / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-}
-
 export function QuestionPanel({ question }: { question: MultipleChoiceQuestion }) {
   const live = useLive();
+  const t = useLocale();
   if (!live) return null;
   const { data, now } = live;
   const st = data.states[question.id];
   const state = st?.state ?? 'locked';
-  const total = data.participants.length;
+  const total = expectedCount(data.participants, data.answers, question.id, now);
   const answered = answeredCount(data.answers, question.id);
   const counts = optionCounts(data.answers, question.id);
   const correct = data.keys[question.id] ?? [];
   const remaining = st?.ends_at ? new Date(st.ends_at).getTime() - now : null;
-  const act = (fn: () => Promise<unknown>) => void fn().catch(() => {});
+  const act = (fn: () => Promise<unknown>) =>
+    void fn().catch((e: unknown) => toast.error(liveErrorMessage(t, e)));
+  const stateLabel = {
+    locked: t.live.stateLocked,
+    open: t.live.stateOpen,
+    ended: t.live.stateEnded,
+  }[state];
   const max = Math.max(1, ...Object.values(counts));
   const byUser = new Map(data.participants.map((p) => [p.user_id, p]));
   const rows = data.answers
@@ -65,7 +72,9 @@ export function QuestionPanel({ question }: { question: MultipleChoiceQuestion }
   return (
     <Section
       title={question.question}
-      aside={<span className="font-mono text-[11px] text-muted-foreground uppercase">{state}</span>}
+      aside={
+        <span className="font-mono text-[11px] text-muted-foreground uppercase">{stateLabel}</span>
+      }
     >
       <div className="flex flex-col gap-1.5">
         {question.options.map((o) => {
@@ -74,7 +83,8 @@ export function QuestionPanel({ question }: { question: MultipleChoiceQuestion }
             <button
               key={o.id}
               type="button"
-              title="Toggle as correct answer"
+              title={t.live.toggleCorrect}
+              aria-pressed={isCorrect}
               onClick={() => act(() => data.actions.toggleCorrect(question.id, o.id))}
               className={cn(
                 'flex items-center gap-2 rounded-[6px] border px-2.5 py-1.5 text-left text-[12.5px]',
@@ -96,40 +106,41 @@ export function QuestionPanel({ question }: { question: MultipleChoiceQuestion }
             variant="outline"
             onClick={() => act(() => data.actions.questionAction(question.id, 'lock'))}
           >
-            <LockOpen /> Lock
+            <LockOpen /> {t.live.lock}
           </Button>
         ) : (
           <Button
             variant="outline"
             onClick={() => act(() => data.actions.questionAction(question.id, 'unlock'))}
           >
-            <Lock /> Unlock
+            <Lock /> {t.live.unlock}
           </Button>
         )}
         {[15, 30, 60].map((s) => (
           <Button
             key={s}
             variant="outline"
+            aria-label={format(t.live.addSeconds, { n: s })}
             onClick={() => act(() => data.actions.questionAction(question.id, 'add_time', s))}
           >
             +{s}s
           </Button>
         ))}
         {state === 'open' && remaining !== null && remaining > 0 && (
-          <span className="font-mono text-[15px] tabular-nums">{clock(remaining)}</span>
+          <span className="font-mono text-[15px] tabular-nums">{formatClock(remaining)}</span>
         )}
         <Button
           variant="outline"
           disabled={state === 'ended'}
           onClick={() => act(() => data.actions.questionAction(question.id, 'end'))}
         >
-          <Square className="fill-current" /> Stop
+          <Square className="fill-current" /> {t.live.stop}
         </Button>
         <Button
           variant={st?.show_results ? 'default' : 'outline'}
           onClick={() => act(() => data.actions.setShowResults(question.id, !st?.show_results))}
         >
-          {st?.show_results ? 'Results shown' : 'Show results'}
+          {st?.show_results ? t.live.resultsShown : t.live.showResults}
         </Button>
       </div>
 
@@ -167,9 +178,9 @@ export function QuestionPanel({ question }: { question: MultipleChoiceQuestion }
         <table className="w-full text-[11.5px]">
           <thead className="sticky top-0 bg-card text-left text-muted-foreground">
             <tr>
-              <th className="px-2 py-1 font-medium">Student</th>
-              <th className="px-2 py-1 font-medium">Answer</th>
-              <th className="px-2 py-1 font-medium">Result</th>
+              <th className="px-2 py-1 font-medium">{t.live.student}</th>
+              <th className="px-2 py-1 font-medium">{t.live.answer}</th>
+              <th className="px-2 py-1 font-medium">{t.live.result}</th>
             </tr>
           </thead>
           <tbody>
@@ -186,7 +197,8 @@ export function QuestionPanel({ question }: { question: MultipleChoiceQuestion }
               <tr key={p.user_id} className="border-t border-hairline text-muted-foreground">
                 <td className="px-2 py-1">{p.display_name}</td>
                 <td className="px-2 py-1" colSpan={2}>
-                  waiting{isParticipantActive(p, now) ? '' : ' · inactive'}
+                  {t.live.waiting}
+                  {isParticipantActive(p, now) ? '' : ` · ${t.live.inactive}`}
                 </td>
               </tr>
             ))}
@@ -199,6 +211,7 @@ export function QuestionPanel({ question }: { question: MultipleChoiceQuestion }
 
 export function StudentsPanel() {
   const live = useLive();
+  const t = useLocale();
   if (!live) return null;
   const { data, now } = live;
   const active = data.participants.filter((p) => isParticipantActive(p, now));
@@ -223,10 +236,14 @@ export function StudentsPanel() {
     </span>
   );
   return (
-    <Section title={`Students · ${data.participants.length}`}>
-      <div className="mb-1 text-[11px] text-muted-foreground">Active ({active.length})</div>
+    <Section title={`${t.live.students} · ${data.participants.length}`}>
+      <div className="mb-1 text-[11px] text-muted-foreground">
+        {format(t.live.activeCount, { count: active.length })}
+      </div>
       <div className="mb-3 flex flex-wrap gap-1.5">{active.map((p) => tile(p, true))}</div>
-      <div className="mb-1 text-[11px] text-muted-foreground">Inactive ({inactive.length})</div>
+      <div className="mb-1 text-[11px] text-muted-foreground">
+        {format(t.live.inactiveCount, { count: inactive.length })}
+      </div>
       <div className="flex flex-wrap gap-1.5">{inactive.map((p) => tile(p, false))}</div>
     </Section>
   );
@@ -234,12 +251,13 @@ export function StudentsPanel() {
 
 export function ResultsPanel() {
   const live = useLive();
+  const t = useLocale();
   if (!live) return null;
   const { data } = live;
   const results = studentResults(data.participants, data.answers);
   const byUser = new Map(results.map((r) => [r.userId, r]));
   return (
-    <Section title={`Class average · ${pct(classAverage(results))}`}>
+    <Section title={`${t.live.classAverage} · ${pct(classAverage(results))}`}>
       <table className="w-full text-[11.5px]">
         <tbody>
           {data.participants.map((p) => {

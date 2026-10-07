@@ -3,13 +3,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useDocumentTitle } from '@/lib/use-document-title';
+import { format, useLocale } from '@/lib/use-locale';
 import { LiveMessage, LiveShell, RequireAuth, useAuth } from './auth';
 import { getClient } from './client';
+import { liveErrorMessage } from './errors';
 
 export function JoinPage() {
-  useDocumentTitle('Join a session');
+  const t = useLocale();
+  useDocumentTitle(t.live.joinSession);
   return (
-    <RequireAuth heading="Join your class">
+    <RequireAuth heading={t.live.joinYourClass}>
       <JoinForm />
     </RequireAuth>
   );
@@ -18,6 +21,7 @@ export function JoinPage() {
 function JoinForm() {
   const { code: codeParam } = useParams();
   const navigate = useNavigate();
+  const t = useLocale();
   const { displayName, signOut } = useAuth();
   const [code, setCode] = useState(codeParam ?? '');
   const [error, setError] = useState<string | null>(null);
@@ -30,11 +34,7 @@ function JoinForm() {
     const { data, error: err } = await getClient().rpc('join_session', { p_code: value });
     setBusy(false);
     if (err || !data) {
-      setError(
-        err?.message === 'session_not_found'
-          ? 'No active session with that code.'
-          : (err?.message ?? 'Could not join.'),
-      );
+      setError(liveErrorMessage(t, err ?? 'session_not_found'));
       return;
     }
     navigate(`/s/${encodeURIComponent(data.deck_id)}/play/${data.id}`, { replace: true });
@@ -53,13 +53,15 @@ function JoinForm() {
     void join(code);
   };
 
-  if (codeParam && busy && !error) return <LiveMessage title="Joining…" />;
+  if (codeParam && busy && !error) return <LiveMessage title={t.live.joining} />;
 
   return (
     <LiveShell>
       <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-3 text-center">
-        <p className="text-[13px] text-muted-foreground">Signed in as {displayName}</p>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">Enter session code</h1>
+        <p className="text-[13px] text-muted-foreground">
+          {format(t.live.signedInAs, { name: displayName })}
+        </p>
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">{t.live.enterCode}</h1>
         <Input
           autoFocus
           value={code}
@@ -70,14 +72,14 @@ function JoinForm() {
         />
         {error && <p className="text-[12.5px] text-destructive">{error}</p>}
         <Button type="submit" disabled={busy || code.length < 4} className="h-9">
-          Join
+          {t.live.join}
         </Button>
         <button
           type="button"
           onClick={() => void signOut()}
           className="text-[12.5px] text-muted-foreground underline-offset-4 hover:underline"
         >
-          Sign out
+          {t.live.signOut}
         </button>
       </form>
     </LiveShell>

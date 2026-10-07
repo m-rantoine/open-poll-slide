@@ -1,6 +1,7 @@
 import config from 'virtual:open-slide/config';
 import { useSyncExternalStore } from 'react';
 import { en } from '../../locale/en';
+import { frCA } from '../../locale/fr-ca';
 import { ja } from '../../locale/ja';
 import type { Locale } from '../../locale/types';
 import { zhCN } from '../../locale/zh-cn';
@@ -10,6 +11,7 @@ export type LocaleId = Locale['id'];
 
 const LOCALES: Record<LocaleId, Locale> = {
   en,
+  'fr-CA': frCA,
   'zh-TW': zhTW,
   'zh-CN': zhCN,
   ja,
@@ -17,6 +19,7 @@ const LOCALES: Record<LocaleId, Locale> = {
 
 export const LOCALE_OPTIONS: ReadonlyArray<{ id: LocaleId; label: string }> = [
   { id: 'en', label: 'English' },
+  { id: 'fr-CA', label: 'Français (Canada)' },
   { id: 'zh-TW', label: '繁體中文' },
   { id: 'zh-CN', label: '简体中文' },
   { id: 'ja', label: '日本語' },
@@ -26,7 +29,7 @@ const STORAGE_KEY = 'open-slide:locale';
 const configLocale = config.locale as Locale | undefined;
 
 function isLocaleId(value: string | null): value is LocaleId {
-  return value === 'en' || value === 'zh-TW' || value === 'zh-CN' || value === 'ja';
+  return value !== null && Object.hasOwn(LOCALES, value);
 }
 
 function readStored(): Locale {
@@ -40,26 +43,31 @@ function readStored(): Locale {
 // A module-level store (rather than React context) so every React root the
 // runtime mounts — the app shell plus the standalone roots used for HTML/PDF
 // export — shares one locale without needing a provider above each of them.
-let current: Locale = readStored();
-const listeners = new Set<() => void>();
+// It lives on globalThis because slides import live components from the
+// published build, which carries its own copy of this module.
+const STORE_KEY = '__open_slide_locale_store__';
+type Store = { current: Locale; listeners: Set<() => void> };
+const g = globalThis as typeof globalThis & { [STORE_KEY]?: Store };
+g[STORE_KEY] ??= { current: readStored(), listeners: new Set() };
+const store = g[STORE_KEY];
 
 function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
+  store.listeners.add(listener);
   return () => {
-    listeners.delete(listener);
+    store.listeners.delete(listener);
   };
 }
 
 function getSnapshot(): Locale {
-  return current;
+  return store.current;
 }
 
 export function setLocale(id: LocaleId): void {
-  current = LOCALES[id];
+  store.current = LOCALES[id];
   try {
     localStorage.setItem(STORAGE_KEY, id);
   } catch {}
-  for (const listener of listeners) listener();
+  for (const listener of store.listeners) listener();
 }
 
 export function useLocaleValue(): Locale {

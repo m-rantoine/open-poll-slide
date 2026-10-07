@@ -1,7 +1,7 @@
 export type Plural = { one: string; other: string };
 
 export type Locale = {
-  id: 'en' | 'zh-TW' | 'zh-CN' | 'ja';
+  id: 'en' | 'fr-CA' | 'zh-TW' | 'zh-CN' | 'ja';
 
   common: {
     cancel: string;
@@ -569,5 +569,141 @@ export type Locale = {
     usedByEmpty: string;
     expandPromptAria: string;
     collapsePromptAria: string;
+  };
+
+  live: {
+    sessions: string;
+    results: string;
+    notConfiguredTitle: string;
+    notConfiguredBody: string;
+    hostsOnlyTitle: string;
+    hostsOnlyBody: string;
+    hostSignIn: string;
+    joinYourClass: string;
+    signInToJoin: string;
+    signInToSeeSessions: string;
+    signIn: string;
+    createAccount: string;
+    yourName: string;
+    email: string;
+    password: string;
+    noAccount: string;
+    haveAccount: string;
+    checkEmail: string;
+    /** template: "Use your {domains} address." */
+    signUpDomainHint: string;
+    joinSession: string;
+    /** template: "Signed in as {name}" */
+    signedInAs: string;
+    enterCode: string;
+    join: string;
+    joining: string;
+    signOut: string;
+    leave: string;
+    previous: string;
+    next: string;
+    couldNotLoadDeck: string;
+    sessionUnavailable: string;
+    useCodeFromHost: string;
+    sessionNotFound: string;
+    sessionEndedTag: string;
+    /** template: "Score {correct}/{graded}" */
+    score: string;
+    thanksForAnswer: string;
+    youChose: string;
+    correct: string;
+    notQuite: string;
+    waitingForHostToOpen: string;
+    answerPeriodEnded: string;
+    clickToUnlock: string;
+    locked: string;
+    lock: string;
+    unlock: string;
+    lockQuestion: string;
+    /** template: "Add {n} seconds" */
+    addSeconds: string;
+    stop: string;
+    stopAnswering: string;
+    /** template: "Answers are closed · {answered} of {total} responded" */
+    answersClosed: string;
+    showAnswers: string;
+    showResults: string;
+    resultsShown: string;
+    toggleCorrect: string;
+    stateLocked: string;
+    stateOpen: string;
+    stateEnded: string;
+    noActiveHostSession: string;
+    startFromPresentMenu: string;
+    openPresenterView: string;
+    openScreen: string;
+    endSession: string;
+    ended: string;
+    sessionEnded: string;
+    endDialogEyebrow: string;
+    endDialogTitle: string;
+    endDialogDescription: string;
+    livePresenter: string;
+    hostPaced: string;
+    selfPaced: string;
+    statusActive: string;
+    statusEnded: string;
+    students: string;
+    /** template: "Active ({count})" */
+    activeCount: string;
+    /** template: "Inactive ({count})" */
+    inactiveCount: string;
+    classAverage: string;
+    student: string;
+    answer: string;
+    result: string;
+    waiting: string;
+    inactive: string;
+    welcome: string;
+    lobbyPlaceholder: string;
+    youreIn: string;
+    selfPacedHint: string;
+    waitingForHostToBegin: string;
+    goToPrefix: string;
+    goToSuffix: string;
+    studentsInLobby: Plural;
+    classResultsPlaceholder: string;
+    yourScore: string;
+    activeSessions: string;
+    loadingSessions: string;
+    noSessionsRunning: string;
+    overview: string;
+    loadingResults: string;
+    noSessionsYet: string;
+    studentCount: Plural;
+    /** template: "avg {value}" */
+    averageShort: string;
+    tabSummary: string;
+    tabByQuestion: string;
+    tabByStudent: string;
+    questions: string;
+    answers: string;
+    /** template: "{answered}/{total} answered" */
+    answeredOf: string;
+    /** template: "{value} correct" */
+    percentCorrect: string;
+    whoAnsweredWhat: string;
+    answered: string;
+    scoreColumn: string;
+    inactiveTime: string;
+    startHostPaced: string;
+    startSelfPaced: string;
+    signInToStart: string;
+    couldNotStart: string;
+    errors: {
+      question_closed: string;
+      already_answered: string;
+      session_not_active: string;
+      session_not_found: string;
+      not_a_participant: string;
+      host_only: string;
+      unknown_option: string;
+      generic: string;
+    };
   };
 };

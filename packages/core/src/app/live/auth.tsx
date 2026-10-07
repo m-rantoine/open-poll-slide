@@ -9,8 +9,10 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { Outlet } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { format, useLocale } from '@/lib/use-locale';
 import { allowedEmailDomains, getClient, liveConfigured } from './client';
 
 type AuthState = {
@@ -91,6 +93,16 @@ export function LiveShell({ children }: { children: ReactNode }) {
   );
 }
 
+export function LivePageFrame() {
+  return (
+    <div className="dark min-h-dvh bg-background text-foreground">
+      <div className="mx-auto w-full max-w-[1180px] px-5 py-8 md:px-10 md:py-12">
+        <Outlet />
+      </div>
+    </div>
+  );
+}
+
 export function LiveMessage({ title, body }: { title: string; body?: string }) {
   return (
     <LiveShell>
@@ -115,7 +127,8 @@ export function LoadingLine() {
   );
 }
 
-export function AuthForm({ heading, hint }: { heading: string; hint?: string }) {
+export function AuthForm({ heading }: { heading: string }) {
+  const t = useLocale();
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -143,7 +156,7 @@ export function AuthForm({ heading, hint }: { heading: string; hint?: string }) 
         },
       });
       if (err) setError(err.message);
-      else if (!data.session) setNotice('Check your email to confirm your account, then sign in.');
+      else if (!data.session) setNotice(t.live.checkEmail);
     }
     setBusy(false);
   };
@@ -152,12 +165,16 @@ export function AuthForm({ heading, hint }: { heading: string; hint?: string }) 
     <LiveShell>
       <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-3">
         <h1 className="font-heading text-2xl font-semibold tracking-tight">{heading}</h1>
-        {hint && <p className="text-[13px] text-muted-foreground">{hint}</p>}
+        {mode === 'sign-up' && allowedEmailDomains.length > 0 && (
+          <p className="text-[13px] text-muted-foreground">
+            {format(t.live.signUpDomainHint, { domains: allowedEmailDomains.join(', ') })}
+          </p>
+        )}
         {mode === 'sign-up' && (
           <Input
             required
             autoComplete="name"
-            placeholder="Your name"
+            placeholder={t.live.yourName}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
@@ -166,7 +183,7 @@ export function AuthForm({ heading, hint }: { heading: string; hint?: string }) 
           required
           type="email"
           autoComplete="email"
-          placeholder={allowedEmailDomains[0] ? `you@${allowedEmailDomains[0]}` : 'Email'}
+          placeholder={allowedEmailDomains[0] ? `you@${allowedEmailDomains[0]}` : t.live.email}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -175,14 +192,14 @@ export function AuthForm({ heading, hint }: { heading: string; hint?: string }) 
           type="password"
           minLength={8}
           autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
-          placeholder="Password"
+          placeholder={t.live.password}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
         {error && <p className="text-[12.5px] text-destructive">{error}</p>}
         {notice && <p className="text-[12.5px] text-emerald-400">{notice}</p>}
         <Button type="submit" disabled={busy} className="h-9">
-          {mode === 'sign-in' ? 'Sign in' : 'Create account'}
+          {mode === 'sign-in' ? t.live.signIn : t.live.createAccount}
         </Button>
         <button
           type="button"
@@ -193,7 +210,7 @@ export function AuthForm({ heading, hint }: { heading: string; hint?: string }) 
             setNotice(null);
           }}
         >
-          {mode === 'sign-in' ? 'No account yet? Create one' : 'Already have an account? Sign in'}
+          {mode === 'sign-in' ? t.live.noAccount : t.live.haveAccount}
         </button>
       </form>
     </LiveShell>
@@ -202,13 +219,9 @@ export function AuthForm({ heading, hint }: { heading: string; hint?: string }) 
 
 export function RequireAuth({ children, heading }: { children: ReactNode; heading: string }) {
   const { loading, session } = useAuth();
+  const t = useLocale();
   if (!liveConfigured) {
-    return (
-      <LiveMessage
-        title="Live sessions are not configured"
-        body="Add a `live` block with your Supabase URL and publishable key to open-slide.config.ts."
-      />
-    );
+    return <LiveMessage title={t.live.notConfiguredTitle} body={t.live.notConfiguredBody} />;
   }
   if (loading) return <LoadingLine />;
   if (!session) return <AuthForm heading={heading} />;
@@ -217,12 +230,13 @@ export function RequireAuth({ children, heading }: { children: ReactNode; headin
 
 export function RequireHost({ children }: { children: ReactNode }) {
   const { isHost } = useAuth();
+  const t = useLocale();
   return (
-    <RequireAuth heading="Host sign in">
+    <RequireAuth heading={t.live.hostSignIn}>
       {isHost ? (
         children
       ) : (
-        <LiveMessage title="Hosts only" body="This area is limited to whitelisted host accounts." />
+        <LiveMessage title={t.live.hostsOnlyTitle} body={t.live.hostsOnlyBody} />
       )}
     </RequireAuth>
   );

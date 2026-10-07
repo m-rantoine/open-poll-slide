@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { useLocale } from '../lib/use-locale';
 import { classAverage, pct, studentResults } from './derive';
 import { useLive, useQuestionRegistryFlag } from './live-context';
 
@@ -24,17 +25,17 @@ const big: CSSProperties = {
   color: 'var(--osd-accent, #2563eb)',
 };
 
-export function ClassResults({ title = 'Results' }: { title?: string }) {
+export function ClassResults({ title: titleProp }: { title?: string }) {
   const live = useLive();
+  const t = useLocale();
   useQuestionRegistryFlag('results');
+  const title = titleProp ?? t.live.results;
 
   if (!live) {
     return (
       <div style={frame}>
         <h1 style={{ margin: 0, fontSize: 120 }}>{title}</h1>
-        <div style={{ fontSize: 44, opacity: 0.6 }}>
-          Class results — appear during live sessions
-        </div>
+        <div style={{ fontSize: 44, opacity: 0.6 }}>{t.live.classResultsPlaceholder}</div>
       </div>
     );
   }
@@ -47,8 +48,10 @@ export function ClassResults({ title = 'Results' }: { title?: string }) {
       <div style={frame}>
         <h1 style={{ margin: 0, fontSize: 96 }}>{title}</h1>
         <div style={big}>{mine && mine.graded > 0 ? `${mine.correct}/${mine.graded}` : '—'}</div>
-        <div style={{ fontSize: 44, opacity: 0.7 }}>Your score</div>
-        <div style={{ fontSize: 52 }}>Class average: {pct(mine?.class_average ?? null)}</div>
+        <div style={{ fontSize: 44, opacity: 0.7 }}>{t.live.yourScore}</div>
+        <div style={{ fontSize: 52 }}>
+          {t.live.classAverage} · {pct(mine?.class_average ?? null)}
+        </div>
       </div>
     );
   }
@@ -58,7 +61,7 @@ export function ClassResults({ title = 'Results' }: { title?: string }) {
     <div style={frame}>
       <h1 style={{ margin: 0, fontSize: 96 }}>{title}</h1>
       <div style={big}>{pct(average)}</div>
-      <div style={{ fontSize: 52, opacity: 0.7 }}>Class average</div>
+      <div style={{ fontSize: 52, opacity: 0.7 }}>{t.live.classAverage}</div>
     </div>
   );
 }

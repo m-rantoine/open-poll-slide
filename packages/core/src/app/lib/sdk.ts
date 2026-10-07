@@ -18,11 +18,14 @@ export type MultipleChoiceQuestion = {
   type: 'multiple_choice';
   question: string;
   options: QuestionOption[];
-  /** Ids of correct options. Omit to let the host mark them live. */
+  /**
+   * Ids of correct options. Omit to let the host mark them live. Stripped from the browser
+   * bundle; `open-slide live keys` uploads it to the database.
+   */
   correct?: string[];
   /** Host-paced sessions: start with the padlock down. Default true. */
   startLocked?: boolean;
-  /** Reveal correctness to participants once the answer period ends. */
+  /** Reveal correctness to participants once the answer period ends. Default false. */
   showResults?: boolean;
 };
 

@@ -3,7 +3,7 @@ import * as readline from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command, Option } from 'commander';
-import type { LiveInitFlags } from './live-init.ts';
+import type { LiveInitFlags, LiveKeysFlags } from './live-init.ts';
 import { assertViteResolvesToCore } from './preflight.ts';
 import { detectSkillsDrift, syncSkills } from './sync.ts';
 import { glyph, readVersion } from './ui.ts';
@@ -148,6 +148,14 @@ export async function run(argv: string[]): Promise<void> {
     .action(async (flags: LiveInitFlags) => {
       const { liveInit } = await import('./live-init.ts');
       await liveInit(flags);
+    });
+  live
+    .command('keys')
+    .description('Upload the answer keys (`correct`) in your slide sources to Supabase')
+    .option('--project-ref <ref>', 'Supabase project ref (defaults to the linked project)')
+    .action(async (flags: LiveKeysFlags) => {
+      const { liveKeys } = await import('./live-init.ts');
+      await liveKeys(flags);
     });
 
   await program.parseAsync(argv, { from: 'user' });

@@ -1,10 +1,13 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { cp, mkdir, readdir } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
+import fg from 'fast-glob';
+import { findAnswerKeys } from '../vite/answer-keys-plugin.ts';
+import { loadUserConfig } from '../vite/open-slide-plugin.ts';
 import { glyph } from './ui.ts';
 
 export interface LiveInitFlags {
@@ -19,8 +22,20 @@ const EMAIL_RE = /^[^\s@'";]+@[^\s@'";]+\.[^\s@'";]+$/;
 const DOMAIN_RE = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/;
 const HOOK_URI = 'pg-functions://postgres/public/hook_restrict_signup_domain';
 
+export interface LiveKeysFlags {
+  projectRef?: string;
+}
+
 function say(message: string) {
   process.stdout.write(`  ${chalk.green('✓')} ${message}\n`);
+}
+
+function warn(message: string) {
+  process.stdout.write(`  ${chalk.yellow(glyph.warn)} ${message}\n`);
+}
+
+function sqlLiteral(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
 }
 
 function supabase(args: string[], opts: { capture?: boolean } = {}): string {
@@ -88,6 +103,75 @@ async function configureAuth(ref: string, siteUrls: string[]): Promise<boolean> 
   return res.ok;
 }
 
+function ensureLinked(projectRef: string | undefined): string {
+  const ref = projectRef ?? process.env.SUPABASE_PROJECT_REF ?? linkedRef();
+  if (!ref) {
+    throw new Error(
+      'No Supabase project is linked. Pass --project-ref <ref> (or set SUPABASE_PROJECT_REF), or run `supabase link` first.',
+    );
+  }
+  if (linkedRef() !== ref) {
+    supabase(['link', '--project-ref', ref], { capture: true });
+    say(`Linked project ${ref}`);
+  }
+  return ref;
+}
+
+type DeckKey = { deck: string; question: string; correct: string[] };
+
+async function collectAnswerKeys(): Promise<DeckKey[]> {
+  const cwd = process.cwd();
+  const config = await loadUserConfig(cwd);
+  const slidesRoot = path.resolve(cwd, config.slidesDir ?? 'slides');
+  const files = await fg('*/**/*.{tsx,ts,jsx,js}', {
+    cwd: slidesRoot,
+    ignore: ['**/node_modules/**', '**/*.d.ts', '**/*.test.*'],
+  });
+  const keys: DeckKey[] = [];
+  for (const file of files.sort()) {
+    const deck = file.split('/')[0];
+    for (const key of findAnswerKeys(await readFile(path.join(slidesRoot, file), 'utf8'))) {
+      if (!key.questionId || !key.correct) {
+        warn(
+          `Skipped a question in ${file}: \`id\` and \`correct\` must be string literals to be uploaded.`,
+        );
+        continue;
+      }
+      keys.push({ deck, question: key.questionId, correct: key.correct });
+    }
+  }
+  return keys;
+}
+
+async function uploadAnswerKeys(): Promise<void> {
+  const keys = await collectAnswerKeys();
+  if (keys.length === 0) {
+    say('No answer keys found in slide sources');
+    return;
+  }
+  const rows = JSON.stringify(keys.map((k) => ({ d: k.deck, q: k.question, c: k.correct })));
+  supabase(
+    [
+      'db',
+      'query',
+      '--linked',
+      `insert into public.deck_answer_keys (deck_id, question_id, correct_option_ids)
+select x.d, x.q, array(select jsonb_array_elements_text(x.c))
+from jsonb_to_recordset(${sqlLiteral(rows)}::jsonb) as x(d text, q text, c jsonb)
+on conflict (deck_id, question_id) do update
+  set correct_option_ids = excluded.correct_option_ids, updated_at = now();`,
+    ],
+    { capture: true },
+  );
+  const decks = new Set(keys.map((k) => k.deck));
+  say(`Uploaded ${keys.length} answer key(s) from ${decks.size} deck(s)`);
+}
+
+export async function liveKeys(flags: LiveKeysFlags): Promise<void> {
+  ensureLinked(flags.projectRef);
+  await uploadAnswerKeys();
+}
+
 export async function liveInit(flags: LiveInitFlags): Promise<void> {
   const hosts = (flags.host ?? []).map((h) => h.trim().toLowerCase());
   const domains = (flags.domain ?? []).map((d) => d.trim().toLowerCase());
@@ -120,16 +204,7 @@ export async function liveInit(flags: LiveInitFlags): Promise<void> {
       : 'Migrations already present',
   );
 
-  const ref = flags.projectRef ?? process.env.SUPABASE_PROJECT_REF ?? linkedRef();
-  if (!ref) {
-    throw new Error(
-      'No Supabase project is linked. Pass --project-ref <ref> (or set SUPABASE_PROJECT_REF), or run `supabase link` first.',
-    );
-  }
-  if (linkedRef() !== ref) {
-    supabase(['link', '--project-ref', ref], { capture: true });
-    say(`Linked project ${ref}`);
-  }
+  const ref = ensureLinked(flags.projectRef);
 
   supabase(['db', 'push', '--yes'], { capture: true });
   say('Applied database schema');
@@ -148,16 +223,23 @@ export async function liveInit(flags: LiveInitFlags): Promise<void> {
     if (hosts.length > 0) say(`Whitelisted host(s): ${hosts.join(', ')}`);
     if (domains.length > 0) say(`Allowed sign-up domain(s): ${domains.join(', ')}`);
   }
+  if (domains.length === 0) {
+    warn(
+      'No --domain given, so the allowed sign-up domains were left as they were. With none set, only hosts can sign up.',
+    );
+  }
+
+  await uploadAnswerKeys();
 
   if (!flags.skipHook) {
     if (await configureAuth(ref, siteUrls)) {
       say('Enabled the sign-up domain hook (email confirmation off: sign-up signs in immediately)');
       if (siteUrls.length > 0) say(`Set site URL / redirects: ${siteUrls.join(', ')}`);
     } else {
-      process.stdout.write(
-        `  ${chalk.yellow(glyph.warn)} Could not enable the sign-up hook automatically (no access token).\n` +
-          `    Run \`supabase login\` and re-run this command, or in the dashboard go to\n` +
-          `    Authentication → Hooks → Before User Created → Postgres function → public.hook_restrict_signup_domain.\n`,
+      warn(
+        'Could not enable the sign-up hook automatically (no access token).\n' +
+          '    Run `supabase login` and re-run this command, or in the dashboard go to\n' +
+          '    Authentication → Hooks → Before User Created → Postgres function → public.hook_restrict_signup_domain.',
       );
     }
   }

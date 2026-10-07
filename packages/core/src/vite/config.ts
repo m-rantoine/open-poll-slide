@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import type { InlineConfig } from 'vite';
+import { answerKeysPlugin } from './answer-keys-plugin.ts';
 import { apiPlugin } from './api-plugin.ts';
 import { currentPlugin } from './current-plugin.ts';
 import { designPlugin } from './design-plugin.ts';
@@ -75,6 +76,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     envDir: userCwd,
     plugins: [
       locTagsPlugin({ userCwd, slidesDir }),
+      answerKeysPlugin({ userCwd, slidesDir }),
       react(),
       tailwindcss(),
       openSlidePlugin({ userCwd, config, coreVersion: CORE_VERSION }),

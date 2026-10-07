@@ -112,6 +112,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      deck_answer_keys: {
+        Row: {
+          correct_option_ids: string[];
+          deck_id: string;
+          question_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          correct_option_ids?: string[];
+          deck_id: string;
+          question_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          correct_option_ids?: string[];
+          deck_id?: string;
+          question_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       hosts: {
         Row: {
           email: string;
@@ -420,6 +441,14 @@ export type Database = {
       };
       require_host: { Args: never; Returns: undefined };
       server_time: { Args: never; Returns: string };
+      session_summaries: {
+        Args: { p_limit?: number };
+        Returns: {
+          class_average: number | null;
+          session_id: string;
+          students: number;
+        }[];
+      };
       set_position: {
         Args: { p_index: number; p_session: string; p_step?: number };
         Returns: undefined;

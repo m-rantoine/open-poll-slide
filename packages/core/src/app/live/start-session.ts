@@ -2,12 +2,15 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { SlideModule } from '../lib/sdk';
+import { useLocale } from '../lib/use-locale';
 import { useAuth } from './auth';
 import { getClient, liveConfigured } from './client';
+import { liveErrorMessage } from './errors';
 
 export function useStartSession(slideId: string, slide: SlideModule | null) {
   const { isHost, session } = useAuth();
   const navigate = useNavigate();
+  const t = useLocale();
 
   const start = useCallback(
     async (mode: 'self' | 'host') => {
@@ -20,7 +23,7 @@ export function useStartSession(slideId: string, slide: SlideModule | null) {
         p_questions: slide.questions ?? {},
       });
       if (error || !data) {
-        toast.error(error?.message ?? 'Could not start the session');
+        toast.error(error ? liveErrorMessage(t, error) : t.live.couldNotStart);
         return;
       }
       if (mode === 'host') {
@@ -29,7 +32,7 @@ export function useStartSession(slideId: string, slide: SlideModule | null) {
         navigate(`/results/${data.id}`);
       }
     },
-    [slideId, slide, navigate],
+    [slideId, slide, navigate, t],
   );
 
   return {

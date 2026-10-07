@@ -1,8 +1,11 @@
 import { Lock, LockOpen, Square } from 'lucide-react';
 import { type CSSProperties, type ReactNode, useState } from 'react';
 import type { MultipleChoiceQuestion } from '../lib/sdk';
-import { answeredCount, optionCounts } from './derive';
+import { format, useLocale } from '../lib/use-locale';
+import { answeredCount, expectedCount, formatClock, optionCounts } from './derive';
+import { liveErrorMessage } from './errors';
 import { useLive, useRegisterQuestion } from './live-context';
+import { useParticipantQuestion } from './use-participant-question';
 
 const INK = 'var(--osd-text, #0f172a)';
 const BG = 'var(--osd-bg, #ffffff)';
@@ -82,11 +85,6 @@ function ControlButton({
   );
 }
 
-function formatClock(ms: number): string {
-  const s = Math.max(0, Math.ceil(ms / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-}
-
 function Padlock({ onClick, hint }: { onClick?: () => void; hint: string }) {
   const content = (
     <>
@@ -119,12 +117,14 @@ function ResultsChart({
   correct,
   total,
   onToggle,
+  toggleLabel,
 }: {
   question: MultipleChoiceQuestion;
   counts: Record<string, number>;
   correct: string[];
   total: number;
   onToggle?: (optionId: string) => void;
+  toggleLabel: string;
 }) {
   const max = Math.max(1, ...Object.values(counts));
   return (
@@ -137,6 +137,8 @@ function ResultsChart({
             key={o.id}
             type="button"
             disabled={!onToggle}
+            title={onToggle ? toggleLabel : undefined}
+            aria-pressed={onToggle ? isCorrect : undefined}
             onClick={() => onToggle?.(o.id)}
             style={{
               display: 'grid',
@@ -196,8 +198,9 @@ export type MultipleChoiceProps = {
 
 export function MultipleChoice({ question }: MultipleChoiceProps) {
   const live = useLive();
+  const t = useLocale();
   useRegisterQuestion(question.id);
-  const [pending, setPending] = useState<string | null>(null);
+  const participant = useParticipantQuestion(question);
   const [failure, setFailure] = useState<string | null>(null);
 
   const heading = (
@@ -233,31 +236,28 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
   const { view, mirror, compact, data, now } = live;
   const st = data.states[question.id];
   const state = st?.state ?? 'locked';
-  const isSelf = data.session?.mode === 'self';
   const remaining = st?.ends_at ? new Date(st.ends_at).getTime() - now : null;
   const countdown =
     state === 'open' && remaining !== null && remaining > 0 ? formatClock(remaining) : null;
   const run = (fn: () => Promise<unknown>) => {
     setFailure(null);
-    fn().catch((e: Error) => setFailure(e.message));
+    fn().catch((e: unknown) => setFailure(liveErrorMessage(t, e)));
   };
 
   if (view === 'participant' && compact) {
     return <div style={frame}>{heading}</div>;
   }
 
-  if (view === 'participant') {
-    const mine = data.mine[question.id];
-    const revealed = Boolean(mine?.show_results) && (isSelf || state === 'ended');
-    const chosen = question.options.find((o) => o.id === mine?.option_id);
+  if (view === 'participant' && participant) {
+    const { mine, chosen, revealed, score, pending, submit } = participant;
     let body: ReactNode;
     if (mine) {
       body = (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
           <div style={{ fontSize: 44 }}>
-            Thanks for your answer!
+            {t.live.thanksForAnswer}
             <div style={{ opacity: 0.7, marginTop: 12 }}>
-              You chose: <strong>{chosen?.label ?? mine.option_id}</strong>
+              {t.live.youChose} <strong>{chosen?.label ?? mine.option_id}</strong>
             </div>
           </div>
           {revealed && mine.is_correct !== null && (
@@ -268,10 +268,10 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
                 color: mine.is_correct ? GOOD : BAD,
               }}
             >
-              {mine.is_correct ? '✓ Correct' : '✗ Not quite'}
-              {data.score && data.score.graded > 0 && (
+              {mine.is_correct ? t.live.correct : t.live.notQuite}
+              {score && score.graded > 0 && (
                 <span style={{ fontSize: 40, color: INK, opacity: 0.7, marginLeft: 32 }}>
-                  Score {data.score.correct}/{data.score.graded}
+                  {format(t.live.score, { correct: score.correct, graded: score.graded })}
                 </span>
               )}
             </div>
@@ -279,9 +279,9 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
         </div>
       );
     } else if (state === 'locked') {
-      body = <Padlock hint="Waiting for your host to open this question" />;
+      body = <Padlock hint={t.live.waitingForHostToOpen} />;
     } else if (state === 'ended') {
-      body = <div style={{ fontSize: 48, opacity: 0.7 }}>The answer period has ended.</div>;
+      body = <div style={{ fontSize: 48, opacity: 0.7 }}>{t.live.answerPeriodEnded}</div>;
     } else {
       body = (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -290,12 +290,7 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
               key={o.id}
               type="button"
               disabled={pending !== null}
-              onClick={() => {
-                setPending(o.id);
-                run(() =>
-                  data.actions.submitAnswer(question.id, o.id).finally(() => setPending(null)),
-                );
-              }}
+              onClick={() => submit(o.id)}
               style={optionStyle({
                 cursor: 'pointer',
                 opacity: pending && pending !== o.id ? 0.5 : 1,
@@ -314,27 +309,28 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
           <div style={{ fontSize: 44, fontVariantNumeric: 'tabular-nums' }}>⏱ {countdown}</div>
         )}
         {body}
-        {failure && <div style={{ fontSize: 30, color: BAD }}>{failure}</div>}
+        {participant.failure && (
+          <div style={{ fontSize: 30, color: BAD }}>{participant.failure}</div>
+        )}
       </div>
     );
   }
 
   const controls = view === 'screen' && !mirror;
-  const total = data.participants.length;
+  const total = expectedCount(data.participants, data.answers, question.id, now);
   const answered = answeredCount(data.answers, question.id);
   const counts = optionCounts(data.answers, question.id);
   const correct = data.keys[question.id] ?? [];
-  const toggle =
-    controls && correct.length === 0
-      ? (id: string) => run(() => data.actions.toggleCorrect(question.id, id))
-      : undefined;
+  const toggle = controls
+    ? (id: string) => run(() => data.actions.toggleCorrect(question.id, id))
+    : undefined;
 
   let body: ReactNode;
   if (state === 'locked') {
     body = (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 40 }}>
         <Padlock
-          hint={controls ? 'Click to let participants answer' : 'Locked'}
+          hint={controls ? t.live.clickToUnlock : t.live.locked}
           onClick={
             controls
               ? () => run(() => data.actions.questionAction(question.id, 'unlock'))
@@ -343,7 +339,7 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
         />
         {controls && (
           <ControlButton
-            label="Show answers"
+            label={t.live.showAnswers}
             onClick={() =>
               run(async () => {
                 await data.actions.questionAction(question.id, 'end');
@@ -351,7 +347,7 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
               })
             }
           >
-            Show answers
+            {t.live.showAnswers}
           </ControlButton>
         )}
       </div>
@@ -369,7 +365,7 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
         {controls && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <ControlButton
-              label="Lock question"
+              label={t.live.lockQuestion}
               onClick={() => run(() => data.actions.questionAction(question.id, 'lock'))}
             >
               <LockOpen size={32} />
@@ -377,7 +373,7 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
             {[15, 30, 60].map((s) => (
               <ControlButton
                 key={s}
-                label={`Add ${s} seconds`}
+                label={format(t.live.addSeconds, { n: s })}
                 tone="accent"
                 onClick={() => run(() => data.actions.questionAction(question.id, 'add_time', s))}
               >
@@ -418,12 +414,12 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
           </span>
           {controls && (
             <ControlButton
-              label="Stop answering"
+              label={t.live.stopAnswering}
               tone="danger"
               onClick={() => run(() => data.actions.questionAction(question.id, 'end'))}
             >
               <Square size={28} fill="currentColor" />
-              Stop
+              {t.live.stop}
             </ControlButton>
           )}
         </div>
@@ -437,21 +433,22 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
         correct={correct}
         total={answered}
         onToggle={toggle}
+        toggleLabel={t.live.toggleCorrect}
       />
     );
   } else {
     body = (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32 }}>
         <div style={{ fontSize: 48, opacity: 0.7 }}>
-          Answers are closed · {answered} of {total} responded
+          {format(t.live.answersClosed, { answered, total })}
         </div>
         {controls && (
           <ControlButton
-            label="Show results"
+            label={t.live.showResults}
             tone="accent"
             onClick={() => run(() => data.actions.setShowResults(question.id, true))}
           >
-            Show results
+            {t.live.showResults}
           </ControlButton>
         )}
       </div>

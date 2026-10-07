@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react';
+import { format, plural, useLocale } from '../lib/use-locale';
+import { isParticipantConnected } from './derive';
 import { useLive, useQuestionRegistryFlag } from './live-context';
 
 const frame: CSSProperties = {
@@ -21,30 +23,31 @@ export function joinUrl(): string {
   return `${window.location.origin}${base}/join`;
 }
 
-export function Lobby({ title = 'Welcome' }: { title?: string }) {
+export function Lobby({ title: titleProp }: { title?: string }) {
   const live = useLive();
+  const t = useLocale();
   useQuestionRegistryFlag('lobby');
+  const title = titleProp ?? t.live.welcome;
 
   if (!live) {
     return (
       <div style={frame}>
         <h1 style={{ margin: 0, fontSize: 120 }}>{title}</h1>
-        <div style={{ fontSize: 44, opacity: 0.6 }}>Lobby — appears during live sessions</div>
+        <div style={{ fontSize: 44, opacity: 0.6 }}>{t.live.lobbyPlaceholder}</div>
       </div>
     );
   }
 
-  const { data, view } = live;
+  const { data, view, now } = live;
   const code = data.session?.code ?? '';
+  const present = data.participants.filter((p) => isParticipantConnected(p, now)).length;
 
   if (view === 'participant') {
     return (
       <div style={frame}>
-        <h1 style={{ margin: 0, fontSize: 96 }}>You're in!</h1>
+        <h1 style={{ margin: 0, fontSize: 96 }}>{t.live.youreIn}</h1>
         <div style={{ fontSize: 44, opacity: 0.7 }}>
-          {data.session?.mode === 'self'
-            ? 'Use the arrows to move through the slides at your own pace.'
-            : 'Waiting for your host to begin…'}
+          {data.session?.mode === 'self' ? t.live.selfPacedHint : t.live.waitingForHostToBegin}
         </div>
         <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: '0.2em' }}>{code}</div>
       </div>
@@ -57,7 +60,9 @@ export function Lobby({ title = 'Welcome' }: { title?: string }) {
         {title}
       </h1>
       <div style={{ fontSize: 52 }}>
-        Go to <strong>{joinUrl().replace(/^https?:\/\//, '')}</strong> and enter
+        {t.live.goToPrefix}
+        <strong>{joinUrl().replace(/^https?:\/\//, '')}</strong>
+        {t.live.goToSuffix}
       </div>
       <div
         style={{
@@ -72,8 +77,7 @@ export function Lobby({ title = 'Welcome' }: { title?: string }) {
         {code}
       </div>
       <div style={{ fontSize: 56 }}>
-        {data.participants.length} {data.participants.length === 1 ? 'student' : 'students'} in the
-        lobby
+        {format(plural(present, t.live.studentsInLobby), { count: present })}
       </div>
     </div>
   );

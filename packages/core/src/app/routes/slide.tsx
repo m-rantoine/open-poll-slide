@@ -804,23 +804,25 @@ export function Slide() {
                         {t.slide.presentPresenter}
                         <DropdownMenuShortcut>P</DropdownMenuShortcut>
                       </DropdownMenuItem>
-                      {liveStart.available && <DropdownMenuSeparator />}
+                      {(liveStart.canStart || (liveStart.available && !liveStart.signedIn)) && (
+                        <DropdownMenuSeparator />
+                      )}
                       {liveStart.canStart && (
                         <>
                           <DropdownMenuItem onClick={() => void liveStart.start('host')}>
                             <Radio />
-                            Start host-paced session
+                            {t.live.startHostPaced}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => void liveStart.start('self')}>
                             <Radio />
-                            Start self-paced session
+                            {t.live.startSelfPaced}
                           </DropdownMenuItem>
                         </>
                       )}
                       {liveStart.available && !liveStart.signedIn && (
                         <DropdownMenuItem onClick={liveStart.goSignIn}>
                           <Radio />
-                          Sign in to start a session
+                          {t.live.signInToStart}
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>

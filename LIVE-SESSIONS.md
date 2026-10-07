@@ -17,7 +17,9 @@ pnpm exec open-slide live init \
   --site-url http://localhost:5173 https://slides.example.com
 ```
 
-This copies the migrations into `supabase/migrations/`, links the project, applies the schema, whitelists the host email(s), sets the allowed participant sign-up domain(s), sets the site URL and redirect list, and turns on the sign-up domain hook with email confirmation off, so signing up logs the participant straight in and no emails are sent (through the Management API, using your CLI login or `SUPABASE_ACCESS_TOKEN`). It is safe to re-run. Add more hosts later by re-running with `--host`, or with SQL: `insert into public.hosts (email) values ('someone@example.com');` (lowercase).
+This copies the migrations into `supabase/migrations/`, links the project, applies the schema, whitelists the host email(s), sets the allowed participant sign-up domain(s), sets the site URL and redirect list, and turns on the sign-up domain hook with email confirmation off, so signing up logs the participant straight in and no emails are sent (through the Management API, using your CLI login or `SUPABASE_ACCESS_TOKEN`). It also uploads the answer keys from your slide sources (see **Answer keys** below). It is safe to re-run. Add more hosts later by re-running with `--host`, or with SQL: `insert into public.hosts (email) values ('someone@example.com');` (lowercase).
+
+**Allowed domains.** Only addresses on the `--domain` list (plus hosts) can sign up; every other domain is rejected. With no domains set, only hosts can sign up. Each `--domain` run replaces the whole list; leave the flag out to keep the current list. You can also edit it in SQL: `update public.app_settings set value = '["school.example"]' where key = 'allowed_email_domains';`.
 
 If the hook step reports a missing token, set it in the dashboard: Authentication → Hooks → Before User Created → Postgres function → `public.hook_restrict_signup_domain`.
 
@@ -41,16 +43,27 @@ Only the publishable key is read; it is meant for browsers. Never put the servic
   - Host-paced opens `/s/<deck>/screen` (projector). Hover the bottom-left to open the presenter view (`/s/<deck>/presenter?session=<id>`) on the host's own computer. Arrow keys / space move everyone.
   - Self-paced opens the session overview at `/results/<id>`; participants move through the deck themselves.
 - **Participants** go to `/join` or `/join/<code>`, sign up (approved domains only, no confirmation email) and are placed in the session. Closing the window makes them inactive; they can rejoin and keep their answers. The sidebar **Active sessions** tab lists running sessions.
-- **Results:** the sidebar **Results** tab (hosts only) and `/results/<id>` show summary, by-question and by-student views. If a question has no saved correct answer, click an option on the screen, presenter panel or results page to mark it correct; all existing and future answers are re-graded automatically.
+- **Results:** the sidebar **Results** tab (hosts only) and `/results/<id>` show summary, by-question and by-student views. Click an option on the screen, presenter panel or results page to mark or unmark it as correct; all existing and future answers are re-graded automatically, and the choice is remembered for later sessions of the same deck.
+- **Language:** pick Français (Canada) or another language from the language menu; live-session screens follow it.
 - Plain **Present** never touches the database; questions render inert.
+
+## Answer keys
+
+`correct` in a question is never sent to browsers. The build blanks it out of slide sources, so participants cannot find it in the page, and session rows only store the questions without their keys. Keys live in the host-only `deck_answer_keys` table:
+
+```bash
+pnpm exec open-slide live keys   # upload every `correct` in slides/ (run after adding or changing one)
+```
+
+`correct` must be an array of string literals for the command to read it. Keys marked live from the app are saved to the same table; running `live keys` again overwrites them with the values in your sources. Participants learn whether they were right only from the server: `submit_answer` returns the grade, and the participant screens show it once the host reveals results (`showResults`).
 
 ## Security model
 
-All rules are enforced in Postgres, not in routes. Participants can only write through `submit_answer` (membership, open state, timer, one answer per question) and read their own answers through `my_answers` / `my_score`, which hide correctness until the host turns on `show_results`. Answer keys and other students' answers are host-only. The sign-up hook rejects emails outside the allowed domains unless the address is a host. `supabase/tests/live_sessions.sql` (in the core package) checks these rules against a project with three confirmed test users and rolls back. `supabase/tests/live-flow.e2e.mjs` drives a full host-paced session (host, presenter, two students) in real browsers with Playwright, and `live-extras.e2e.mjs` covers timers, inactive tracking, self-paced mode and a phone viewport; their headers list the setup.
+All rules are enforced in Postgres, not in routes. Participants can only write through `submit_answer` (membership, open state, timer, one answer per question) and read their own answers through `my_answers` / `my_score`, which hide correctness until the host turns on `show_results`. Answer keys (per session and per deck) and other students' answers are host-only. The sign-up hook rejects emails outside the allowed domains unless the address is a host. `supabase/tests/live_sessions.sql` (in the core package) checks these rules: it creates its own users inside one transaction and always rolls back (`supabase db query --linked -f supabase/tests/live_sessions.sql`; the last line reads `ALL CHECKS PASSED`). `supabase/tests/live-flow.e2e.mjs` drives a full host-paced session (host, presenter, two students) in real browsers with Playwright, and `live-extras.e2e.mjs` covers timers, inactive tracking, self-paced mode and a phone viewport; their headers list the setup.
 
 ## Notes
 
 - With email confirmation off, the domain check only proves the *typed* address is on an allowed domain, not that the person owns it. Someone could register another student's address first. Turn confirmation back on (Authentication → Providers → Email) if that matters.
-- UI strings for live sessions are English only.
+- A student whose heartbeat has stopped for a minute (closed tab, sleeping phone) no longer counts toward "everyone answered" or the lobby count.
 - On phones (under 768px wide) the participant view shows the slide at the top and a native answer card with large tap targets below it.
 - Session codes are listed to any signed-in user on the Active sessions tab.
