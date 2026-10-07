@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   FolderOpen,
   LayoutGrid,
   type LucideIcon,
@@ -6,6 +7,7 @@ import {
   Palette,
   Pencil,
   PenLine,
+  Radio,
   Trash2,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -42,13 +44,15 @@ function useSlideDragActive() {
   return active;
 }
 
-export type SystemViewKind = 'all' | 'draft' | 'themes' | 'assets';
+export type SystemViewKind = 'all' | 'draft' | 'themes' | 'assets' | 'sessions' | 'results';
 
 const SYSTEM_VIEW_ICONS: Record<SystemViewKind, LucideIcon> = {
   all: LayoutGrid,
   draft: PenLine,
   themes: Palette,
   assets: FolderOpen,
+  sessions: Radio,
+  results: BarChart3,
 };
 
 export function SystemViewIcon({ kind, className }: { kind: SystemViewKind; className?: string }) {
@@ -103,6 +107,12 @@ type Row =
     }
   | {
       kind: 'assets';
+    }
+  | {
+      kind: 'sessions';
+    }
+  | {
+      kind: 'results';
     };
 
 export function FolderItem({
@@ -113,7 +123,7 @@ export function FolderItem({
   onDropSlide,
 }: {
   row: Row;
-  count: number;
+  count?: number;
   selected: boolean;
   onSelect: () => void;
   onDropSlide: (slideId: string) => void;
@@ -168,7 +178,11 @@ export function FolderItem({
           ? t.home.themes
           : row.kind === 'assets'
             ? t.home.assets
-            : row.folder.name;
+            : row.kind === 'sessions'
+              ? 'Active sessions'
+              : row.kind === 'results'
+                ? 'Results'
+                : row.folder.name;
 
   const commitRename = () => {
     if (row.kind !== 'folder') return;
@@ -257,7 +271,7 @@ export function FolderItem({
             'group-hover:opacity-0 group-has-[[aria-expanded=true]]:opacity-0',
         )}
       >
-        {pad2(count)}
+        {count === undefined ? '' : pad2(count)}
       </span>
 
       {row.kind === 'folder' && import.meta.env.DEV && (

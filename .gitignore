@@ -9,3 +9,6 @@ packages/cli/template/.agents/skills
 packages/core/e2e/.scratch
 playwright-report
 test-results
+
+.env
+.env.local

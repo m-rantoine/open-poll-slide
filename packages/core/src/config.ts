@@ -6,6 +6,14 @@ export type OpenSlideBuildConfig = {
   allowHtmlDownload?: boolean;
 };
 
+export type OpenSlideLiveConfig = {
+  supabaseUrl: string;
+  /** Publishable (anon) key; safe to ship to the browser. */
+  supabaseKey: string;
+  /** Shown on the sign-up form; enforcement lives in the database hook. */
+  allowedEmailDomains?: string[];
+};
+
 export type OpenSlideConfig = {
   base?: string;
   slidesDir?: string;
@@ -20,4 +28,5 @@ export type OpenSlideConfig = {
    */
   locale?: Locale;
   build?: OpenSlideBuildConfig;
+  live?: OpenSlideLiveConfig;
 };

@@ -1,0 +1,205 @@
+import {
+  ClassResults,
+  type DesignSystem,
+  Lobby,
+  MultipleChoice,
+  type MultipleChoiceQuestion,
+  type Page,
+  type SlideMeta,
+} from '@open-slide/core';
+
+export const meta: SlideMeta = { title: 'Live quiz demo', createdAt: '2026-10-07T00:00:00.000Z' };
+
+export const design: DesignSystem = {
+  palette: { bg: '#ffffff', text: '#0f172a', accent: '#2563eb' },
+  fonts: {
+    display: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+    body: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+  },
+  typeScale: { hero: 140, body: 36 },
+  radius: 16,
+};
+
+export const questions = {
+  capital: {
+    id: 'capital',
+    type: 'multiple_choice',
+    question: 'What is the capital of Canada?',
+    options: [
+      { id: 'toronto', label: 'Toronto' },
+      { id: 'ottawa', label: 'Ottawa' },
+      { id: 'montr-al', label: 'Montréal' },
+      { id: 'vancouver', label: 'Vancouver' },
+    ],
+    correct: ['ottawa'],
+    startLocked: true,
+    showResults: true,
+  },
+  planets: {
+    id: 'planets',
+    type: 'multiple_choice',
+    question: 'Which planet is closest to the Sun?',
+    options: [
+      { id: 'venus', label: 'Venus' },
+      { id: 'earth', label: 'Earth' },
+      { id: 'mercury', label: 'Mercury' },
+      { id: 'mars', label: 'Mars' },
+    ],
+    correct: ['mercury'],
+    startLocked: true,
+    showResults: true,
+  },
+  water: {
+    id: 'water',
+    type: 'multiple_choice',
+    question: 'What is the chemical symbol for water?',
+    options: [
+      { id: 'h2o', label: 'H2O' },
+      { id: 'co2', label: 'CO2' },
+      { id: 'o2', label: 'O2' },
+      { id: 'nacl', label: 'NaCl' },
+    ],
+    correct: ['h2o'],
+    startLocked: true,
+    showResults: true,
+  },
+  ocean: {
+    id: 'ocean',
+    type: 'multiple_choice',
+    question: 'Which is the largest ocean on Earth?',
+    options: [
+      { id: 'atlantic', label: 'Atlantic' },
+      { id: 'indian', label: 'Indian' },
+      { id: 'arctic', label: 'Arctic' },
+      { id: 'pacific', label: 'Pacific' },
+    ],
+    correct: ['pacific'],
+    startLocked: true,
+    showResults: true,
+  },
+  math: {
+    id: 'math',
+    type: 'multiple_choice',
+    question: 'What is 12 × 12?',
+    options: [
+      { id: '122', label: '122' },
+      { id: '144', label: '144' },
+      { id: '124', label: '124' },
+      { id: '148', label: '148' },
+    ],
+    correct: ['144'],
+    startLocked: true,
+    showResults: true,
+  },
+  author: {
+    id: 'author',
+    type: 'multiple_choice',
+    question: 'Who wrote “Romeo and Juliet”?',
+    options: [
+      { id: 'charles-dickens', label: 'Charles Dickens' },
+      { id: 'jane-austen', label: 'Jane Austen' },
+      { id: 'william-shakespeare', label: 'William Shakespeare' },
+      { id: 'mark-twain', label: 'Mark Twain' },
+    ],
+    correct: ['william-shakespeare'],
+    startLocked: true,
+    showResults: true,
+  },
+  bones: {
+    id: 'bones',
+    type: 'multiple_choice',
+    question: 'How many bones are in the adult human body?',
+    options: [
+      { id: '186', label: '186' },
+      { id: '206', label: '206' },
+      { id: '226', label: '226' },
+      { id: '256', label: '256' },
+    ],
+    correct: ['206'],
+    startLocked: true,
+    showResults: true,
+  },
+  lang: {
+    id: 'lang',
+    type: 'multiple_choice',
+    question: 'Which language is spoken most widely as a first language?',
+    options: [
+      { id: 'english', label: 'English' },
+      { id: 'spanish', label: 'Spanish' },
+      { id: 'mandarin-chinese', label: 'Mandarin Chinese' },
+      { id: 'hindi', label: 'Hindi' },
+    ],
+    correct: ['mandarin-chinese'],
+    startLocked: true,
+    showResults: true,
+  },
+  year: {
+    id: 'year',
+    type: 'multiple_choice',
+    question: 'In which year did humans first land on the Moon?',
+    options: [
+      { id: '1959', label: '1959' },
+      { id: '1965', label: '1965' },
+      { id: '1969', label: '1969' },
+      { id: '1975', label: '1975' },
+    ],
+    correct: ['1969'],
+    startLocked: true,
+    showResults: true,
+  },
+  season: {
+    id: 'season',
+    type: 'multiple_choice',
+    question: 'Which season do you like best? (no right answer)',
+    options: [
+      { id: 'winter', label: 'Winter' },
+      { id: 'spring', label: 'Spring' },
+      { id: 'summer', label: 'Summer' },
+      { id: 'autumn', label: 'Autumn' },
+    ],
+    startLocked: true,
+    showResults: true,
+  },
+} satisfies Record<string, MultipleChoiceQuestion>;
+
+const Intro: Page = () => (
+  <div
+    style={{
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      gap: 24,
+      padding: '0 160px',
+      background: 'var(--osd-bg)',
+      color: 'var(--osd-text)',
+      fontFamily: 'var(--osd-font-body)',
+    }}
+  >
+    <h1
+      style={{ margin: 0, fontSize: 'var(--osd-size-hero)', fontFamily: 'var(--osd-font-display)' }}
+    >
+      Ten-question quiz
+    </h1>
+    <p style={{ margin: 0, fontSize: 48, opacity: 0.6 }}>
+      Nine with right answers, one just for fun. Ready?
+    </p>
+  </div>
+);
+
+export default [
+  () => <Lobby title="Live quiz demo" />,
+  Intro,
+  () => <MultipleChoice question={questions.capital} />,
+  () => <MultipleChoice question={questions.planets} />,
+  () => <MultipleChoice question={questions.water} />,
+  () => <MultipleChoice question={questions.ocean} />,
+  () => <MultipleChoice question={questions.math} />,
+  () => <MultipleChoice question={questions.author} />,
+  () => <MultipleChoice question={questions.bones} />,
+  () => <MultipleChoice question={questions.lang} />,
+  () => <MultipleChoice question={questions.year} />,
+  () => <MultipleChoice question={questions.season} />,
+  () => <ClassResults />,
+] satisfies Page[];

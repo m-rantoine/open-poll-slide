@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
-import { loadConfigFromFile, normalizePath, type Plugin, type ViteDevServer } from 'vite';
+import { loadConfigFromFile, loadEnv, normalizePath, type Plugin, type ViteDevServer } from 'vite';
 import type { OpenSlideConfig } from '../config.ts';
 import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
 import { foldersManifestPath, readManifest } from '../files/folders.ts';
@@ -234,7 +234,24 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
               showSlideUi: userBuild.showSlideUi ?? true,
               allowHtmlDownload: userBuild.allowHtmlDownload ?? true,
             };
-        const resolvedConfig = { ...config, build: buildResolved, version: coreVersion };
+        const env = {
+          ...loadEnv(isDev ? 'development' : 'production', userCwd, ''),
+          ...process.env,
+        };
+        const envUrl = env.SUPABASE_URL;
+        const envKey = env.SUPABASE_PUBLISHABLE_KEY ?? env.SUPABASE_ANON_KEY;
+        const live =
+          config.live ??
+          (envUrl && envKey
+            ? {
+                supabaseUrl: envUrl,
+                supabaseKey: envKey,
+                allowedEmailDomains: env.OPEN_SLIDE_ALLOWED_EMAIL_DOMAINS?.split(',')
+                  .map((d) => d.trim())
+                  .filter(Boolean),
+              }
+            : undefined);
+        const resolvedConfig = { ...config, live, build: buildResolved, version: coreVersion };
         return `export default ${JSON.stringify(resolvedConfig)};\n`;
       }
       if (id === resolved(FOLDERS_VMOD)) {

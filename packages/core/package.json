@@ -30,6 +30,7 @@
     "src/app",
     "src/locale",
     "skills",
+    "supabase/migrations",
     "README.md"
   ],
   "scripts": {
@@ -72,6 +73,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@fontsource-variable/geist": "^5.3.0",
+    "@supabase/supabase-js": "^2.117.2",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",
     "chalk": "^6.0.0",

@@ -3,6 +3,12 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { TooltipProvider } from './components/ui/tooltip';
 import { useLocale } from './lib/use-locale';
+import { AuthProvider } from './live/auth';
+import { JoinPage } from './live/join';
+import { PlayPage } from './live/play';
+import { ResultsDetailPage, ResultsListPage } from './live/results';
+import { ScreenPage } from './live/screen';
+import { SessionsPage } from './live/sessions';
 import { AssetsPage } from './routes/assets';
 import { Home } from './routes/home';
 import { HomeShell } from './routes/home-shell';
@@ -15,21 +21,30 @@ export function App() {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       {/* One app-wide provider so adjacent tooltips group: after the first
           opens, moving along a toolbar shows the rest instantly. */}
-      <TooltipProvider delay={200}>
-        <Routes>
-          {config.build.showSlideBrowser && (
-            <Route element={<HomeShell />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/themes" element={<ThemesGalleryPage />} />
-              <Route path="/themes/:themeId" element={<ThemeDetailPage />} />
-              <Route path="/assets" element={<AssetsPage />} />
-            </Route>
-          )}
-          <Route path="/s/:slideId" element={<Slide />} />
-          <Route path="/s/:slideId/presenter" element={<Presenter />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider delay={200}>
+          <Routes>
+            {config.build.showSlideBrowser && (
+              <Route element={<HomeShell />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/themes" element={<ThemesGalleryPage />} />
+                <Route path="/themes/:themeId" element={<ThemeDetailPage />} />
+                <Route path="/assets" element={<AssetsPage />} />
+                <Route path="/sessions" element={<SessionsPage />} />
+                <Route path="/results" element={<ResultsListPage />} />
+                <Route path="/results/:sessionId" element={<ResultsDetailPage />} />
+              </Route>
+            )}
+            <Route path="/s/:slideId" element={<Slide />} />
+            <Route path="/s/:slideId/presenter" element={<Presenter />} />
+            <Route path="/s/:slideId/screen" element={<ScreenPage />} />
+            <Route path="/s/:slideId/play/:sessionId" element={<PlayPage />} />
+            <Route path="/join" element={<JoinPage />} />
+            <Route path="/join/:code" element={<JoinPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </AuthProvider>
       <Toaster />
     </BrowserRouter>
   );
