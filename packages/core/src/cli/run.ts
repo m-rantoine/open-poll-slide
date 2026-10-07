@@ -143,6 +143,7 @@ export async function run(argv: string[]): Promise<void> {
     .option('--project-ref <ref>', 'Supabase project ref (defaults to the linked project)')
     .option('--host <email...>', 'whitelist host email(s)')
     .option('--domain <domain...>', 'allowed participant sign-up domain(s)')
+    .option('--site-url <url...>', 'site URL(s) the app runs at; the first is the primary')
     .option('--skip-hook', 'do not configure the sign-up domain hook')
     .action(async (flags: LiveInitFlags) => {
       const { liveInit } = await import('./live-init.ts');

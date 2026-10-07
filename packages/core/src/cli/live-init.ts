@@ -12,6 +12,7 @@ export interface LiveInitFlags {
   host?: string[];
   domain?: string[];
   skipHook?: boolean;
+  siteUrl?: string[];
 }
 
 const EMAIL_RE = /^[^\s@'";]+@[^\s@'";]+\.[^\s@'";]+$/;
@@ -71,7 +72,7 @@ function linkedRef(): string | null {
   }
 }
 
-async function enableSignupHook(ref: string): Promise<boolean> {
+async function configureAuth(ref: string, siteUrls: string[]): Promise<boolean> {
   const token = accessToken();
   if (!token) return false;
   const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/config/auth`, {
@@ -80,7 +81,8 @@ async function enableSignupHook(ref: string): Promise<boolean> {
     body: JSON.stringify({
       hook_before_user_created_enabled: true,
       hook_before_user_created_uri: HOOK_URI,
-      mailer_autoconfirm: false,
+      mailer_autoconfirm: true,
+      ...(siteUrls.length > 0 ? { site_url: siteUrls[0], uri_allow_list: siteUrls.join(',') } : {}),
     }),
   });
   return res.ok;
@@ -89,6 +91,8 @@ async function enableSignupHook(ref: string): Promise<boolean> {
 export async function liveInit(flags: LiveInitFlags): Promise<void> {
   const hosts = (flags.host ?? []).map((h) => h.trim().toLowerCase());
   const domains = (flags.domain ?? []).map((d) => d.trim().toLowerCase());
+  const siteUrls = (flags.siteUrl ?? []).map((u) => u.trim().replace(/\/$/, ''));
+  for (const u of siteUrls) new URL(u);
   for (const h of hosts) if (!EMAIL_RE.test(h)) throw new Error(`Invalid host email: ${h}`);
   for (const d of domains) if (!DOMAIN_RE.test(d)) throw new Error(`Invalid domain: ${d}`);
 
@@ -146,8 +150,9 @@ export async function liveInit(flags: LiveInitFlags): Promise<void> {
   }
 
   if (!flags.skipHook) {
-    if (await enableSignupHook(ref)) {
-      say('Enabled the sign-up domain hook and email confirmation');
+    if (await configureAuth(ref, siteUrls)) {
+      say('Enabled the sign-up domain hook (email confirmation off: sign-up signs in immediately)');
+      if (siteUrls.length > 0) say(`Set site URL / redirects: ${siteUrls.join(', ')}`);
     } else {
       process.stdout.write(
         `  ${chalk.yellow(glyph.warn)} Could not enable the sign-up hook automatically (no access token).\n` +
