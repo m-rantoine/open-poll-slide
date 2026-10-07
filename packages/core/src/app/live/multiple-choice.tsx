@@ -5,15 +5,8 @@ import { format, useLocale } from '../lib/use-locale';
 import { answeredCount, expectedCount, formatClock, optionCounts } from './derive';
 import { liveErrorMessage } from './errors';
 import { useLive, useRegisterQuestion } from './live-context';
+import { ACCENT, BAD, BG, DISPLAY, FONT, GOOD, INK } from './question-style';
 import { useParticipantQuestion } from './use-participant-question';
-
-const INK = 'var(--osd-text, #0f172a)';
-const BG = 'var(--osd-bg, #ffffff)';
-const ACCENT = 'var(--osd-accent, #2563eb)';
-const GOOD = '#16a34a';
-const BAD = '#dc2626';
-const FONT = 'var(--osd-font-body, system-ui, sans-serif)';
-const DISPLAY = 'var(--osd-font-display, var(--osd-font-body, system-ui, sans-serif))';
 
 const frame: CSSProperties = {
   width: '100%',

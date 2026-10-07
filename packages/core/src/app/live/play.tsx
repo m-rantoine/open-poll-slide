@@ -92,9 +92,7 @@ function Play() {
     <div className="dark flex h-dvh w-screen flex-col bg-background text-foreground">
       <LiveProvider view="participant" compact={isMobile} data={data} deckId={slideId}>
         <div className="flex min-h-0 flex-1 flex-col" style={surface}>
-          <div
-            className={cn('flex min-h-0 flex-col', isMobile && hasCards ? 'shrink-0' : 'flex-1')}
-          >
+          <div className={cn('flex min-h-0 flex-col', hasCards ? 'hidden' : 'flex-1')}>
             <div
               className={cn('relative w-full', isMobile ? 'my-auto' : 'min-h-0 flex-1')}
               style={isMobile ? { aspectRatio: '16 / 9' } : undefined}
@@ -119,7 +117,9 @@ function Play() {
               </Provider>
             </div>
           </div>
-          {hasCards && <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">{cards}</div>}
+          {hasCards && (
+            <div className="min-h-0 flex-1 space-y-10 overflow-y-auto px-6 py-8">{cards}</div>
+          )}
         </div>
       </LiveProvider>
       <footer className="flex h-11 shrink-0 items-center justify-between border-t border-hairline px-4 text-[12.5px]">

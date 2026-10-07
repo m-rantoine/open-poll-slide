@@ -1,11 +1,24 @@
 import { Lock } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import type { CSSProperties } from 'react';
 import type { MultipleChoiceQuestion } from '../lib/sdk';
 import { format, useLocale } from '../lib/use-locale';
+import { BAD, DISPLAY, FONT, GOOD, INK } from './question-style';
 import { useParticipantQuestion } from './use-participant-question';
 
-const INK = 'var(--osd-text, var(--foreground))';
-const edge = `color-mix(in srgb, ${INK} 22%, transparent)`;
+// Same look as the question drawn on the slide (see multiple-choice.tsx), at phone scale.
+const optionStyle: CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '18px 20px',
+  fontSize: 20,
+  fontFamily: FONT,
+  textAlign: 'left',
+  color: INK,
+  background: 'transparent',
+  border: `3px solid color-mix(in srgb, ${INK} 22%, transparent)`,
+  borderRadius: 'var(--osd-radius, 16px)',
+  cursor: 'pointer',
+};
 
 export function ParticipantQuestionCard({ question }: { question: MultipleChoiceQuestion }) {
   const t = useLocale();
@@ -16,67 +29,86 @@ export function ParticipantQuestionCard({ question }: { question: MultipleChoice
   return (
     <section
       aria-label={question.question}
-      className="rounded-[12px] border p-4"
       style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 28,
         color: INK,
-        borderColor: edge,
-        background: `color-mix(in srgb, ${INK} 5%, transparent)`,
+        fontFamily: FONT,
       }}
     >
-      <h2 className="font-heading text-[17px] leading-snug font-semibold">{question.question}</h2>
+      <h2
+        style={{
+          margin: 0,
+          fontFamily: DISPLAY,
+          fontSize: 30,
+          lineHeight: 1.15,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {question.question}
+      </h2>
       {countdown && !mine && (
-        <div className="mt-2 font-mono text-[15px] tabular-nums opacity-70">⏱ {countdown}</div>
+        <div style={{ fontSize: 22, fontVariantNumeric: 'tabular-nums' }}>⏱ {countdown}</div>
       )}
       {mine ? (
-        <div className="mt-3 space-y-1.5">
-          <p className="text-[14px]">{t.live.thanksForAnswer}</p>
-          <p className="text-[13px] opacity-70">
-            {t.live.youChose}{' '}
-            <strong className="opacity-100">{chosen?.label ?? mine.option_id}</strong>
-          </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div style={{ fontSize: 22 }}>
+            {t.live.thanksForAnswer}
+            <div style={{ opacity: 0.7, marginTop: 8, fontSize: 18 }}>
+              {t.live.youChose} <strong>{chosen?.label ?? mine.option_id}</strong>
+            </div>
+          </div>
           {revealed && mine.is_correct !== null && (
-            <p
-              className={cn(
-                'pt-1 text-[20px] font-semibold',
-                mine.is_correct ? 'text-[#16a34a]' : 'text-[#dc2626]',
-              )}
+            <div
+              style={{
+                fontSize: 34,
+                fontWeight: 700,
+                color: mine.is_correct ? GOOD : BAD,
+              }}
             >
               {mine.is_correct ? t.live.correct : t.live.notQuite}
               {score && score.graded > 0 && (
-                <span className="ml-3 text-[13px] font-medium opacity-70">
+                <div style={{ fontSize: 20, color: INK, opacity: 0.7, fontWeight: 500 }}>
                   {format(t.live.score, { correct: score.correct, graded: score.graded })}
-                </span>
+                </div>
               )}
-            </p>
+            </div>
           )}
         </div>
       ) : state === 'locked' ? (
-        <div className="mt-4 flex flex-col items-center gap-2 py-4 opacity-70">
-          <Lock className="size-10" strokeWidth={1.5} />
-          <span className="text-[13px]">{t.live.waitingForHostToOpen}</span>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 16,
+            padding: '24px 0',
+            opacity: 0.7,
+          }}
+        >
+          <Lock size={96} strokeWidth={1.5} />
+          <span style={{ fontSize: 18, textAlign: 'center' }}>{t.live.waitingForHostToOpen}</span>
         </div>
       ) : state === 'ended' ? (
-        <p className="mt-3 text-[14px] opacity-70">{t.live.answerPeriodEnded}</p>
+        <div style={{ fontSize: 22, opacity: 0.7 }}>{t.live.answerPeriodEnded}</div>
       ) : (
-        <div className="mt-3 flex flex-col gap-2.5">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {question.options.map((o) => (
             <button
               key={o.id}
               type="button"
               disabled={pending !== null}
               onClick={() => submit(o.id)}
-              style={{ borderColor: edge, color: INK }}
-              className={cn(
-                'min-h-14 w-full rounded-[10px] border bg-transparent px-4 py-3 text-left text-[16px]',
-                'active:bg-[color-mix(in_srgb,currentColor_12%,transparent)] disabled:opacity-50',
-              )}
+              style={{ ...optionStyle, opacity: pending && pending !== o.id ? 0.5 : 1 }}
             >
               {o.label}
             </button>
           ))}
         </div>
       )}
-      {failure && <p className="mt-2 text-[12.5px] text-destructive">{failure}</p>}
+      {failure && <div style={{ fontSize: 16, color: BAD }}>{failure}</div>}
     </section>
   );
 }
