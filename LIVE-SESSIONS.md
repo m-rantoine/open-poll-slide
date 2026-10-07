@@ -45,6 +45,7 @@ Only the publishable key is read; it is meant for browsers. Never put the servic
 - **Participants** go to `/join` or `/join/<code>`, sign up (approved domains only, no confirmation email) and are placed in the session. Closing the window makes them inactive; they can rejoin and keep their answers. The sidebar **Active sessions** tab lists running sessions.
 - **Results:** the sidebar **Results** tab (hosts only) and `/results/<id>` show summary, by-question and by-student views. Click an option on the screen, presenter panel or results page to mark or unmark it as correct; all existing and future answers are re-graded automatically, and the choice is remembered for later sessions of the same deck.
 - **Language:** pick Français (Canada) or another language from the language menu; live-session screens follow it.
+- Every live view (host screen, participants, presenter preview) renders through the standard Player, so a deck's `transition` and step reveals behave as in **Present**. The host screen also gets the Present control bar (overview, blackout, laser, fullscreen) and keyboard shortcuts; participants in a host-paced session cannot navigate.
 - Plain **Present** never touches the database; questions render inert.
 
 ## Answer keys

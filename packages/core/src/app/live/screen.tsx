@@ -1,12 +1,10 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
+import { toast } from 'sonner';
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { useLocale } from '@/lib/use-locale';
-import { pad2 } from '@/lib/utils';
-import { useTouchSwipe } from '../components/present/use-touch-swipe';
+import { Player } from '../components/player';
+import type { StepAggregate } from '../lib/step-context';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireHost } from './auth';
 import { getClient } from './client';
@@ -14,7 +12,7 @@ import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
 import { LiveProvider } from './live-context';
 import { joinUrl } from './lobby';
-import { LiveStage, useHostNavigation } from './stage';
+import { clampIndex } from './stage';
 import { useLiveSession } from './use-live-session';
 
 export function useResolvedSessionId(slideId: string): string | null | undefined {
@@ -64,32 +62,46 @@ function Screen() {
   const data = useLiveSession(sessionId ?? undefined, true);
   useDocumentTitle(slide?.meta?.title);
   const total = slide?.default.length ?? 0;
-  const nav = useHostNavigation(data, total);
-  const { next, prev } = nav;
-  const rootRef = useRef<HTMLDivElement>(null);
-  useTouchSwipe({ ref: rootRef, onPrev: prev, onNext: next });
+  const session = data.session;
+  const index = clampIndex(session?.current_index ?? 0, total);
+  const step = session?.current_step ?? 0;
+  const { setPosition } = data.actions;
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || isTypingTarget(e.target) || hasModifier(e)) return;
-      if (isForwardKey(e)) {
-        e.preventDefault();
-        next();
-      } else if (isBackwardKey(e)) {
-        e.preventDefault();
-        prev();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [next, prev]);
+  // Rapid presses must build on the previous press, not on the last row the server echoed back.
+  const positionRef = useRef({ index, step });
+  positionRef.current = { index, step };
+
+  const move = useCallback(
+    (nextIndex: number, nextStep: number) => {
+      positionRef.current = { index: nextIndex, step: nextStep };
+      setPosition(nextIndex, nextStep).catch((e: unknown) => toast.error(liveErrorMessage(t, e)));
+    },
+    [setPosition, t],
+  );
+  const onIndexChange = useCallback((next: number) => move(next, 0), [move]);
+  const onStepAggregateChange = useCallback(
+    (a: StepAggregate) => {
+      // A step host re-registering briefly reports zero steps; that is not a reveal change.
+      if (a.stepCount === 0) return;
+      if (a.revealed !== positionRef.current.step) move(positionRef.current.index, a.revealed);
+    },
+    [move],
+  );
+  const openPresenter = useCallback(() => {
+    if (!sessionId) return;
+    const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+    window.open(
+      `${base}/s/${encodeURIComponent(slideId)}/presenter?session=${sessionId}`,
+      '_blank',
+    );
+  }, [sessionId, slideId]);
 
   if (error) return <LiveMessage title={t.live.couldNotLoadDeck} body={error} />;
   if (sessionId === null) {
     return <LiveMessage title={t.live.noActiveHostSession} body={t.live.startFromPresentMenu} />;
   }
   if (sessionId === undefined || !slide || data.loading) return <LoadingLine />;
-  if (data.error || !data.session) {
+  if (data.error || !session) {
     return (
       <LiveMessage
         title={t.live.sessionUnavailable}
@@ -98,63 +110,39 @@ function Screen() {
     );
   }
 
-  const session = data.session;
   return (
-    <div ref={rootRef} className="group/screen relative h-dvh w-screen overflow-hidden bg-black">
+    <div className="group/screen relative h-dvh w-screen overflow-hidden bg-black">
       <LiveProvider view="screen" data={data} deckId={slideId}>
-        <LiveStage
-          slide={slide}
-          index={nav.index}
-          step={nav.step}
-          controllerRef={nav.controllerRef}
-          onAggregate={nav.onAggregate}
+        <Player
+          pages={slide.default}
+          design={slide.design}
+          transition={slide.transition}
+          index={index}
+          onIndexChange={onIndexChange}
+          onExit={() => {}}
+          allowExit={false}
+          controls
+          fullscreen={false}
+          controlledRevealed={step}
+          onStepAggregateChange={onStepAggregateChange}
+          onPresenter={openPresenter}
         />
       </LiveProvider>
-      {session.status === 'active' && (
-        <div className="pointer-events-none absolute top-4 right-4 rounded-[8px] bg-black/70 px-4 py-2 text-right text-white">
-          <div className="text-[11px] tracking-[0.1em] uppercase opacity-60">
-            {joinUrl().replace(/^https?:\/\//, '')}
-          </div>
-          <div className="font-mono text-2xl font-bold tracking-[0.25em]">{session.code}</div>
-        </div>
-      )}
-      <div className="pointer-events-none absolute inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] flex flex-wrap items-center justify-between gap-2">
-        <div className="pointer-events-auto flex gap-2 opacity-0 transition-opacity group-hover/screen:opacity-100 [@media(hover:none)]:opacity-100">
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={
-              <a
-                href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/s/${encodeURIComponent(slideId)}/presenter?session=${session.id}`}
-                target="_blank"
-                rel="noreferrer"
-              />
-            }
-          >
-            {t.live.openPresenterView}
-          </Button>
+      <div className="pointer-events-none absolute inset-x-4 top-4 z-50 flex items-start justify-between gap-2">
+        <div className="pointer-events-auto opacity-0 transition-opacity group-hover/screen:opacity-100 [@media(hover:none)]:opacity-100">
           <EndSessionButton data={data} onEnded={() => navigate(`/results/${session.id}`)} />
         </div>
-        <div className="pointer-events-auto hidden items-center gap-2 rounded-full bg-black/60 p-1 text-white backdrop-blur-sm [@media(hover:none)]:flex">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={t.live.previous}
-            disabled={nav.index === 0 && nav.step === 0}
-            onClick={prev}
-          >
-            <ChevronLeft />
-          </Button>
-          <span className="font-mono text-[12px] tabular-nums">
-            {pad2(nav.index + 1)} / {pad2(total)}
-          </span>
-          <Button variant="ghost" size="icon" aria-label={t.live.next} onClick={next}>
-            <ChevronRight />
-          </Button>
-        </div>
+        {session.status === 'active' && (
+          <div className="rounded-[8px] bg-black/70 px-4 py-2 text-right text-white">
+            <div className="text-[11px] tracking-[0.1em] uppercase opacity-60">
+              {joinUrl().replace(/^https?:\/\//, '')}
+            </div>
+            <div className="font-mono text-2xl font-bold tracking-[0.25em]">{session.code}</div>
+          </div>
+        )}
       </div>
       {session.status === 'ended' && (
-        <div className="absolute inset-0 grid place-items-center bg-black/80 text-white">
+        <div className="absolute inset-0 z-50 grid place-items-center bg-black/80 text-white">
           {t.live.sessionEnded}
         </div>
       )}

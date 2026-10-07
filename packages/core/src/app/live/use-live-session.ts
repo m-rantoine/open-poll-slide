@@ -108,6 +108,9 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
   const bump = useCallback((slice: Slice) => {
     versions.current[slice]++;
   }, []);
+  // Echoes of the host's own older position writes must not roll the screen back while a
+  // newer write is pending; remote changes are accepted again once the newest echo arrives.
+  const expectedPosition = useRef<{ index: number; step: number; until: number } | null>(null);
   const generation = useRef(0);
   const inFlight = useRef<number | null>(null);
   const loaded = useRef(false);
@@ -209,7 +212,21 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
         (p) => {
           if (p.eventType === 'DELETE') return;
           bump('session');
-          setSession(p.new as SessionRow);
+          const row = p.new as SessionRow;
+          const expected = expectedPosition.current;
+          if (asHost && expected && Date.now() < expected.until) {
+            if (row.current_index === expected.index && row.current_step === expected.step) {
+              expectedPosition.current = null;
+            } else {
+              setSession((cur) =>
+                cur
+                  ? { ...row, current_index: cur.current_index, current_step: cur.current_step }
+                  : row,
+              );
+              return;
+            }
+          }
+          setSession(row);
         },
       )
       .on(
@@ -288,10 +305,11 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
     };
   }, [sessionId, asHost, loadAll, bump]);
 
-  const positionQueue = useRef<{ busy: boolean; next: { index: number; step: number } | null }>({
-    busy: false,
-    next: null,
-  });
+  const positionQueue = useRef<{
+    busy: boolean;
+    sending: { index: number; step: number } | null;
+    next: { index: number; step: number } | null;
+  }>({ busy: false, sending: null, next: null });
   const offsetRef = useRef(serverOffset);
   offsetRef.current = serverOffset;
   const statesRef = useRef(states);
@@ -339,7 +357,11 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
     () => ({
       async setPosition(index, step = 0) {
         if (!sessionId) return;
+        const queue = positionQueue.current;
+        const pending = queue.next ?? (queue.busy ? queue.sending : null);
+        if (pending && pending.index === index && pending.step === step) return;
         bump('session');
+        expectedPosition.current = { index, step, until: Date.now() + 3000 };
         setSession((cur) => (cur ? { ...cur, current_index: index, current_step: step } : cur));
         // Concurrent requests can be applied out of order by Postgres, leaving
         // the database behind the host's screen. Send one at a time, latest only.
@@ -350,6 +372,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
           while (positionQueue.current.next) {
             const target = positionQueue.current.next;
             positionQueue.current.next = null;
+            positionQueue.current.sending = target;
             const { error: err } = await getClient().rpc('set_position', {
               p_session: sessionId,
               p_index: target.index,

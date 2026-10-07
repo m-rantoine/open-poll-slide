@@ -6,6 +6,7 @@ import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { useLocale } from '@/lib/use-locale';
 import { pad2 } from '@/lib/utils';
+import { Player } from '../components/player';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlidePageProvider } from '../lib/page-context';
 import { useSlideModule } from '../lib/use-slide-module';
@@ -14,7 +15,7 @@ import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
 import { LiveProvider, useQuestionRegistry } from './live-context';
 import { QuestionPanel, ResultsPanel, StudentsPanel } from './presenter-panels';
-import { LiveStage, useHostNavigation } from './stage';
+import { useHostNavigation } from './stage';
 import { useLiveSession } from './use-live-session';
 
 export function LivePresenter({ sessionId }: { sessionId: string }) {
@@ -98,15 +99,24 @@ function Inner({ sessionId }: { sessionId: string }) {
         <section className="flex min-h-0 flex-col gap-3">
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-[8px] bg-black ring-1 ring-border">
             <LiveProvider view="presenter" mirror data={data} deckId={slideId}>
-              <LiveStage
-                slide={slide}
-                index={nav.index}
-                step={nav.step}
-                active={false}
-                controllerRef={nav.controllerRef}
-                onAggregate={nav.onAggregate}
-                wrap={(children) => <Provider>{children}</Provider>}
-              />
+              <Provider>
+                <div className="absolute inset-0">
+                  <Player
+                    pages={slide.default}
+                    design={slide.design}
+                    transition={slide.transition}
+                    index={nav.index}
+                    onIndexChange={() => {}}
+                    onExit={() => {}}
+                    allowExit={false}
+                    fullscreen={false}
+                    contained
+                    navigation="locked"
+                    controlledRevealed={nav.step}
+                    onStepAggregateChange={nav.onAggregate}
+                  />
+                </div>
+              </Provider>
             </LiveProvider>
           </div>
           <div className="flex items-center gap-3">

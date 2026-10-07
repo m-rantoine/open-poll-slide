@@ -23,6 +23,8 @@ type Props = {
   disabled?: boolean;
   stepControllerRef?: MutableRefObject<StepController | null>;
   entryDirection?: EntryDirection;
+  /** Drive the incoming page's reveal step from outside (live sessions). */
+  controlledRevealed?: number;
   onStepAggregateChange?: (aggregate: StepAggregate) => void;
 };
 
@@ -644,6 +646,7 @@ export function SlideTransitionLayer({
   disabled,
   stepControllerRef,
   entryDirection = 'jump',
+  controlledRevealed,
   onStepAggregateChange,
 }: Props) {
   const [current, setCurrent] = useState(index);
@@ -815,6 +818,7 @@ export function SlideTransitionLayer({
               isActivePage
               entryDirection={entryDirection}
               controllerRef={activeControllerRef}
+              controlledRevealed={current === index ? controlledRevealed : undefined}
               onAggregateChange={onStepAggregateChange}
             >
               <CurrentPage />

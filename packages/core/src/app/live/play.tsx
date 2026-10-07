@@ -2,17 +2,16 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { format, useLocale } from '@/lib/use-locale';
-import type { StepController } from '../lib/step-context';
+import { Player } from '../components/player';
 import { useIsMobile } from '../lib/use-is-mobile';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireAuth, useAuth } from './auth';
 import { liveErrorMessage } from './errors';
 import { LiveProvider, useQuestionRegistry } from './live-context';
 import { ParticipantQuestionCard } from './participant-card';
-import { clampIndex, LiveStage } from './stage';
+import { clampIndex } from './stage';
 import { useLiveSession, useParticipantPresence } from './use-live-session';
 
 export function PlayPage() {
@@ -44,45 +43,21 @@ function Play() {
     restored.current = true;
     setLocalIndex(data.selfIndex);
   }, [data.selfIndex]);
-  const controllerRef = useRef<StepController | null>(null);
+  const navRef = useRef<{ next: () => void; prev: () => void } | null>(null);
   const isMobile = useIsMobile();
   const { ids, Provider } = useQuestionRegistry();
 
   const index = clampIndex(isSelf ? localIndex : (session?.current_index ?? 0), total);
   const { setPosition } = data.actions;
 
-  const go = useCallback(
+  const onIndexChange = useCallback(
     (next: number) => {
-      const i = clampIndex(next, total);
-      setLocalIndex(i);
-      void setPosition(i, 0).catch(() => {});
+      if (!isSelf) return;
+      setLocalIndex(next);
+      void setPosition(next, 0).catch(() => {});
     },
-    [total, setPosition],
+    [isSelf, setPosition],
   );
-  const goNext = useCallback(() => {
-    if (controllerRef.current?.advance()) return;
-    go(index + 1);
-  }, [go, index]);
-  const goPrev = useCallback(() => {
-    if (controllerRef.current?.retreat()) return;
-    go(index - 1);
-  }, [go, index]);
-
-  useEffect(() => {
-    if (!isSelf) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target) || e.defaultPrevented) return;
-      if (isForwardKey(e)) {
-        e.preventDefault();
-        goNext();
-      } else if (isBackwardKey(e)) {
-        e.preventDefault();
-        goPrev();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isSelf, goNext, goPrev]);
 
   if (error) return <LiveMessage title={t.live.couldNotLoadDeck} body={error} />;
   if (data.error) {
@@ -104,16 +79,27 @@ function Play() {
     <div className="dark flex h-dvh w-screen flex-col bg-background text-foreground">
       <LiveProvider view="participant" compact={isMobile} data={data} deckId={slideId}>
         <div
-          className={isMobile ? 'shrink-0' : 'min-h-0 flex-1'}
+          className={isMobile ? 'relative shrink-0' : 'relative min-h-0 flex-1'}
           style={isMobile ? { aspectRatio: '16 / 9' } : undefined}
         >
-          <LiveStage
-            slide={slide}
-            index={index}
-            step={isSelf ? undefined : session.current_step}
-            controllerRef={controllerRef}
-            wrap={(children) => <Provider>{children}</Provider>}
-          />
+          <Provider>
+            <div className="absolute inset-0">
+              <Player
+                pages={slide.default}
+                design={slide.design}
+                transition={slide.transition}
+                index={index}
+                onIndexChange={onIndexChange}
+                onExit={() => {}}
+                allowExit={false}
+                fullscreen={false}
+                contained
+                navigation={isSelf ? 'free' : 'locked'}
+                controlledRevealed={isSelf ? undefined : session.current_step}
+                navRef={navRef}
+              />
+            </div>
+          </Provider>
         </div>
         {isMobile && (
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
@@ -139,10 +125,20 @@ function Play() {
           )}
           {isSelf && (
             <>
-              <Button variant="outline" size="icon" aria-label={t.live.previous} onClick={goPrev}>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label={t.live.previous}
+                onClick={() => navRef.current?.prev()}
+              >
                 <ChevronLeft />
               </Button>
-              <Button variant="outline" size="icon" aria-label={t.live.next} onClick={goNext}>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label={t.live.next}
+                onClick={() => navRef.current?.next()}
+              >
                 <ChevronRight />
               </Button>
             </>
