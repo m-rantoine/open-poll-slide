@@ -83,7 +83,6 @@ function Play() {
         .filter(Boolean)
         .map((q) => <ParticipantQuestionCard key={q.id} question={q} />)
     : [];
-  const hasCards = cards.length > 0;
   const surface: CSSProperties | undefined = slide.design
     ? { ...designToCssVars(slide.design), background: slide.design.palette.bg }
     : undefined;
@@ -92,33 +91,31 @@ function Play() {
     <div className="dark flex h-dvh w-screen flex-col bg-background text-foreground">
       <LiveProvider view="participant" compact={isMobile} data={data} deckId={slideId}>
         <div className="flex min-h-0 flex-1 flex-col" style={surface}>
-          <div className={cn('flex min-h-0 flex-col', hasCards ? 'hidden' : 'flex-1')}>
-            <div
-              className={cn('relative w-full', isMobile ? 'my-auto' : 'min-h-0 flex-1')}
-              style={isMobile ? { aspectRatio: '16 / 9' } : undefined}
-            >
-              <Provider>
-                <div className="absolute inset-0">
-                  <Player
-                    pages={slide.default}
-                    design={slide.design}
-                    transition={slide.transition}
-                    index={index}
-                    onIndexChange={onIndexChange}
-                    onExit={() => {}}
-                    allowExit={false}
-                    fullscreen={false}
-                    contained
-                    navigation={isSelf ? 'free' : 'locked'}
-                    controlledRevealed={isSelf ? undefined : session.current_step}
-                    navRef={navRef}
-                  />
-                </div>
-              </Provider>
-            </div>
+          <div
+            className={cn('relative w-full', isMobile ? 'shrink-0' : 'min-h-0 flex-1')}
+            style={isMobile ? { aspectRatio: '16 / 9', marginTop: '12dvh' } : undefined}
+          >
+            <Provider>
+              <div className="absolute inset-0">
+                <Player
+                  pages={slide.default}
+                  design={slide.design}
+                  transition={slide.transition}
+                  index={index}
+                  onIndexChange={onIndexChange}
+                  onExit={() => {}}
+                  allowExit={false}
+                  fullscreen={false}
+                  contained
+                  navigation={isSelf ? 'free' : 'locked'}
+                  controlledRevealed={isSelf ? undefined : session.current_step}
+                  navRef={navRef}
+                />
+              </div>
+            </Provider>
           </div>
-          {hasCards && (
-            <div className="min-h-0 flex-1 space-y-10 overflow-y-auto px-6 py-8">{cards}</div>
+          {isMobile && (
+            <div className="min-h-0 flex-1 space-y-8 overflow-y-auto px-6 py-6">{cards}</div>
           )}
         </div>
       </LiveProvider>

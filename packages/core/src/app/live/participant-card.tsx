@@ -2,10 +2,11 @@ import { Lock } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import type { MultipleChoiceQuestion } from '../lib/sdk';
 import { format, useLocale } from '../lib/use-locale';
-import { BAD, DISPLAY, FONT, GOOD, INK } from './question-style';
+import { BAD, FONT, GOOD, INK } from './question-style';
 import { useParticipantQuestion } from './use-participant-question';
 
-// Same look as the question drawn on the slide (see multiple-choice.tsx), at phone scale.
+// Same look as the question drawn on the slide (see multiple-choice.tsx), at phone scale. The
+// heading stays on the slide itself, so only the interactive part is drawn here.
 const optionStyle: CSSProperties = {
   width: '100%',
   boxSizing: 'border-box',
@@ -37,18 +38,6 @@ export function ParticipantQuestionCard({ question }: { question: MultipleChoice
         fontFamily: FONT,
       }}
     >
-      <h2
-        style={{
-          margin: 0,
-          fontFamily: DISPLAY,
-          fontSize: 30,
-          lineHeight: 1.15,
-          fontWeight: 700,
-          letterSpacing: '-0.01em',
-        }}
-      >
-        {question.question}
-      </h2>
       {countdown && !mine && (
         <div style={{ fontSize: 22, fontVariantNumeric: 'tabular-nums' }}>⏱ {countdown}</div>
       )}
