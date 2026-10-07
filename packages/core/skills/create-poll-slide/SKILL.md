@@ -73,4 +73,4 @@ In a regular "Present" (no session) all of these render inertly: options are vis
 - Every `<MultipleChoice>` receives an object from `questions`, never an inline literal.
 - `questions` keys, `id` fields and option ids are unique and kebab/snake-case slugs.
 - Option labels are short enough to fit one or two lines at the component's 40px size (about 50 characters).
-- Hand-off: tell the user to run a session from the slide's **Present ▾ → Start host-paced / self-paced session** (hosts only), that participants join at `/join` with the session code, and that correct answers left unset can be marked live.
+- Hand-off: tell the user to run a session from the slide's **Present ▾ → Start host-paced / self-paced session** (hosts only), that participants join at `/join` with the session code, and that correct answers left unset can be marked live. If sessions are not set up yet, point them to `LIVE-SESSIONS.md` (`open-slide live init`, then `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`).

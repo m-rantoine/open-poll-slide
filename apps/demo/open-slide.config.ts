@@ -1,11 +1,7 @@
 import type { OpenSlideConfig } from '@open-slide/core';
 
-const openSlideConfig: OpenSlideConfig = {
-  live: {
-    supabaseUrl: 'https://typsckrpciggvydhochi.supabase.co',
-    supabaseKey: 'sb_publishable_clXm1wFJCIZxr-3KJ00iJg_YOKnMjGr',
-    allowedEmailDomains: ['mon-avenir.ca'],
-  },
-};
+// Live sessions read SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY from the
+// environment (or .env.local); see LIVE-SESSIONS.md.
+const openSlideConfig: OpenSlideConfig = {};
 
 export default openSlideConfig;

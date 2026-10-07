@@ -3,6 +3,7 @@ import * as readline from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command, Option } from 'commander';
+import type { LiveInitFlags } from './live-init.ts';
 import { assertViteResolvesToCore } from './preflight.ts';
 import { detectSkillsDrift, syncSkills } from './sync.ts';
 import { glyph, readVersion } from './ui.ts';
@@ -133,6 +134,19 @@ export async function run(argv: string[]): Promise<void> {
     .option('--dry-run', 'show what would change without writing')
     .action(async (flags: SyncFlags) => {
       await syncSkills(resolveBuiltinSkillsDir(), flags);
+    });
+
+  const live = program.command('live').description('Live session tooling');
+  live
+    .command('init')
+    .description('Create the live-session tables in your Supabase project')
+    .option('--project-ref <ref>', 'Supabase project ref (defaults to the linked project)')
+    .option('--host <email...>', 'whitelist host email(s)')
+    .option('--domain <domain...>', 'allowed participant sign-up domain(s)')
+    .option('--skip-hook', 'do not configure the sign-up domain hook')
+    .action(async (flags: LiveInitFlags) => {
+      const { liveInit } = await import('./live-init.ts');
+      await liveInit(flags);
     });
 
   await program.parseAsync(argv, { from: 'user' });

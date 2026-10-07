@@ -30,6 +30,7 @@
     "src/app",
     "src/locale",
     "skills",
+    "supabase/migrations",
     "README.md"
   ],
   "scripts": {

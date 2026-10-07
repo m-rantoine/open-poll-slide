@@ -49,6 +49,10 @@ Manage images, videos, and fonts per deck through a built-in assets panel. Searc
 
 Fullscreen playback with keyboard navigation, plus a **presenter mode** with current/next slide preview, speaker notes, and a timer. Built for the stage, not just the browser tab.
 
+### 🙋 Live sessions (open-poll-slide fork)
+
+Run decks as Pear Deck–style live sessions: lobby, multiple-choice questions with lock/timer controls, host-paced or self-paced, per-student results and a host dashboard, backed by your own Supabase project. Create the tables with one command, `open-slide live init`, and provide `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`. See [LIVE-SESSIONS.md](LIVE-SESSIONS.md) for setup, and `apps/demo/slides/live-quiz-demo` for a ten-question example. The `/create-poll-slide` skill authors question decks.
+
 ### 📦 Export to static HTML, PDF & PPTX
 
 One command exports your deck as a self-contained static HTML site, a print-ready PDF, or an editable PowerPoint file. The PPTX export runs entirely in the browser and turns each page into native text boxes, shapes, and images — no server, no headless browser.
