@@ -230,7 +230,7 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
     );
   }
 
-  const { view, mirror, data, now } = live;
+  const { view, mirror, compact, data, now } = live;
   const st = data.states[question.id];
   const state = st?.state ?? 'locked';
   const isSelf = data.session?.mode === 'self';
@@ -241,6 +241,10 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
     setFailure(null);
     fn().catch((e: Error) => setFailure(e.message));
   };
+
+  if (view === 'participant' && compact) {
+    return <div style={frame}>{heading}</div>;
+  }
 
   if (view === 'participant') {
     const mine = data.mine[question.id];

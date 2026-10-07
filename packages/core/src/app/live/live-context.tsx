@@ -15,6 +15,8 @@ export type LiveContextValue = {
   view: Exclude<LiveView, 'static'>;
   /** Presenter canvases mirror the screen without its host controls. */
   mirror: boolean;
+  /** Phone layout: answers live in a native card below the slide, so slide questions show only their heading. */
+  compact: boolean;
   data: LiveData;
   now: number;
   deckId: string;
@@ -40,12 +42,14 @@ const RegistryContext = g[REGISTRY_KEY];
 export function LiveProvider({
   view,
   mirror = false,
+  compact = false,
   data,
   deckId,
   children,
 }: {
   view: LiveContextValue['view'];
   mirror?: boolean;
+  compact?: boolean;
   data: LiveData;
   deckId: string;
   children: ReactNode;
@@ -57,8 +61,8 @@ export function LiveProvider({
   }, []);
   const now = Date.now() + data.serverOffset;
   const value = useMemo(
-    () => ({ view, mirror, data, now, deckId }),
-    [view, mirror, data, now, deckId],
+    () => ({ view, mirror, compact, data, now, deckId }),
+    [view, mirror, compact, data, now, deckId],
   );
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;
 }

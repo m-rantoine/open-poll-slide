@@ -46,11 +46,11 @@ Only the publishable key is read; it is meant for browsers. Never put the servic
 
 ## Security model
 
-All rules are enforced in Postgres, not in routes. Participants can only write through `submit_answer` (membership, open state, timer, one answer per question) and read their own answers through `my_answers` / `my_score`, which hide correctness until the host turns on `show_results`. Answer keys and other students' answers are host-only. The sign-up hook rejects emails outside the allowed domains unless the address is a host. `supabase/tests/live_sessions.sql` (in the core package) checks these rules against a project with three confirmed test users and rolls back. `supabase/tests/live-flow.e2e.mjs` drives a full host-paced session (host, presenter, two students) in real browsers with Playwright; its header lists the setup.
+All rules are enforced in Postgres, not in routes. Participants can only write through `submit_answer` (membership, open state, timer, one answer per question) and read their own answers through `my_answers` / `my_score`, which hide correctness until the host turns on `show_results`. Answer keys and other students' answers are host-only. The sign-up hook rejects emails outside the allowed domains unless the address is a host. `supabase/tests/live_sessions.sql` (in the core package) checks these rules against a project with three confirmed test users and rolls back. `supabase/tests/live-flow.e2e.mjs` drives a full host-paced session (host, presenter, two students) in real browsers with Playwright, and `live-extras.e2e.mjs` covers timers, inactive tracking, self-paced mode and a phone viewport; their headers list the setup.
 
 ## Notes
 
 - With email confirmation off, the domain check only proves the *typed* address is on an allowed domain, not that the person owns it. Someone could register another student's address first. Turn confirmation back on (Authentication → Providers → Email) if that matters.
 - UI strings for live sessions are English only.
-- Participant view scales the 1920×1080 slide; small phone screens will show it small.
+- On phones (under 768px wide) the participant view shows the slide at the top and a native answer card with large tap targets below it.
 - Session codes are listed to any signed-in user on the Active sessions tab.
