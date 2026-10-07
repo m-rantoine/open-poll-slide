@@ -1,4 +1,5 @@
 import {
+  type Context,
   createContext,
   type ReactNode,
   useCallback,
@@ -19,7 +20,22 @@ export type LiveContextValue = {
   deckId: string;
 };
 
-const LiveContext = createContext<LiveContextValue | null>(null);
+type Registry = { add: (id: string) => void; remove: (id: string) => void };
+
+// Stored on globalThis so the app (src) and slides importing the published
+// build (dist) share one context instance; otherwise slide components never
+// see the provider.
+const LIVE_KEY = '__open_slide_live_context__';
+const REGISTRY_KEY = '__open_slide_live_registry_context__';
+type GlobalWithCtx = typeof globalThis & {
+  [LIVE_KEY]?: Context<LiveContextValue | null>;
+  [REGISTRY_KEY]?: Context<Registry | null>;
+};
+const g = globalThis as GlobalWithCtx;
+g[LIVE_KEY] ??= createContext<LiveContextValue | null>(null);
+g[REGISTRY_KEY] ??= createContext<Registry | null>(null);
+const LiveContext = g[LIVE_KEY];
+const RegistryContext = g[REGISTRY_KEY];
 
 export function LiveProvider({
   view,
@@ -50,9 +66,6 @@ export function LiveProvider({
 export function useLive(): LiveContextValue | null {
   return useContext(LiveContext);
 }
-
-type Registry = { add: (id: string) => void; remove: (id: string) => void };
-const RegistryContext = createContext<Registry | null>(null);
 
 export function useQuestionRegistry(): {
   ids: string[];

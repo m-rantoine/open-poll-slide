@@ -63,18 +63,32 @@ export function useHostNavigation(data: LiveData, total: number) {
   const step = session?.current_step ?? 0;
   const { setPosition } = data.actions;
 
-  const next = useCallback(() => {
-    if (step < stepCount) void setPosition(index, step + 1);
-    else if (index < total - 1) void setPosition(index + 1, 0);
-  }, [step, stepCount, index, total, setPosition]);
-  const prev = useCallback(() => {
-    if (step > 0) void setPosition(index, step - 1);
-    else if (index > 0) void setPosition(index - 1, 0);
-  }, [step, index, setPosition]);
-  const goTo = useCallback(
-    (i: number) => void setPosition(clampIndex(i, total), 0),
-    [setPosition, total],
+  // Rapid key presses must build on the previous press, not on the last row
+  // the server has echoed back.
+  const positionRef = useRef({ index, step });
+  positionRef.current = { index, step };
+  const stepCountRef = useRef(stepCount);
+  stepCountRef.current = stepCount;
+
+  const move = useCallback(
+    (nextIndex: number, nextStep: number) => {
+      positionRef.current = { index: nextIndex, step: nextStep };
+      void setPosition(nextIndex, nextStep).catch(() => {});
+    },
+    [setPosition],
   );
+
+  const next = useCallback(() => {
+    const cur = positionRef.current;
+    if (cur.step < stepCountRef.current) move(cur.index, cur.step + 1);
+    else if (cur.index < total - 1) move(cur.index + 1, 0);
+  }, [move, total]);
+  const prev = useCallback(() => {
+    const cur = positionRef.current;
+    if (cur.step > 0) move(cur.index, cur.step - 1);
+    else if (cur.index > 0) move(cur.index - 1, 0);
+  }, [move]);
+  const goTo = useCallback((i: number) => move(clampIndex(i, total), 0), [move, total]);
 
   return { index, step, stepCount, next, prev, goTo, controllerRef, onAggregate };
 }

@@ -221,9 +221,9 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
         {heading}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {question.options.map((o) => (
-            <button key={o.id} type="button" tabIndex={-1} style={optionStyle()}>
+            <div key={o.id} style={optionStyle()}>
               {o.label}
-            </button>
+            </div>
           ))}
         </div>
       </div>
