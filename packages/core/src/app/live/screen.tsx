@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { useLocale } from '@/lib/use-locale';
+import { pad2 } from '@/lib/utils';
+import { useTouchSwipe } from '../components/present/use-touch-swipe';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireHost } from './auth';
 import { getClient } from './client';
@@ -63,6 +66,8 @@ function Screen() {
   const total = slide?.default.length ?? 0;
   const nav = useHostNavigation(data, total);
   const { next, prev } = nav;
+  const rootRef = useRef<HTMLDivElement>(null);
+  useTouchSwipe({ ref: rootRef, onPrev: prev, onNext: next });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -95,7 +100,7 @@ function Screen() {
 
   const session = data.session;
   return (
-    <div className="group/screen relative h-dvh w-screen overflow-hidden bg-black">
+    <div ref={rootRef} className="group/screen relative h-dvh w-screen overflow-hidden bg-black">
       <LiveProvider view="screen" data={data} deckId={slideId}>
         <LiveStage
           slide={slide}
@@ -113,20 +118,40 @@ function Screen() {
           <div className="font-mono text-2xl font-bold tracking-[0.25em]">{session.code}</div>
         </div>
       )}
-      <div className="absolute bottom-4 left-4 flex gap-2 opacity-0 transition-opacity group-hover/screen:opacity-100">
-        <Button
-          variant="outline"
-          onClick={() =>
-            window.open(
-              `${import.meta.env.BASE_URL.replace(/\/$/, '')}/s/${encodeURIComponent(slideId)}/presenter?session=${session.id}`,
-              'open-slide-presenter',
-              'popup,width=1280,height=800',
-            )
-          }
-        >
-          {t.live.openPresenterView}
-        </Button>
-        <EndSessionButton data={data} onEnded={() => navigate(`/results/${session.id}`)} />
+      <div className="pointer-events-none absolute inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] flex flex-wrap items-center justify-between gap-2">
+        <div className="pointer-events-auto flex gap-2 opacity-0 transition-opacity group-hover/screen:opacity-100 [@media(hover:none)]:opacity-100">
+          <Button
+            variant="outline"
+            className="[@media(hover:none)]:hidden"
+            onClick={() =>
+              window.open(
+                `${import.meta.env.BASE_URL.replace(/\/$/, '')}/s/${encodeURIComponent(slideId)}/presenter?session=${session.id}`,
+                'open-slide-presenter',
+                'popup,width=1280,height=800',
+              )
+            }
+          >
+            {t.live.openPresenterView}
+          </Button>
+          <EndSessionButton data={data} onEnded={() => navigate(`/results/${session.id}`)} />
+        </div>
+        <div className="pointer-events-auto hidden items-center gap-2 rounded-full bg-black/60 p-1 text-white backdrop-blur-sm [@media(hover:none)]:flex">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t.live.previous}
+            disabled={nav.index === 0 && nav.step === 0}
+            onClick={prev}
+          >
+            <ChevronLeft />
+          </Button>
+          <span className="font-mono text-[12px] tabular-nums">
+            {pad2(nav.index + 1)} / {pad2(total)}
+          </span>
+          <Button variant="ghost" size="icon" aria-label={t.live.next} onClick={next}>
+            <ChevronRight />
+          </Button>
+        </div>
       </div>
       {session.status === 'ended' && (
         <div className="absolute inset-0 grid place-items-center bg-black/80 text-white">
