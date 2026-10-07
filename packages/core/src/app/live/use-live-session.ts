@@ -121,7 +121,9 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
     setLoading(true);
     const supabase = getClient();
     const channel = supabase
-      .channel(`live:${sessionId}:${asHost ? 'host' : 'participant'}`)
+      .channel(
+        `live:${sessionId}:${asHost ? 'host' : 'participant'}:${Math.random().toString(36).slice(2)}`,
+      )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` },
@@ -193,7 +195,10 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') void loadAll();
     });
+    // Safety net for events dropped during reconnects.
+    const resync = window.setInterval(() => void loadAll(), 8000);
     return () => {
+      window.clearInterval(resync);
       void supabase.removeChannel(channel);
     };
   }, [sessionId, asHost, loadAll]);
@@ -242,6 +247,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
     () => ({
       async setPosition(index, step = 0) {
         if (!sessionId) return;
+        setSession((cur) => (cur ? { ...cur, current_index: index, current_step: step } : cur));
         const { error: err } = await getClient().rpc('set_position', {
           p_session: sessionId,
           p_index: index,
