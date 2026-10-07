@@ -1,10 +1,12 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { format, useLocale } from '@/lib/use-locale';
+import { cn } from '@/lib/utils';
 import { Player } from '../components/player';
+import { designToCssVars } from '../lib/design';
 import { useIsMobile } from '../lib/use-is-mobile';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireAuth, useAuth } from './auth';
@@ -75,42 +77,50 @@ function Play() {
     ...((session.questions ?? {}) as NonNullable<typeof slide.questions>),
   };
 
+  const cards = isMobile
+    ? ids
+        .map((id) => questions[id])
+        .filter(Boolean)
+        .map((q) => <ParticipantQuestionCard key={q.id} question={q} />)
+    : [];
+  const hasCards = cards.length > 0;
+  const surface: CSSProperties | undefined = slide.design
+    ? { ...designToCssVars(slide.design), background: slide.design.palette.bg }
+    : undefined;
+
   return (
     <div className="dark flex h-dvh w-screen flex-col bg-background text-foreground">
       <LiveProvider view="participant" compact={isMobile} data={data} deckId={slideId}>
-        <div
-          className={isMobile ? 'relative shrink-0' : 'relative min-h-0 flex-1'}
-          style={isMobile ? { aspectRatio: '16 / 9' } : undefined}
-        >
-          <Provider>
-            <div className="absolute inset-0">
-              <Player
-                pages={slide.default}
-                design={slide.design}
-                transition={slide.transition}
-                index={index}
-                onIndexChange={onIndexChange}
-                onExit={() => {}}
-                allowExit={false}
-                fullscreen={false}
-                contained
-                navigation={isSelf ? 'free' : 'locked'}
-                controlledRevealed={isSelf ? undefined : session.current_step}
-                navRef={navRef}
-              />
+        <div className="flex min-h-0 flex-1 flex-col" style={surface}>
+          <div
+            className={cn('flex min-h-0 flex-col', isMobile && hasCards ? 'shrink-0' : 'flex-1')}
+          >
+            <div
+              className={cn('relative w-full', isMobile ? 'my-auto' : 'min-h-0 flex-1')}
+              style={isMobile ? { aspectRatio: '16 / 9' } : undefined}
+            >
+              <Provider>
+                <div className="absolute inset-0">
+                  <Player
+                    pages={slide.default}
+                    design={slide.design}
+                    transition={slide.transition}
+                    index={index}
+                    onIndexChange={onIndexChange}
+                    onExit={() => {}}
+                    allowExit={false}
+                    fullscreen={false}
+                    contained
+                    navigation={isSelf ? 'free' : 'locked'}
+                    controlledRevealed={isSelf ? undefined : session.current_step}
+                    navRef={navRef}
+                  />
+                </div>
+              </Provider>
             </div>
-          </Provider>
-        </div>
-        {isMobile && (
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-            {ids
-              .map((id) => questions[id])
-              .filter(Boolean)
-              .map((q) => (
-                <ParticipantQuestionCard key={q.id} question={q} />
-              ))}
           </div>
-        )}
+          {hasCards && <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">{cards}</div>}
+        </div>
       </LiveProvider>
       <footer className="flex h-11 shrink-0 items-center justify-between border-t border-hairline px-4 text-[12.5px]">
         <span className="font-mono text-muted-foreground">
