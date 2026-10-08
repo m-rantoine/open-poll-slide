@@ -57,6 +57,7 @@ Rules:
 - `id` must equal its key in `questions`, and be unique within the deck. Option `id`s are stable slugs (`ottawa`), never positions — answers are stored by option id, so reordering or rewording later does not corrupt past results.
 - `correct` is an array of string literal option ids; omit it entirely when unknown. Several correct options are allowed. It never reaches the browser: the build strips it, and `open-slide live keys` uploads it to the database, so tell the user to run that command after adding or changing answer keys.
 - One question per page. The component fills the whole 1920×1080 page itself (it brings its own frame, heading and options), so do not wrap it in a padded container. It uses `--osd-*` design variables when the deck exports `design`, so declare `design` as `create-slide` recommends.
+- Optional: `export const isPrivate = true;` hides the deck from non-hosts (it then only opens through a session). Without it the deck follows `SLIDES_DEFAULT_AS_PRIVATE` (public when unset).
 - Only multiple choice exists today (`type: 'multiple_choice'`).
 
 ## Page structure

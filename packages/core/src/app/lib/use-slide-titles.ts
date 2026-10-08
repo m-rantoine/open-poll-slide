@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { loadSlide, slideIds } from './slides';
+import { loadSlide } from './slides';
+import { useVisibleSlideIds } from './use-visible-slides';
 
 /**
  * Resolves every deck's display title once `enabled` first turns true. The home
@@ -7,6 +8,7 @@ import { loadSlide, slideIds } from './slides';
  * needs its own pass over the slide modules — kept lazy since it imports them all.
  */
 export function useSlideTitles(enabled: boolean): Record<string, string> {
+  const slideIds = useVisibleSlideIds();
   const [titles, setTitles] = useState<Record<string, string>>({});
   const startedRef = useRef(false);
 
@@ -23,7 +25,7 @@ export function useSlideTitles(enabled: boolean): Record<string, string> {
         }
       }),
     ).then((entries) => setTitles(Object.fromEntries(entries)));
-  }, [enabled]);
+  }, [enabled, slideIds]);
 
   return titles;
 }

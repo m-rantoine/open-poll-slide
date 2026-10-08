@@ -13,12 +13,12 @@ async function withSlidesRoot<T>(fn: (root: string) => Promise<T>): Promise<T> {
   }
 }
 
-async function writeSlide(root: string, id: string): Promise<string> {
+async function writeSlide(root: string, id: string, extra = ''): Promise<string> {
   await fs.mkdir(path.join(root, id), { recursive: true });
   const entry = path.join(root, id, 'index.tsx');
   await fs.writeFile(
     entry,
-    `export const meta = { title: '${id}' };\nexport default [];\n`,
+    `export const meta = { title: '${id}' };\n${extra}export default [];\n`,
     'utf8',
   );
   return entry;
@@ -45,6 +45,26 @@ describe('generateSlidesModule', () => {
       expect(ignored).toEqual(['推薦系統']);
       expect(code).toContain('export const slideIds = ["cover"];');
       expect(code).not.toContain('推薦系統');
+    });
+  });
+
+  it('marks slides private by their own export, falling back to the default', async () => {
+    await withSlidesRoot(async (root) => {
+      const files = [
+        await writeSlide(root, 'plain'),
+        await writeSlide(root, 'secret', 'export const isPrivate = true;\n'),
+        await writeSlide(root, 'open', 'export const isPrivate = false;\n'),
+      ].sort();
+
+      const publicByDefault = await generateSlidesModule(files, root, false);
+      expect(publicByDefault.code).toContain(
+        'export const slidePrivate = {"open":false,"plain":false,"secret":true};',
+      );
+
+      const privateByDefault = await generateSlidesModule(files, root, false, true);
+      expect(privateByDefault.code).toContain(
+        'export const slidePrivate = {"open":false,"plain":true,"secret":true};',
+      );
     });
   });
 });

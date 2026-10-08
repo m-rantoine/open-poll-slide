@@ -62,6 +62,17 @@ pnpm exec open-slide live keys   # upload every `correct` in slides/ (run after 
 
 `correct` must be an array of string literals for the command to read it. Keys marked live from the app are saved to the same table; running `live keys` again overwrites them with the values in your sources. Participants learn whether they were right only from the server: `submit_answer` returns the grade, and the participant screens show it once the host reveals results (`showResults`).
 
+## Private decks
+
+Decks are public by default. A deck becomes private in either of two ways, and its own setting wins:
+
+1. In the deck: `export const isPrivate = true;` (or `false`) in `slides/<id>/index.tsx`. It must be a literal `true` or `false`.
+2. For every deck without that export: set `SLIDES_DEFAULT_AS_PRIVATE=true` (also `1` or `yes`) in the environment or an `.env` file when you run or build. Unset means public. The demo app sets it in `apps/demo/.env.production`, so its built site is private by default.
+
+Private decks are hidden from everyone except signed-in hosts: they do not appear on any homepage tab, in the command menu, in the deck switcher or in theme listings, and opening `/s/<id>` shows the same "Page not found" as an unknown deck. They do appear in **Active sessions** while a session is running, and participants play them through the session (`/join`) as usual. Hosts see a **Private** label on their cards. If live sessions are not configured, nobody is a host, so private decks are hidden from everybody.
+
+This is a visibility rule, not access control: the deck's code is part of the site you publish, so someone who knows the file's address can still download it. Keep anything secret out of decks, or host the site behind your own login.
+
 ## Security model
 
 All rules are enforced in Postgres, not in routes. Participants can only write through `submit_answer` (membership, open state, timer, one answer per question) and read their own answers through `my_answers` / `my_score`, which hide correctness until the host turns on `show_results`. Answer keys (per session and per deck) and other students' answers are host-only. The sign-up hook rejects emails outside the allowed domains unless the address is a host. `supabase/tests/live_sessions.sql` (in the core package) checks these rules: it creates its own users inside one transaction and always rolls back (`supabase db query --linked -f supabase/tests/live_sessions.sql`; the last line reads `ALL CHECKS PASSED`). `supabase/tests/live-flow.e2e.mjs` drives a full host-paced session (host, presenter, two students) in real browsers with Playwright, and `live-extras.e2e.mjs` covers timers, inactive tracking, self-paced mode and a phone viewport; their headers list the setup.

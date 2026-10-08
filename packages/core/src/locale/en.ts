@@ -617,6 +617,7 @@ export const en: Locale = {
       'Your host paused this session. It continues here when they resume, or you can rejoin later with the same code.',
     yourSessions: 'Your sessions',
     rejoin: 'Rejoin',
+    privateDeck: 'Private',
     livePresenter: 'Live presenter',
     hostPaced: 'host-paced',
     selfPaced: 'self-paced',

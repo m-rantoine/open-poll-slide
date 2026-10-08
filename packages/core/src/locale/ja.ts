@@ -625,6 +625,7 @@ export const ja: Locale = {
       'ホストがセッションを一時停止しました。再開されるとここから続きます。後から同じコードで再参加することもできます。',
     yourSessions: '参加中のセッション',
     rejoin: '再参加',
+    privateDeck: '非公開',
     livePresenter: 'ライブ発表者',
     hostPaced: 'ホスト主導',
     selfPaced: '自分のペース',

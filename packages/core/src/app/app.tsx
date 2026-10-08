@@ -1,9 +1,18 @@
 import config from 'virtual:open-slide/config';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { BrowserRouter, Route, Routes, useParams } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { TooltipProvider } from './components/ui/tooltip';
+import { isSlidePrivate } from './lib/slides';
 import { useLocale } from './lib/use-locale';
-import { AuthProvider, LivePageFrame } from './live/auth';
+import {
+  AuthProvider,
+  LivePageFrame,
+  LoadingLine,
+  useAuth,
+  useCanSeePrivateSlides,
+} from './live/auth';
+import { liveConfigured } from './live/client';
 import { JoinPage } from './live/join';
 import { PlayPage } from './live/play';
 import { ResultsDetailPage, ResultsListPage } from './live/results';
@@ -42,8 +51,22 @@ export function App() {
                 <Route path="/results/:sessionId" element={<ResultsDetailPage />} />
               </Route>
             )}
-            <Route path="/s/:slideId" element={<Slide />} />
-            <Route path="/s/:slideId/presenter" element={<Presenter />} />
+            <Route
+              path="/s/:slideId"
+              element={
+                <PrivateSlideGate>
+                  <Slide />
+                </PrivateSlideGate>
+              }
+            />
+            <Route
+              path="/s/:slideId/presenter"
+              element={
+                <PrivateSlideGate>
+                  <Presenter />
+                </PrivateSlideGate>
+              }
+            />
             <Route path="/s/:slideId/screen" element={<ScreenPage />} />
             <Route path="/s/:slideId/play/:sessionId" element={<PlayPage />} />
             <Route path="/join" element={<JoinPage />} />
@@ -55,6 +78,17 @@ export function App() {
       <Toaster />
     </BrowserRouter>
   );
+}
+
+// Private decks only open directly for hosts; everyone else gets the same page as an unknown deck.
+// Participants reach a private deck through its session, which is not behind this gate.
+function PrivateSlideGate({ children }: { children: ReactNode }) {
+  const { slideId = '' } = useParams();
+  const { loading } = useAuth();
+  const canSeePrivate = useCanSeePrivateSlides();
+  if (!isSlidePrivate(slideId) || canSeePrivate) return children;
+  if (liveConfigured && loading) return <LoadingLine />;
+  return <NotFound />;
 }
 
 function NotFound() {

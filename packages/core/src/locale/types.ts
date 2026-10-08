@@ -651,6 +651,7 @@ export type Locale = {
     pausedParticipantBody: string;
     yourSessions: string;
     rejoin: string;
+    privateDeck: string;
     livePresenter: string;
     hostPaced: string;
     selfPaced: string;

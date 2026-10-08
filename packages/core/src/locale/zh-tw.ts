@@ -612,6 +612,7 @@ export const zhTW: Locale = {
       '主持人已暫停此工作階段。繼續後會從這裡接著進行，你也可以稍後用同一代碼重新加入。',
     yourSessions: '你的工作階段',
     rejoin: '重新加入',
+    privateDeck: '私人',
     livePresenter: '直播簡報者',
     hostPaced: '主持人控制',
     selfPaced: '自主節奏',

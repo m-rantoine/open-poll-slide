@@ -2,6 +2,7 @@ import {
   slideCreatedAt as createdAt,
   slideIds as ids,
   loadSlide as load,
+  slidePrivate as privacy,
   slideThemes as themes,
 } from 'virtual:open-slide/slides';
 import type { SlideModule } from './sdk';
@@ -9,6 +10,10 @@ import type { SlideModule } from './sdk';
 export const slideIds: string[] = ids;
 export const slideThemes: Record<string, string> = themes;
 export const slideCreatedAt: Record<string, number> = createdAt;
+
+export function isSlidePrivate(id: string): boolean {
+  return privacy[id] === true;
+}
 
 export function slidesByTheme(themeId: string): string[] {
   return slideIds.filter((id) => slideThemes[id] === themeId);

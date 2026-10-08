@@ -612,6 +612,7 @@ export const zhCN: Locale = {
       '主持人已暂停此会话。继续后会从这里接着进行，你也可以稍后用同一代码重新加入。',
     yourSessions: '你的会话',
     rejoin: '重新加入',
+    privateDeck: '私有',
     livePresenter: '直播演讲者',
     hostPaced: '主持人控制',
     selfPaced: '自主节奏',

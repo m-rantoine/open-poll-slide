@@ -27,8 +27,8 @@ import {
   THEMES_ID,
 } from '../components/sidebar/sidebar';
 import type { FoldersManifest } from '../lib/sdk';
-import { slideIds } from '../lib/slides';
 import { themes as themeRegistry } from '../lib/themes';
+import { useVisibleSlideIds } from '../lib/use-visible-slides';
 import { useCanSeeThemes } from '../live/auth';
 
 export type HomeOutletContext = {
@@ -105,6 +105,7 @@ export function HomeShell() {
   const { assets: globalAssets } = useAssets(GLOBAL_ASSET_SCOPE);
   const isAssetsRoute = selectedId === ASSETS_ID;
 
+  const slideIds = useVisibleSlideIds();
   const { draftSlides, slidesByFolder } = useMemo(() => {
     const byFolder: Record<string, string[]> = {};
     const draft: string[] = [];
@@ -119,7 +120,7 @@ export function HomeShell() {
       }
     }
     return { draftSlides: draft, slidesByFolder: byFolder };
-  }, [manifest]);
+  }, [manifest, slideIds]);
 
   const countFor = (folderId: string | null) =>
     folderId === null ? draftSlides.length : (slidesByFolder[folderId]?.length ?? 0);

@@ -632,6 +632,7 @@ export const frCA: Locale = {
       'Votre animateur a mis cette session en pause. Elle reprendra ici à sa reprise, ou vous pouvez la rejoindre plus tard avec le même code.',
     yourSessions: 'Vos sessions',
     rejoin: 'Rejoindre à nouveau',
+    privateDeck: 'Privée',
     livePresenter: 'Présentateur en direct',
     hostPaced: 'rythme de l’animateur',
     selfPaced: 'rythme libre',

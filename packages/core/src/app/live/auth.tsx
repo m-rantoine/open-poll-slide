@@ -91,6 +91,12 @@ export function useCanSeeThemes(): boolean {
   return !liveConfigured || (!loading && isHost);
 }
 
+// Private decks are for hosts. Without live sessions nobody can be a host, so they stay hidden.
+export function useCanSeePrivateSlides(): boolean {
+  const { loading, isHost } = useAuth();
+  return liveConfigured && !loading && isHost;
+}
+
 export function LiveShell({ children }: { children: ReactNode }) {
   return (
     <div className="dark grid min-h-dvh place-items-center bg-background px-6 text-foreground">

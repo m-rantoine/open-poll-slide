@@ -71,6 +71,9 @@ function Play() {
     );
   }
   if (!slide || data.loading || !session) return <LoadingLine />;
+  if (session.deck_id !== slideId) {
+    return <LiveMessage title={t.live.sessionUnavailable} body={t.live.useCodeFromHost} />;
+  }
 
   const questions = {
     ...(slide.questions ?? {}),
