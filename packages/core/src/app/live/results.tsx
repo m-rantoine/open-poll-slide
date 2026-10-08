@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { format, plural, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
+import type { Locale } from '../../locale/types';
 import type { MultipleChoiceQuestion } from '../lib/sdk';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireHost } from './auth';
@@ -20,9 +21,15 @@ import {
 } from './derive';
 import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
+import { PauseSessionButton } from './pause-session';
 import { SlideThumb } from './slide-thumb';
 import type { SessionRow } from './types';
 import { useLiveSession } from './use-live-session';
+
+function statusLabel(t: Locale, status: SessionRow['status']) {
+  if (status === 'active') return t.live.statusActive;
+  return status === 'paused' ? t.live.statusPaused : t.live.statusEnded;
+}
 
 export function ResultsListPage() {
   const t = useLocale();
@@ -95,7 +102,7 @@ function ResultsList() {
                     <div className="font-mono text-[11.5px] text-muted-foreground">
                       {new Date(s.created_at).toLocaleString(t.id)} ·{' '}
                       {s.mode === 'host' ? t.live.hostPaced : t.live.selfPaced} · {s.code} ·{' '}
-                      {s.status === 'active' ? t.live.statusActive : t.live.statusEnded}
+                      {statusLabel(t, s.status)}
                     </div>
                   </div>
                   <div className="text-right font-mono text-[12px] tabular-nums">
@@ -182,10 +189,10 @@ function ResultsDetail() {
           <div className="font-mono text-[11.5px] text-muted-foreground">
             {new Date(session.created_at).toLocaleString(t.id)} ·{' '}
             {session.mode === 'host' ? t.live.hostPaced : t.live.selfPaced} · {session.code} ·{' '}
-            {session.status === 'active' ? t.live.statusActive : t.live.statusEnded}
+            {statusLabel(t, session.status)}
           </div>
         </div>
-        {session.status === 'active' && session.mode === 'host' && (
+        {session.status !== 'ended' && session.mode === 'host' && (
           <Button
             variant="outline"
             onClick={() =>
@@ -195,7 +202,8 @@ function ResultsDetail() {
             {t.live.openScreen}
           </Button>
         )}
-        {session.status === 'active' && <EndSessionButton data={data} />}
+        <PauseSessionButton data={data} />
+        {session.status !== 'ended' && <EndSessionButton data={data} />}
       </header>
 
       <nav className="mb-5 flex gap-1 border-b border-hairline">

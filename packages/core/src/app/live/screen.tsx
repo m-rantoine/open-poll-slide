@@ -12,6 +12,7 @@ import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
 import { LiveProvider } from './live-context';
 import { joinUrl } from './lobby';
+import { PauseSessionButton } from './pause-session';
 import { clampIndex } from './stage';
 import { useLiveSession } from './use-live-session';
 
@@ -30,7 +31,7 @@ export function useResolvedSessionId(slideId: string): string | null | undefined
       .from('sessions')
       .select('id')
       .eq('deck_id', slideId)
-      .eq('status', 'active')
+      .in('status', ['active', 'paused'])
       .eq('mode', 'host')
       .order('created_at', { ascending: false })
       .limit(1)
@@ -123,16 +124,18 @@ function Screen() {
           allowExit={false}
           controls
           fullscreen={false}
+          navigation={session.status === 'active' ? 'free' : 'locked'}
           controlledRevealed={step}
           onStepAggregateChange={onStepAggregateChange}
           onPresenter={openPresenter}
         />
       </LiveProvider>
       <div className="pointer-events-none absolute inset-x-4 top-4 z-50 flex items-start justify-between gap-2">
-        <div className="pointer-events-auto opacity-0 transition-opacity group-hover/screen:opacity-100 [@media(hover:none)]:opacity-100">
+        <div className="pointer-events-auto flex gap-2 opacity-0 transition-opacity group-hover/screen:opacity-100 [@media(hover:none)]:opacity-100">
+          <PauseSessionButton data={data} />
           <EndSessionButton data={data} onEnded={() => navigate(`/results/${session.id}`)} />
         </div>
-        {session.status === 'active' && (
+        {session.status !== 'ended' && (
           <div className="rounded-[8px] bg-black/70 px-4 py-2 text-right text-white">
             <div className="text-[11px] tracking-[0.1em] uppercase opacity-60">
               {joinUrl().replace(/^https?:\/\//, '')}
@@ -141,6 +144,15 @@ function Screen() {
           </div>
         )}
       </div>
+      {session.status === 'paused' && (
+        <div className="absolute inset-0 z-40 grid place-items-center bg-black px-6 text-center text-white">
+          <div className="flex max-w-md flex-col items-center gap-4">
+            <h2 className="font-heading text-3xl font-semibold">{t.live.pausedTitle}</h2>
+            <p className="text-[15px] text-white/70">{t.live.pausedHostBody}</p>
+            <PauseSessionButton data={data} />
+          </div>
+        </div>
+      )}
       {session.status === 'ended' && (
         <div className="absolute inset-0 z-50 grid place-items-center bg-black/80 text-white">
           {t.live.sessionEnded}

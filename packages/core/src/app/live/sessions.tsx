@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { useLocale } from '@/lib/use-locale';
 import { LiveMessage, RequireAuth, useAuth } from './auth';
 import { getClient } from './client';
+import { liveErrorMessage } from './errors';
 import { SlideThumb } from './slide-thumb';
 
 type ActiveSession = {
@@ -14,6 +16,7 @@ type ActiveSession = {
   deck_title: string | null;
   mode: 'self' | 'host';
   created_at: string;
+  status: 'active' | 'paused' | 'ended';
 };
 
 export function SessionsPage() {
@@ -31,6 +34,7 @@ function Sessions() {
   const t = useLocale();
   const { isHost } = useAuth();
   const [rows, setRows] = useState<ActiveSession[] | null>(null);
+  const [resuming, setResuming] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data } = await getClient().rpc('list_active_sessions');
@@ -42,6 +46,21 @@ function Sessions() {
     const id = window.setInterval(load, 10_000);
     return () => window.clearInterval(id);
   }, [load]);
+
+  const resume = async (s: ActiveSession) => {
+    setResuming(s.id);
+    const { error } = await getClient().rpc('resume_session', { p_session: s.id });
+    setResuming(null);
+    if (error) {
+      toast.error(liveErrorMessage(t, error));
+      return;
+    }
+    navigate(
+      s.mode === 'host'
+        ? `/s/${encodeURIComponent(s.deck_id)}/screen?session=${s.id}`
+        : `/results/${s.id}`,
+    );
+  };
 
   if (rows === null) return <LiveMessage title={t.live.loadingSessions} />;
 
@@ -68,6 +87,7 @@ function Sessions() {
                 </div>
                 <div className="font-mono text-[11.5px] text-muted-foreground">
                   {s.mode === 'host' ? t.live.hostPaced : t.live.selfPaced} · {s.code}
+                  {s.status === 'paused' && ` · ${t.live.statusPaused}`}
                 </div>
               </div>
               {isHost && (
@@ -78,7 +98,17 @@ function Sessions() {
                   {t.live.overview}
                 </Link>
               )}
-              <Button onClick={() => navigate(`/join/${s.code}`)}>{t.live.join}</Button>
+              {isHost && s.status === 'paused' && (
+                <Button disabled={resuming === s.id} onClick={() => void resume(s)}>
+                  {t.live.resume}
+                </Button>
+              )}
+              <Button
+                variant={isHost && s.status === 'paused' ? 'outline' : 'default'}
+                onClick={() => navigate(`/join/${s.code}`)}
+              >
+                {t.live.join}
+              </Button>
             </li>
           ))}
         </ul>

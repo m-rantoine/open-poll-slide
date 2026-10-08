@@ -588,7 +588,7 @@ export const ja: Locale = {
     notQuite: '✗ 不正解',
     waitingForHostToOpen: 'ホストが質問を開くのを待っています',
     answerPeriodEnded: '回答時間は終了しました。',
-    clickToUnlock: 'クリックして回答を受け付ける',
+    clickToUnlock: 'クリックまたは Enter で回答を受け付ける',
     locked: 'ロック中',
     lock: 'ロック',
     unlock: 'ロック解除',
@@ -615,6 +615,16 @@ export const ja: Locale = {
     endDialogTitle: 'このセッションを終了しますか？',
     endDialogDescription:
       '参加者は回答やスライドの移動ができなくなります。結果は引き続き閲覧できます。',
+    pause: '一時停止',
+    resume: '再開',
+    statusPaused: '一時停止中',
+    pausedTitle: 'セッションは一時停止中です',
+    pausedHostBody:
+      '参加者は待機しています。準備ができたら再開してください。中断した場所から続けられます。',
+    pausedParticipantBody:
+      'ホストがセッションを一時停止しました。再開されるとここから続きます。後から同じコードで再参加することもできます。',
+    yourSessions: '参加中のセッション',
+    rejoin: '再参加',
     livePresenter: 'ライブ発表者',
     hostPaced: 'ホスト主導',
     selfPaced: '自分のペース',
@@ -666,6 +676,7 @@ export const ja: Locale = {
       question_closed: 'この質問は締め切られました。',
       already_answered: 'この質問にはすでに回答しています。',
       session_not_active: 'このセッションは終了しました。',
+      session_paused: 'このセッションは一時停止中です。',
       session_not_found: 'そのコードの進行中セッションはありません。',
       not_a_participant: '先にセッションに参加してください。',
       host_only: 'ホストのみ実行できます。',

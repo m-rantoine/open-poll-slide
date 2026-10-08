@@ -204,6 +204,92 @@ begin
   if v <> 'inactive' then raise exception 'FAIL set_presence changed a participant of an ended session'; end if;
   r := r || 'PASS end_session freezes inactive time' || E'\n';
 
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select * into sess from public.create_session('sql-test-deck-pause', 'Deck', 'host', 2, qs);
+  perform public.host_question_action(sess.id, 'fav', 'add_time', 60);
+  execute 'reset role';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.join_session(sess.code);
+  select count(*) into n from public.list_my_sessions() where id = sess.id and status = 'active';
+  if n <> 1 then raise exception 'FAIL list_my_sessions should list an active joined session'; end if;
+  execute 'reset role';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.pause_session(sess.id);
+  select * into st from public.session_question_state where session_id = sess.id and question_id = 'fav';
+  if st.ends_at is not null or st.paused_remaining_ms not between 55000 and 60000 then
+    raise exception 'FAIL pause should store the remaining time (ends_at=%, remaining=%)', st.ends_at, st.paused_remaining_ms;
+  end if;
+  select count(*) into n from public.list_active_sessions() where id = sess.id and status = 'paused';
+  if n <> 1 then raise exception 'FAIL a paused session should appear in list_active_sessions'; end if;
+  execute 'reset role';
+  select status::text into v from public.sessions where id = sess.id;
+  if v <> 'paused' then raise exception 'FAIL status should be paused, got %', v; end if;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  begin
+    perform public.submit_answer(sess.id, 'fav', 'a');
+    raise exception 'FAIL answered while paused';
+  exception when raise_exception then
+    if sqlerrm <> 'session_paused' then raise; end if;
+  end;
+  perform public.join_session(sess.code);
+  select count(*) into n from public.list_my_sessions() where id = sess.id and status = 'paused';
+  if n <> 1 then raise exception 'FAIL list_my_sessions should include a paused session'; end if;
+  execute 'reset role';
+  select * into p from public.session_participants where session_id = sess.id and user_id = s1;
+  if p.status <> 'inactive' or p.inactive_since is not null then
+    raise exception 'FAIL joining a paused session should wait without a running clock (status=%, since=%)', p.status, p.inactive_since;
+  end if;
+  r := r || 'PASS pause: stores timers, blocks answers, lists the session, rejoin waits' || E'\n';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.resume_session(sess.id);
+  execute 'reset role';
+  select status::text into v from public.sessions where id = sess.id;
+  select * into st from public.session_question_state where session_id = sess.id and question_id = 'fav';
+  if v <> 'active' or st.paused_remaining_ms is not null or extract(epoch from st.ends_at - now()) not between 50 and 61 then
+    raise exception 'FAIL resume should restore the timer (status=%, ends_in=%)', v, extract(epoch from st.ends_at - now());
+  end if;
+  select * into p from public.session_participants where session_id = sess.id and user_id = s1;
+  if p.inactive_since is null then raise exception 'FAIL resume should start the clock for students who have not returned'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.submit_answer(sess.id, 'fav', 'a');
+  execute 'reset role';
+  r := r || 'PASS resume: timer restored, answering works again' || E'\n';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.pause_session(sess.id);
+  perform public.end_session(sess.id);
+  execute 'reset role';
+  select status::text into v from public.sessions where id = sess.id;
+  if v <> 'ended' then raise exception 'FAIL a paused session should be endable, got %', v; end if;
+  begin
+    perform set_config('request.jwt.claims', json_build_object('sub', s2, 'email', 'sql-test-s2@school.example.test', 'role', 'authenticated')::text, true);
+    execute 'set local role authenticated';
+    perform public.join_session(sess.code);
+    raise exception 'FAIL joined an ended session';
+  exception when no_data_found then
+    execute 'reset role';
+  end;
+  begin
+    perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+    execute 'set local role authenticated';
+    perform public.pause_session(sess.id);
+    raise exception 'FAIL student paused a session';
+  exception when insufficient_privilege then
+    execute 'reset role';
+  end;
+  r := r || 'PASS end from paused; ended sessions cannot be joined; students cannot pause' || E'\n';
+
   select value into saved_domains from public.app_settings where key = 'allowed_email_domains';
   update public.app_settings set value = '["school.example.test"]' where key = 'allowed_email_domains';
   if public.hook_restrict_signup_domain('{"user":{"email":"kid@school.example.test"}}') <> '{}'::jsonb then

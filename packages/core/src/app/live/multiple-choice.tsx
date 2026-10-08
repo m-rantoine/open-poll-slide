@@ -1,10 +1,12 @@
 import { Lock, LockOpen, Square } from 'lucide-react';
 import { type CSSProperties, type ReactNode, useState } from 'react';
 import type { MultipleChoiceQuestion } from '../lib/sdk';
+import { useIsActivePage } from '../lib/step-context';
 import { format, useLocale } from '../lib/use-locale';
 import { answeredCount, expectedCount, formatClock, optionCounts } from './derive';
 import { liveErrorMessage } from './errors';
 import { useLive, useRegisterQuestion } from './live-context';
+import { useLockHotkey } from './lock-hotkey';
 import { ACCENT, BAD, BG, DISPLAY, FONT, GOOD, INK } from './question-style';
 import { useParticipantQuestion } from './use-participant-question';
 
@@ -195,6 +197,16 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
   useRegisterQuestion(question.id);
   const participant = useParticipantQuestion(question);
   const [failure, setFailure] = useState<string | null>(null);
+  const onScreen = useIsActivePage();
+  useLockHotkey(
+    live?.data,
+    question.id,
+    Boolean(live) &&
+      live?.view === 'screen' &&
+      !live.mirror &&
+      onScreen &&
+      live.data.session?.status === 'active',
+  );
 
   const heading = (
     <h2

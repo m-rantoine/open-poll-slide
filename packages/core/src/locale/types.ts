@@ -643,6 +643,14 @@ export type Locale = {
     endDialogEyebrow: string;
     endDialogTitle: string;
     endDialogDescription: string;
+    pause: string;
+    resume: string;
+    statusPaused: string;
+    pausedTitle: string;
+    pausedHostBody: string;
+    pausedParticipantBody: string;
+    yourSessions: string;
+    rejoin: string;
     livePresenter: string;
     hostPaced: string;
     selfPaced: string;
@@ -699,6 +707,7 @@ export type Locale = {
       question_closed: string;
       already_answered: string;
       session_not_active: string;
+      session_paused: string;
       session_not_found: string;
       not_a_participant: string;
       host_only: string;

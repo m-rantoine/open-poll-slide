@@ -19,6 +19,8 @@ export type LiveActions = {
   toggleCorrect: (questionId: string, optionId: string) => Promise<void>;
   submitAnswer: (questionId: string, optionId: string) => Promise<MyAnswer>;
   endSession: () => Promise<void>;
+  pauseSession: () => Promise<void>;
+  resumeSession: () => Promise<void>;
 };
 
 export type LiveData = {
@@ -436,8 +438,23 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
         const { error: err } = await getClient().rpc('end_session', { p_session: sessionId });
         if (err) throw err;
       },
+      async pauseSession() {
+        if (!sessionId) return;
+        const { error: err } = await getClient().rpc('pause_session', { p_session: sessionId });
+        if (err) throw err;
+        bump('session');
+        setSession((cur) => (cur ? { ...cur, status: 'paused' } : cur));
+      },
+      async resumeSession() {
+        if (!sessionId) return;
+        const { error: err } = await getClient().rpc('resume_session', { p_session: sessionId });
+        if (err) throw err;
+        bump('session');
+        setSession((cur) => (cur ? { ...cur, status: 'active' } : cur));
+        void loadAll();
+      },
     }),
-    [sessionId, questionAction, bump],
+    [sessionId, questionAction, bump, loadAll],
   );
 
   return {

@@ -14,6 +14,8 @@ import { LiveMessage, LoadingLine, RequireHost } from './auth';
 import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
 import { LiveProvider, useQuestionRegistry } from './live-context';
+import { useLockHotkey } from './lock-hotkey';
+import { PauseSessionButton } from './pause-session';
 import { QuestionPanel, ResultsPanel, StudentsPanel } from './presenter-panels';
 import { useHostNavigation } from './stage';
 import { useLiveSession } from './use-live-session';
@@ -37,10 +39,13 @@ function Inner({ sessionId }: { sessionId: string }) {
   const total = slide?.default.length ?? 0;
   const nav = useHostNavigation(data, total);
   const { next, prev } = nav;
+  const paused = data.session?.status === 'paused';
+  const activeQuestionId = ids.find((id) => !id.startsWith('__'));
+  useLockHotkey(data, activeQuestionId, data.session?.status === 'active');
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || isTypingTarget(e.target) || hasModifier(e)) return;
+      if (paused || e.defaultPrevented || isTypingTarget(e.target) || hasModifier(e)) return;
       if (isForwardKey(e)) {
         e.preventDefault();
         next();
@@ -51,7 +56,7 @@ function Inner({ sessionId }: { sessionId: string }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [next, prev]);
+  }, [next, prev, paused]);
 
   if (error) return <LiveMessage title={t.live.couldNotLoadDeck} body={error} />;
   if (!slide || data.loading) return <LoadingLine />;
@@ -91,6 +96,7 @@ function Inner({ sessionId }: { sessionId: string }) {
           <Button variant="outline" onClick={() => navigate(`/results/${session.id}`)}>
             {t.live.results}
           </Button>
+          <PauseSessionButton data={data} />
           <EndSessionButton data={data} />
         </div>
       </header>
@@ -120,10 +126,14 @@ function Inner({ sessionId }: { sessionId: string }) {
             </LiveProvider>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={prev} disabled={nav.index === 0 && nav.step === 0}>
+            <Button
+              variant="outline"
+              onClick={prev}
+              disabled={paused || (nav.index === 0 && nav.step === 0)}
+            >
               <ChevronLeft /> {t.live.previous}
             </Button>
-            <Button variant="outline" onClick={next}>
+            <Button variant="outline" onClick={next} disabled={paused}>
               {t.live.next} <ChevronRight />
             </Button>
             {NextPage && (

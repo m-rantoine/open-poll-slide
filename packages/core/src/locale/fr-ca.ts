@@ -594,7 +594,7 @@ export const frCA: Locale = {
     notQuite: '✗ Pas tout à fait',
     waitingForHostToOpen: 'En attente de l’ouverture de la question par l’animateur',
     answerPeriodEnded: 'La période de réponse est terminée.',
-    clickToUnlock: 'Cliquez pour permettre aux participants de répondre',
+    clickToUnlock: 'Cliquez ou appuyez sur Entrée pour permettre aux participants de répondre',
     locked: 'Verrouillée',
     lock: 'Verrouiller',
     unlock: 'Déverrouiller',
@@ -622,6 +622,16 @@ export const frCA: Locale = {
     endDialogTitle: 'Terminer cette session?',
     endDialogDescription:
       'Les participants ne pourront plus répondre ni naviguer dans la présentation. Les résultats restent accessibles.',
+    pause: 'Mettre en pause',
+    resume: 'Reprendre',
+    statusPaused: 'en pause',
+    pausedTitle: 'Session en pause',
+    pausedHostBody:
+      'Les participants attendent. Reprenez quand vous êtes prêt : tout reprend là où vous vous êtes arrêté.',
+    pausedParticipantBody:
+      'Votre animateur a mis cette session en pause. Elle reprendra ici à sa reprise, ou vous pouvez la rejoindre plus tard avec le même code.',
+    yourSessions: 'Vos sessions',
+    rejoin: 'Rejoindre à nouveau',
     livePresenter: 'Présentateur en direct',
     hostPaced: 'rythme de l’animateur',
     selfPaced: 'rythme libre',
@@ -676,6 +686,7 @@ export const frCA: Locale = {
       question_closed: 'Cette question est fermée.',
       already_answered: 'Vous avez déjà répondu à cette question.',
       session_not_active: 'Cette session est terminée.',
+      session_paused: 'Cette session est en pause.',
       session_not_found: 'Aucune session active avec ce code.',
       not_a_participant: 'Rejoignez d’abord la session.',
       host_only: 'Seuls les animateurs peuvent faire cela.',

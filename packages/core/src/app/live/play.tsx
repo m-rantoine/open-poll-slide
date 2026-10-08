@@ -90,7 +90,22 @@ function Play() {
   return (
     <div className="dark flex h-dvh w-screen flex-col bg-background text-foreground">
       <LiveProvider view="participant" compact={isMobile} data={data} deckId={slideId}>
-        <div className="flex min-h-0 flex-1 flex-col" style={surface}>
+        <div className="relative flex min-h-0 flex-1 flex-col" style={surface}>
+          {session.status === 'paused' && (
+            <div
+              role="status"
+              className="absolute inset-0 z-40 grid place-items-center px-8 text-center"
+              style={{ background: 'var(--osd-bg, #fff)' }}
+            >
+              <div
+                className="flex max-w-sm flex-col gap-3"
+                style={{ color: 'var(--osd-text, #0f172a)' }}
+              >
+                <h2 className="font-heading text-2xl font-semibold">{t.live.pausedTitle}</h2>
+                <p className="text-[15px] opacity-70">{t.live.pausedParticipantBody}</p>
+              </div>
+            </div>
+          )}
           <div
             className={cn('relative w-full', isMobile ? 'shrink-0' : 'min-h-0 flex-1')}
             style={isMobile ? { aspectRatio: '16 / 9', marginTop: '12dvh' } : undefined}

@@ -8,6 +8,14 @@ import { LiveMessage, LiveShell, RequireAuth, useAuth } from './auth';
 import { getClient } from './client';
 import { liveErrorMessage } from './errors';
 
+type MySession = {
+  id: string;
+  code: string;
+  deck_id: string;
+  deck_title: string | null;
+  status: 'active' | 'paused' | 'ended';
+};
+
 export function JoinPage() {
   const t = useLocale();
   useDocumentTitle(t.live.joinSession);
@@ -26,7 +34,20 @@ function JoinForm() {
   const [code, setCode] = useState(codeParam ?? '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [mine, setMine] = useState<MySession[]>([]);
   const autoRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getClient()
+      .rpc('list_my_sessions')
+      .then(({ data }) => {
+        if (!cancelled) setMine(data ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const join = async (value: string) => {
     setBusy(true);
@@ -61,6 +82,29 @@ function JoinForm() {
         <p className="text-[13px] text-muted-foreground">
           {format(t.live.signedInAs, { name: displayName })}
         </p>
+        {mine.length > 0 && (
+          <div className="flex flex-col gap-2 text-left">
+            <h2 className="eyebrow">{t.live.yourSessions}</h2>
+            {mine.map((s) => (
+              <Button
+                key={s.id}
+                variant="outline"
+                disabled={busy}
+                className="h-auto justify-between gap-3 py-2"
+                onClick={() => void join(s.code)}
+              >
+                <span className="min-w-0 truncate text-left">
+                  {s.deck_title ?? s.deck_id}
+                  <span className="block font-mono text-[11px] text-muted-foreground">
+                    {s.code}
+                    {s.status === 'paused' && ` · ${t.live.statusPaused}`}
+                  </span>
+                </span>
+                <span className="shrink-0">{t.live.rejoin}</span>
+              </Button>
+            ))}
+          </div>
+        )}
         <h1 className="font-heading text-2xl font-semibold tracking-tight">{t.live.enterCode}</h1>
         <Input
           autoFocus

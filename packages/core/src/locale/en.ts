@@ -580,7 +580,7 @@ export const en: Locale = {
     notQuite: '✗ Not quite',
     waitingForHostToOpen: 'Waiting for your host to open this question',
     answerPeriodEnded: 'The answer period has ended.',
-    clickToUnlock: 'Click to let participants answer',
+    clickToUnlock: 'Click or press Enter to let participants answer',
     locked: 'Locked',
     lock: 'Lock',
     unlock: 'Unlock',
@@ -607,6 +607,16 @@ export const en: Locale = {
     endDialogTitle: 'End this session?',
     endDialogDescription:
       'Participants can no longer answer or move through the deck. Results stay available.',
+    pause: 'Pause',
+    resume: 'Resume',
+    statusPaused: 'paused',
+    pausedTitle: 'Session paused',
+    pausedHostBody:
+      'Participants are waiting. Resume when you are ready; everything picks up where you left off.',
+    pausedParticipantBody:
+      'Your host paused this session. It continues here when they resume, or you can rejoin later with the same code.',
+    yourSessions: 'Your sessions',
+    rejoin: 'Rejoin',
     livePresenter: 'Live presenter',
     hostPaced: 'host-paced',
     selfPaced: 'self-paced',
@@ -661,6 +671,7 @@ export const en: Locale = {
       question_closed: 'This question is closed.',
       already_answered: 'You already answered this question.',
       session_not_active: 'This session has ended.',
+      session_paused: 'This session is paused.',
       session_not_found: 'No active session with that code.',
       not_a_participant: 'Join the session first.',
       host_only: 'Only hosts can do that.',

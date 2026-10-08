@@ -249,6 +249,7 @@ export type Database = {
         Row: {
           ends_at: string | null;
           key_version: number;
+          paused_remaining_ms: number | null;
           question_id: string;
           session_id: string;
           show_results: boolean;
@@ -257,6 +258,7 @@ export type Database = {
         Insert: {
           ends_at?: string | null;
           key_version?: number;
+          paused_remaining_ms?: number | null;
           question_id: string;
           session_id: string;
           show_results?: boolean;
@@ -265,6 +267,7 @@ export type Database = {
         Update: {
           ends_at?: string | null;
           key_version?: number;
+          paused_remaining_ms?: number | null;
           question_id?: string;
           session_id?: string;
           show_results?: boolean;
@@ -293,6 +296,7 @@ export type Database = {
           id: string;
           mode: Database['public']['Enums']['session_mode'];
           page_count: number;
+          paused_at: string | null;
           questions: Json;
           status: Database['public']['Enums']['session_status'];
         };
@@ -308,6 +312,7 @@ export type Database = {
           id?: string;
           mode: Database['public']['Enums']['session_mode'];
           page_count?: number;
+          paused_at?: string | null;
           questions?: Json;
           status?: Database['public']['Enums']['session_status'];
         };
@@ -323,6 +328,7 @@ export type Database = {
           id?: string;
           mode?: Database['public']['Enums']['session_mode'];
           page_count?: number;
+          paused_at?: string | null;
           questions?: Json;
           status?: Database['public']['Enums']['session_status'];
         };
@@ -377,6 +383,7 @@ export type Database = {
         Returns: {
           ends_at: string | null;
           key_version: number;
+          paused_remaining_ms: number | null;
           question_id: string;
           session_id: string;
           show_results: boolean;
@@ -424,6 +431,19 @@ export type Database = {
           deck_title: string;
           id: string;
           mode: Database['public']['Enums']['session_mode'];
+          status: Database['public']['Enums']['session_status'];
+        }[];
+      };
+      list_my_sessions: {
+        Args: never;
+        Returns: {
+          code: string;
+          created_at: string;
+          deck_id: string;
+          deck_title: string;
+          id: string;
+          mode: Database['public']['Enums']['session_mode'];
+          status: Database['public']['Enums']['session_status'];
         }[];
       };
       my_answers: {
@@ -443,7 +463,9 @@ export type Database = {
           graded: number;
         }[];
       };
+      pause_session: { Args: { p_session: string }; Returns: undefined };
       require_host: { Args: never; Returns: undefined };
+      resume_session: { Args: { p_session: string }; Returns: undefined };
       server_time: { Args: never; Returns: string };
       session_summaries: {
         Args: { p_limit?: number };
@@ -490,7 +512,7 @@ export type Database = {
     };
     Enums: {
       session_mode: 'self' | 'host';
-      session_status: 'active' | 'ended';
+      session_status: 'active' | 'paused' | 'ended';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -620,7 +642,7 @@ export const Constants = {
   public: {
     Enums: {
       session_mode: ['self', 'host'],
-      session_status: ['active', 'ended'],
+      session_status: ['active', 'paused', 'ended'],
     },
   },
 } as const;
