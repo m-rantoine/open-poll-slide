@@ -7,7 +7,6 @@ import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import { Player } from '../components/player';
 import { designToCssVars } from '../lib/design';
-import { useIsMobile } from '../lib/use-is-mobile';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireAuth, useAuth } from './auth';
 import { liveErrorMessage } from './errors';
@@ -15,6 +14,7 @@ import { LiveProvider, useQuestionRegistry } from './live-context';
 import { ParticipantQuestionCard } from './participant-card';
 import { clampIndex } from './stage';
 import { useLiveSession, useParticipantPresence } from './use-live-session';
+import { usePortrait } from './use-portrait';
 
 export function PlayPage() {
   const t = useLocale();
@@ -46,7 +46,7 @@ function Play() {
     setLocalIndex(data.selfIndex);
   }, [data.selfIndex]);
   const navRef = useRef<{ next: () => void; prev: () => void } | null>(null);
-  const isMobile = useIsMobile();
+  const portrait = usePortrait();
   const { ids, Provider } = useQuestionRegistry();
 
   const index = clampIndex(isSelf ? localIndex : (session?.current_index ?? 0), total);
@@ -77,7 +77,7 @@ function Play() {
     ...((session.questions ?? {}) as NonNullable<typeof slide.questions>),
   };
 
-  const cards = isMobile
+  const cards = portrait
     ? ids
         .map((id) => questions[id])
         .filter(Boolean)
@@ -89,7 +89,7 @@ function Play() {
 
   return (
     <div className="dark flex h-dvh w-screen flex-col bg-background text-foreground">
-      <LiveProvider view="participant" compact={isMobile} data={data} deckId={slideId}>
+      <LiveProvider view="participant" compact={portrait} data={data} deckId={slideId}>
         <div className="relative flex min-h-0 flex-1 flex-col" style={surface}>
           {session.status === 'paused' && (
             <div
@@ -107,8 +107,8 @@ function Play() {
             </div>
           )}
           <div
-            className={cn('relative w-full', isMobile ? 'shrink-0' : 'min-h-0 flex-1')}
-            style={isMobile ? { aspectRatio: '16 / 9', marginTop: '12dvh' } : undefined}
+            className={cn('relative w-full', portrait ? 'shrink-0' : 'min-h-0 flex-1')}
+            style={portrait ? { aspectRatio: '16 / 9', marginTop: '12dvh' } : undefined}
           >
             <Provider>
               <div className="absolute inset-0">
@@ -129,7 +129,7 @@ function Play() {
               </div>
             </Provider>
           </div>
-          {isMobile && (
+          {portrait && (
             <div className="min-h-0 flex-1 space-y-8 overflow-y-auto px-6 py-6">{cards}</div>
           )}
         </div>

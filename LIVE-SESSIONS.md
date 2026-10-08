@@ -70,5 +70,5 @@ All rules are enforced in Postgres, not in routes. Participants can only write t
 
 - With email confirmation off, the domain check only proves the *typed* address is on an allowed domain, not that the person owns it. Someone could register another student's address first. Turn confirmation back on (Authentication → Providers → Email) if that matters.
 - A student whose heartbeat has stopped for a minute (closed tab, sleeping phone) no longer counts toward "everyone answered" or the lobby count.
-- On phones (under 768px wide) the participant view shows the slide at the top and a native answer card with large tap targets below it.
+- The participant view chooses its layout from the screen shape, not its width. When the screen is portrait, meaning its width is at most 0.75x its height (a phone upright, or a tall tablet), the slide sits in a fixed spot near the top and the answer buttons are drawn below it at a readable size. Otherwise the whole question is drawn inside the slide, as on the host screen.
 - Session codes are listed to any signed-in user on the Active sessions tab.
