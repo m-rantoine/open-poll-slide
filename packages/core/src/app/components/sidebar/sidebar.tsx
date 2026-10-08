@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import type { Folder, FolderIcon } from '@/lib/sdk';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
-import { useAuth } from '../../live/auth';
+import { useAuth, useCanSeeThemes } from '../../live/auth';
 import { liveConfigured } from '../../live/client';
 import { COMMAND_MENU_SHORTCUT } from '../command/command-menu';
 import { FolderIconChip, FolderItem } from './folder-item';
@@ -80,6 +80,7 @@ export function Sidebar({
   const inputRef = useRef<HTMLInputElement>(null);
   const t = useLocale();
   const { isHost, session: authSession } = useAuth();
+  const canSeeThemes = useCanSeeThemes();
 
   const startCreating = () => {
     const color = PRESET_COLORS[folders.length % PRESET_COLORS.length];
@@ -176,13 +177,15 @@ export function Sidebar({
           onSelect={() => onSelect(ALL_SLIDES_ID)}
           onDropSlide={() => {}}
         />
-        <FolderItem
-          row={{ kind: 'themes' }}
-          count={themesCount}
-          selected={selectedId === THEMES_ID}
-          onSelect={() => onSelect(THEMES_ID)}
-          onDropSlide={() => {}}
-        />
+        {canSeeThemes && (
+          <FolderItem
+            row={{ kind: 'themes' }}
+            count={themesCount}
+            selected={selectedId === THEMES_ID}
+            onSelect={() => onSelect(THEMES_ID)}
+            onDropSlide={() => {}}
+          />
+        )}
         {liveConfigured && (
           <FolderItem
             row={{ kind: 'sessions' }}

@@ -85,6 +85,12 @@ export function useAuth(): AuthState {
   return ctx;
 }
 
+// Themes are a hosts-only area once live sessions are configured; without them, everyone sees them.
+export function useCanSeeThemes(): boolean {
+  const { loading, isHost } = useAuth();
+  return !liveConfigured || (!loading && isHost);
+}
+
 export function LiveShell({ children }: { children: ReactNode }) {
   return (
     <div className="dark grid min-h-dvh place-items-center bg-background px-6 text-foreground">

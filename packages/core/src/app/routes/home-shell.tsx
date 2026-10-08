@@ -29,6 +29,7 @@ import {
 import type { FoldersManifest } from '../lib/sdk';
 import { slideIds } from '../lib/slides';
 import { themes as themeRegistry } from '../lib/themes';
+import { useCanSeeThemes } from '../live/auth';
 
 export type HomeOutletContext = {
   manifest: FoldersManifest;
@@ -71,6 +72,7 @@ export function HomeShell() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const t = useLocale();
+  const canSeeThemes = useCanSeeThemes();
 
   const selectedId = pathToSelectedId(location.pathname, searchParams);
 
@@ -225,14 +227,16 @@ export function HomeShell() {
                     <span className="flex-1 truncate">{t.home.slides}</span>
                     <span className="folio">{pad2(slideIds.length)}</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => selectFolder(THEMES_ID)}
-                    className={cn(selectedId === THEMES_ID && 'bg-muted text-foreground')}
-                  >
-                    <SystemViewIcon kind="themes" className="text-muted-foreground" />
-                    <span className="flex-1 truncate">{t.home.themes}</span>
-                    <span className="folio">{pad2(themeRegistry.length)}</span>
-                  </DropdownMenuItem>
+                  {canSeeThemes && (
+                    <DropdownMenuItem
+                      onClick={() => selectFolder(THEMES_ID)}
+                      className={cn(selectedId === THEMES_ID && 'bg-muted text-foreground')}
+                    >
+                      <SystemViewIcon kind="themes" className="text-muted-foreground" />
+                      <span className="flex-1 truncate">{t.home.themes}</span>
+                      <span className="folio">{pad2(themeRegistry.length)}</span>
+                    </DropdownMenuItem>
+                  )}
                   {import.meta.env.DEV && (
                     <DropdownMenuItem
                       onClick={() => selectFolder(ASSETS_ID)}
