@@ -26,7 +26,11 @@ export const questions = {
     type: 'multiple_choice',
     question: 'What is the capital of Canada?',
     options: [
-      { id: 'toronto', label: 'Toronto' },
+      {
+        id: 'toronto',
+        label:
+          'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      },
       { id: 'ottawa', label: 'Ottawa' },
       { id: 'montr-al', label: 'Montréal' },
       { id: 'vancouver', label: 'Vancouver' },
@@ -189,17 +193,367 @@ const Intro: Page = () => (
 );
 
 export default [
-  () => <Lobby title="Live quiz demo" />,
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <Lobby title="Live quiz demo" />
+    </div>
+  ),
   Intro,
-  () => <MultipleChoice question={questions.capital} />,
-  () => <MultipleChoice question={questions.planets} />,
-  () => <MultipleChoice question={questions.water} />,
-  () => <MultipleChoice question={questions.ocean} />,
-  () => <MultipleChoice question={questions.math} />,
-  () => <MultipleChoice question={questions.author} />,
-  () => <MultipleChoice question={questions.bones} />,
-  () => <MultipleChoice question={questions.lang} />,
-  () => <MultipleChoice question={questions.year} />,
-  () => <MultipleChoice question={questions.season} />,
-  () => <ClassResults />,
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.capital.question}
+      </h1>
+      <MultipleChoice question={questions.capital} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.planets.question}
+      </h1>
+      <MultipleChoice question={questions.planets} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.water.question}
+      </h1>
+      <MultipleChoice question={questions.water} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.ocean.question}
+      </h1>
+      <MultipleChoice question={questions.ocean} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.math.question}
+      </h1>
+      <MultipleChoice question={questions.math} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.author.question}
+      </h1>
+      <MultipleChoice question={questions.author} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.bones.question}
+      </h1>
+      <MultipleChoice question={questions.bones} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.lang.question}
+      </h1>
+      <MultipleChoice question={questions.lang} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.year.question}
+      </h1>
+      <MultipleChoice question={questions.year} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.season.question}
+      </h1>
+      <MultipleChoice question={questions.season} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.season.question}
+      </h1>
+      <MultipleChoice question={questions.season} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <ClassResults />
+    </div>
+  ),
 ] satisfies Page[];

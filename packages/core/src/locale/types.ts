@@ -257,6 +257,9 @@ export type Locale = {
     textColor: string;
     backgroundColor: string;
     imageSection: string;
+    quizSection: string;
+    pollLanguage: string;
+    quizColumns: string;
     imagePlaceholderSection: string;
     elementTextPlaceholder: string;
     sizeLabel: string;

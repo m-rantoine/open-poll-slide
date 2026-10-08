@@ -394,30 +394,771 @@ export const questions = {
 } satisfies Record<string, MultipleChoiceQuestion>;
 
 export default [
-  () => <Lobby title="Quiz de biologie : classification du vivant" />,
-  () => <MultipleChoice question={questions.q01} />,
-  () => <MultipleChoice question={questions.q02} />,
-  () => <MultipleChoice question={questions.q03} />,
-  () => <MultipleChoice question={questions.q04} />,
-  () => <MultipleChoice question={questions.q05} />,
-  () => <MultipleChoice question={questions.q06} />,
-  () => <MultipleChoice question={questions.q07} />,
-  () => <MultipleChoice question={questions.q08} />,
-  () => <MultipleChoice question={questions.q09} />,
-  () => <MultipleChoice question={questions.q10} />,
-  () => <MultipleChoice question={questions.q11} />,
-  () => <MultipleChoice question={questions.q12} />,
-  () => <MultipleChoice question={questions.q13} />,
-  () => <MultipleChoice question={questions.q15} />,
-  () => <MultipleChoice question={questions.q16} />,
-  () => <MultipleChoice question={questions.q17} />,
-  () => <MultipleChoice question={questions.q18} />,
-  () => <MultipleChoice question={questions.q19} />,
-  () => <MultipleChoice question={questions.q20} />,
-  () => <MultipleChoice question={questions.q21} />,
-  () => <MultipleChoice question={questions.q22} />,
-  () => <MultipleChoice question={questions.q23} />,
-  () => <MultipleChoice question={questions.q24} />,
-  () => <MultipleChoice question={questions.q25} />,
-  () => <ClassResults />,
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <Lobby language="fr" title="Quiz de biologie : classification du vivant" />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q01.question}
+      </h1>
+      <MultipleChoice
+        language="fr"
+        question={questions.q01}
+        style={{
+          minWidth: '0px',
+          minHeight: '0px',
+          maxWidth: 'none',
+          maxHeight: 'none',
+          flexShrink: '0',
+          flexGrow: '0',
+          flexBasis: 'auto',
+          width: '1664px',
+          height: '731.22px',
+          translate: '0px 0px',
+        }}
+      />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q02.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q02} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q03.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q03} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q04.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q04} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q05.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q05} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q06.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q06} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q07.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q07} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q08.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q08} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q09.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q09} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q10.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q10} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q11.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q11} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q12.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q12} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q13.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q13} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q15.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q15} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q16.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q16} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q17.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q17} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q18.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q18} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q19.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q19} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q20.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q20} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q21.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q21} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q22.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q22} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q23.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q23} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q24.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q24} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.q25.question}
+      </h1>
+      <MultipleChoice language="fr" question={questions.q25} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <ClassResults language="fr" />
+    </div>
+  ),
 ] satisfies Page[];

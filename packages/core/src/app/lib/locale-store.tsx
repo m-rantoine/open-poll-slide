@@ -1,5 +1,5 @@
 import config from 'virtual:open-slide/config';
-import { useSyncExternalStore } from 'react';
+import { createContext, type ReactNode, useContext, useSyncExternalStore } from 'react';
 import { en } from '../../locale/en';
 import { frCA } from '../../locale/fr-ca';
 import { ja } from '../../locale/ja';
@@ -70,6 +70,25 @@ export function setLocale(id: LocaleId): void {
   for (const listener of store.listeners) listener();
 }
 
+const ScopedLocale = createContext<Locale | null>(null);
+
+export type PollLanguage = 'en' | 'fr';
+
+const POLL_LANGUAGES: Record<PollLanguage, Locale> = { en, fr: frCA };
+
+export function LanguageScope({
+  language,
+  children,
+}: {
+  language?: PollLanguage;
+  children: ReactNode;
+}) {
+  const locale = language ? (POLL_LANGUAGES[language] ?? null) : null;
+  return <ScopedLocale.Provider value={locale}>{children}</ScopedLocale.Provider>;
+}
+
 export function useLocaleValue(): Locale {
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const scoped = useContext(ScopedLocale);
+  const global = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return scoped ?? global;
 }

@@ -64,6 +64,7 @@ type ElementSnapshot = {
   text: string | null;
   imageSrc: string | null;
   placeholder: { hint: string; width?: number; height?: number } | null;
+  poll: { language: string; columns: number | null; line: number; column: number } | null;
 };
 
 type ContentSelection = { start: number; end: number };
@@ -367,6 +368,38 @@ export function InspectorPanel({
               {snapshot.imageSrc !== null && (
                 <Section title={t.inspector.imageSection}>
                   <ImageField src={snapshot.imageSrc} anchor={selected.anchor} />
+                </Section>
+              )}
+              {snapshot.poll && (
+                <Section title={t.inspector.quizSection}>
+                  <PollLanguageField
+                    value={snapshot.poll.language}
+                    onChange={(value) =>
+                      snapshot.poll &&
+                      applyEdit(snapshot.poll.line, snapshot.poll.column, [
+                        {
+                          kind: 'set-attr-string',
+                          attr: 'language',
+                          value: value === 'en' ? null : value,
+                        },
+                      ])
+                    }
+                  />
+                  {snapshot.poll.columns !== null && (
+                    <QuizColumnsField
+                      value={snapshot.poll.columns}
+                      onChange={(value) =>
+                        snapshot.poll &&
+                        applyEdit(snapshot.poll.line, snapshot.poll.column, [
+                          {
+                            kind: 'set-attr-number',
+                            attr: 'columns',
+                            value: value === 1 ? null : value,
+                          },
+                        ])
+                      }
+                    />
+                  )}
                 </Section>
               )}
               {snapshot.placeholder && (
@@ -797,6 +830,69 @@ function ImageField({ src, anchor }: { src: string; anchor: HTMLElement }) {
   );
 }
 
+function PollLanguageField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const t = useLocale();
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-[11px] text-muted-foreground">{t.inspector.pollLanguage}</span>
+      <div className="flex gap-1">
+        {[
+          { id: 'en', label: 'English' },
+          { id: 'fr', label: 'Français' },
+        ].map((l) => (
+          <Button
+            key={l.id}
+            type="button"
+            size="sm"
+            variant={l.id === value ? 'default' : 'outline'}
+            className="flex-1"
+            aria-pressed={l.id === value}
+            onClick={() => onChange(l.id)}
+          >
+            {l.label}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function QuizColumnsField({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const t = useLocale();
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-[11px] text-muted-foreground">{t.inspector.quizColumns}</span>
+      <div className="flex gap-1">
+        {[1, 2, 3, 4].map((n) => (
+          <Button
+            key={n}
+            type="button"
+            size="sm"
+            variant={n === value ? 'default' : 'outline'}
+            className="flex-1"
+            aria-pressed={n === value}
+            onClick={() => onChange(n)}
+          >
+            {n}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PlaceholderField({
   slideId,
   hint,
@@ -1003,6 +1099,19 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
     text,
     imageSrc,
     placeholder,
+    poll: readPollComponent(el),
+  };
+}
+
+function readPollComponent(el: HTMLElement): ElementSnapshot['poll'] {
+  const host = el.closest<HTMLElement>('[data-poll-language]');
+  const loc = host?.dataset.slideLoc?.split(':');
+  if (!host || !loc || loc.length !== 2) return null;
+  return {
+    language: host.dataset.pollLanguage ?? 'en',
+    columns: host.dataset.quizColumns ? Number(host.dataset.quizColumns) : null,
+    line: Number(loc[0]),
+    column: Number(loc[1]),
   };
 }
 

@@ -62,8 +62,9 @@ Rules:
 
 ## Page structure
 
+- Every page is a normal `Page` whose root is a full-size `<div>`; `<Lobby />`, `<MultipleChoice />` and `<ClassResults />` are components placed inside it (they forward `data-slide-loc` and `style`, so the inspector can edit them like any element).
 - **First page: `<Lobby />`** for decks meant to be run live. It shows the join URL, session code and student count on the Screen, a waiting message on participant devices, and a student list in the Presenter view. Outside a session it renders a harmless placeholder.
-- **Question pages** — `<MultipleChoice question={questions.x} />`. Put an explanatory content page before a question when the audience needs context; do not add a heading above the question.
+- **Question pages** — a full-size column `<div>` containing `<h1>{questions.x.question}</h1>` followed by `<MultipleChoice question={questions.x} />`. `MultipleChoice` renders only the options/controls and fills the remaining space, shrinking its type to fit; it does not render the question. Use `columns={2}` for a multi-column option grid (also editable in the inspector). Give the `<h1>` an explicit font size and keep padding on the page `<div>`.
 - **Last page: `<ClassResults />`** to show the class average (and each participant's own score on their device).
 - Normal content pages work as usual and are shown in full on Screen and participant views.
 

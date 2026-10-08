@@ -9,6 +9,7 @@ export type {
   DesignTypeScale,
 } from './app/lib/design.ts';
 export { cssVarsToString, defaultDesign, designToCssVars } from './app/lib/design.ts';
+export type { PollLanguage } from './app/lib/locale-store.tsx';
 export { useSlidePageNumber } from './app/lib/page-context.tsx';
 export type {
   MultipleChoiceQuestion,
@@ -25,7 +26,9 @@ export type {
   SlideTransition,
   TransitionPhase,
 } from './app/lib/transition.ts';
+export type { ClassResultsProps } from './app/live/class-results.tsx';
 export { ClassResults } from './app/live/class-results.tsx';
+export type { LobbyProps } from './app/live/lobby.tsx';
 export { Lobby } from './app/live/lobby.tsx';
 export type { MultipleChoiceProps } from './app/live/multiple-choice.tsx';
 export { MultipleChoice } from './app/live/multiple-choice.tsx';

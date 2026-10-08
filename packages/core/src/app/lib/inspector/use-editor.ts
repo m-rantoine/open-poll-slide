@@ -12,6 +12,8 @@ export type EditOp =
       prevText?: string;
     }
   | { kind: 'set-attr-asset'; attr: string; assetPath: string; previewUrl: string }
+  | { kind: 'set-attr-number'; attr: string; value: number | null }
+  | { kind: 'set-attr-string'; attr: string; value: string | null }
   | { kind: 'replace-placeholder-with-image'; assetPath: string };
 
 export type Edit = { line: number; column: number; ops: EditOp[]; dependsOn?: number };

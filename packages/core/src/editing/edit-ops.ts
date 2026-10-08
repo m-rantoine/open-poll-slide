@@ -14,6 +14,8 @@ export type EditOp =
       prevText?: string;
     }
   | { kind: 'set-attr-asset'; attr: string; assetPath: string }
+  | { kind: 'set-attr-number'; attr: string; value: number | null }
+  | { kind: 'set-attr-string'; attr: string; value: string | null }
   | { kind: 'replace-placeholder-with-image'; assetPath: string };
 
 export type ApplyEditResult =
@@ -1198,6 +1200,55 @@ export function planEdit(
       splices.push(...richResult);
     } else {
       splices.push(result);
+    }
+  }
+
+  for (const op of ops) {
+    if (op.kind !== 'set-attr-string') continue;
+    if (!/^[A-Za-z][\w-]*$/.test(op.attr)) {
+      return { ok: false, status: 422, error: 'invalid attribute name' };
+    }
+    const opening = element.openingElement;
+    const existing = findJsxAttr(opening, op.attr);
+    if (existing) {
+      const from = existing.start ?? 0;
+      const to = existing.end ?? 0;
+      if (op.value === null) {
+        let start = from;
+        while (start > 0 && /\s/.test(source[start - 1])) start--;
+        splices.push({ from: start, to, text: '' });
+      } else {
+        splices.push({ from, to, text: `${op.attr}=${formatJsxAttrValue(op.value)}` });
+      }
+    } else if (op.value !== null) {
+      const at = opening.name.end ?? 0;
+      splices.push({ from: at, to: at, text: ` ${op.attr}=${formatJsxAttrValue(op.value)}` });
+    }
+  }
+
+  for (const op of ops) {
+    if (op.kind !== 'set-attr-number') continue;
+    if (!/^[A-Za-z][\w-]*$/.test(op.attr)) {
+      return { ok: false, status: 422, error: 'invalid attribute name' };
+    }
+    if (op.value !== null && !Number.isFinite(op.value)) {
+      return { ok: false, status: 422, error: 'attribute value must be a finite number' };
+    }
+    const opening = element.openingElement;
+    const existing = findJsxAttr(opening, op.attr);
+    if (existing) {
+      const from = existing.start ?? 0;
+      const to = existing.end ?? 0;
+      if (op.value === null) {
+        let start = from;
+        while (start > 0 && /\s/.test(source[start - 1])) start--;
+        splices.push({ from: start, to, text: '' });
+      } else {
+        splices.push({ from, to, text: `${op.attr}={${op.value}}` });
+      }
+    } else if (op.value !== null) {
+      const at = opening.name.end ?? 0;
+      splices.push({ from: at, to: at, text: ` ${op.attr}={${op.value}}` });
     }
   }
 

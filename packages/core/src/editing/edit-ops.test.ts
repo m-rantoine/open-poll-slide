@@ -1144,3 +1144,52 @@ describe('applyEdit / replace-placeholder-with-image', () => {
     expect(r.error).toMatch(/\.\/assets\//);
   });
 });
+
+describe('applyEdit / set-attr-number', () => {
+  const src = 'export default [() => <MultipleChoice question={q} />];\n';
+  const col = src.indexOf('<MultipleChoice');
+
+  it('adds the attribute', () => {
+    const r = applyEdit(src, 1, col, [{ kind: 'set-attr-number', attr: 'columns', value: 2 }]);
+    expect(r).toEqual({
+      ok: true,
+      source: 'export default [() => <MultipleChoice columns={2} question={q} />];\n',
+    });
+  });
+
+  it('replaces and removes the attribute', () => {
+    const withAttr = 'export default [() => <MultipleChoice columns={2} question={q} />];\n';
+    const replaced = applyEdit(withAttr, 1, col, [
+      { kind: 'set-attr-number', attr: 'columns', value: 3 },
+    ]);
+    expect(replaced).toEqual({ ok: true, source: withAttr.replace('{2}', '{3}') });
+    const removed = applyEdit(withAttr, 1, col, [
+      { kind: 'set-attr-number', attr: 'columns', value: null },
+    ]);
+    expect(removed).toEqual({ ok: true, source: src });
+  });
+});
+
+describe('applyEdit / set-attr-string', () => {
+  const src = 'export default [() => <Lobby title="x" />];\n';
+  const col = src.indexOf('<Lobby');
+
+  it('adds, replaces and removes the attribute', () => {
+    const added = applyEdit(src, 1, col, [
+      { kind: 'set-attr-string', attr: 'language', value: 'fr' },
+    ]);
+    expect(added).toEqual({
+      ok: true,
+      source: 'export default [() => <Lobby language="fr" title="x" />];\n',
+    });
+    if (!added.ok) throw new Error('unreachable');
+    const replaced = applyEdit(added.source, 1, col, [
+      { kind: 'set-attr-string', attr: 'language', value: 'en' },
+    ]);
+    expect(replaced).toEqual({ ok: true, source: added.source.replace('"fr"', '"en"') });
+    const removed = applyEdit(added.source, 1, col, [
+      { kind: 'set-attr-string', attr: 'language', value: null },
+    ]);
+    expect(removed).toEqual({ ok: true, source: src });
+  });
+});
