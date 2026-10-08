@@ -80,6 +80,44 @@ function ControlButton({
   );
 }
 
+const URGENT_MS = 10_000;
+
+function Countdown({
+  remaining,
+  size,
+  style,
+}: {
+  remaining: number | null;
+  size: number;
+  style?: CSSProperties;
+}) {
+  const shown = remaining !== null && remaining > 0;
+  const urgent = shown && remaining <= URGENT_MS;
+  return (
+    <span
+      aria-hidden={!shown}
+      style={{
+        display: 'inline-block',
+        minWidth: '5ch',
+        textAlign: 'right',
+        fontSize: size,
+        fontVariantNumeric: 'tabular-nums',
+        visibility: shown ? 'visible' : 'hidden',
+        color: urgent ? BAD : undefined,
+        animation: urgent ? 'osd-countdown-pulse 1s ease-in-out infinite' : undefined,
+        ...style,
+      }}
+    >
+      <style>
+        {
+          '@keyframes osd-countdown-pulse{0%,100%{opacity:1}50%{opacity:.45}}@media(prefers-reduced-motion:reduce){[style*="osd-countdown-pulse"]{animation:none!important}}'
+        }
+      </style>
+      {shown ? formatClock(remaining) : '0:00'}
+    </span>
+  );
+}
+
 function Padlock({ onClick, hint }: { onClick?: () => void; hint: string }) {
   const content = (
     <>
@@ -330,6 +368,33 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
     ? (id: string) => run(() => data.actions.toggleCorrect(question.id, id))
     : undefined;
 
+  const progress = (
+    <>
+      <div
+        style={{
+          flex: 1,
+          minWidth: 60,
+          height: controls ? 20 : 40,
+          borderRadius: 20,
+          overflow: 'hidden',
+          background: `color-mix(in srgb, ${INK} 10%, transparent)`,
+        }}
+      >
+        <div
+          style={{
+            height: '100%',
+            width: `${total > 0 ? Math.min(100, (answered / total) * 100) : 0}%`,
+            background: ACCENT,
+            transition: 'width 300ms ease',
+          }}
+        />
+      </div>
+      <span style={{ fontSize: controls ? 32 : 36, fontVariantNumeric: 'tabular-nums' }}>
+        {answered} / {total}
+      </span>
+    </>
+  );
+
   let body: ReactNode;
   if (state === 'locked') {
     body = (
@@ -367,7 +432,7 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
             </div>
           ))}
         </div>
-        {controls && (
+        {controls ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <ControlButton
               label={t.live.lockQuestion}
@@ -385,49 +450,29 @@ export function MultipleChoice({ question }: MultipleChoiceProps) {
                 +{s}s
               </ControlButton>
             ))}
+            <Countdown remaining={remaining} size={56} style={{ marginLeft: 8 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0 }}>
+              {progress}
+              <ControlButton
+                label={t.live.stopAnswering}
+                tone="danger"
+                onClick={() => run(() => data.actions.questionAction(question.id, 'end'))}
+              >
+                <Square size={28} fill="currentColor" />
+                {t.live.stop}
+              </ControlButton>
+            </div>
+          </div>
+        ) : (
+          <>
             {countdown && (
-              <span style={{ fontSize: 56, fontVariantNumeric: 'tabular-nums', marginLeft: 16 }}>
-                {countdown}
-              </span>
+              <Countdown remaining={remaining} size={56} style={{ textAlign: 'left' }} />
             )}
-          </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginTop: 'auto' }}>
+              {progress}
+            </div>
+          </>
         )}
-        {countdown && !controls && (
-          <div style={{ fontSize: 56, fontVariantNumeric: 'tabular-nums' }}>{countdown}</div>
-        )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 28, marginTop: 'auto' }}>
-          <div
-            style={{
-              flex: 1,
-              height: 40,
-              borderRadius: 20,
-              overflow: 'hidden',
-              background: `color-mix(in srgb, ${INK} 10%, transparent)`,
-            }}
-          >
-            <div
-              style={{
-                height: '100%',
-                width: `${total > 0 ? Math.min(100, (answered / total) * 100) : 0}%`,
-                background: ACCENT,
-                transition: 'width 300ms ease',
-              }}
-            />
-          </div>
-          <span style={{ fontSize: 36, fontVariantNumeric: 'tabular-nums' }}>
-            {answered} / {total}
-          </span>
-          {controls && (
-            <ControlButton
-              label={t.live.stopAnswering}
-              tone="danger"
-              onClick={() => run(() => data.actions.questionAction(question.id, 'end'))}
-            >
-              <Square size={28} fill="currentColor" />
-              {t.live.stop}
-            </ControlButton>
-          )}
-        </div>
       </>
     );
   } else if (st?.show_results) {
