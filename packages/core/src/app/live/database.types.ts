@@ -248,6 +248,7 @@ export type Database = {
       session_question_state: {
         Row: {
           ends_at: string | null;
+          key_version: number;
           question_id: string;
           session_id: string;
           show_results: boolean;
@@ -255,6 +256,7 @@ export type Database = {
         };
         Insert: {
           ends_at?: string | null;
+          key_version?: number;
           question_id: string;
           session_id: string;
           show_results?: boolean;
@@ -262,6 +264,7 @@ export type Database = {
         };
         Update: {
           ends_at?: string | null;
+          key_version?: number;
           question_id?: string;
           session_id?: string;
           show_results?: boolean;

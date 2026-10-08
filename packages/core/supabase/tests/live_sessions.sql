@@ -157,6 +157,8 @@ begin
   select count(*) into n from public.deck_answer_keys
     where deck_id = 'sql-test-deck' and question_id = 'fav' and correct_option_ids = array['b'];
   if n <> 1 then raise exception 'FAIL marking a key live did not persist for the deck'; end if;
+  select key_version into n from public.session_question_state where session_id = sess.id and question_id = 'fav';
+  if n <> 3 then raise exception 'FAIL each key change should bump key_version (got %)', n; end if;
   r := r || 'PASS live re-keying regrades and is remembered for the deck' || E'\n';
 
   perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
