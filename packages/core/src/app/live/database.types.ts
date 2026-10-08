@@ -376,6 +376,7 @@ export type Database = {
         };
         Returns: {
           ends_at: string | null;
+          key_version: number;
           question_id: string;
           session_id: string;
           show_results: boolean;
