@@ -42,7 +42,9 @@ export function findAnswerKeys(code: string): FoundAnswerKey[] {
       if (name) props.set(name, p);
     }
     const correct = props.get('correct');
-    if (!correct || !props.has('options') || !props.has('question')) return;
+    const type = props.get('type')?.value;
+    const isWordCloud = Boolean(type && t.isStringLiteral(type) && type.value === 'word_cloud');
+    if (!correct || !props.has('question') || !(props.has('options') || isWordCloud)) return;
     const id = props.get('id')?.value;
     found.push({
       questionId: id && t.isStringLiteral(id) ? id.value : null,

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getClient } from './client';
+import { normalizeAnswer } from './derive';
 import { errorText } from './errors';
 import type {
   AnswerRow,
@@ -10,6 +11,8 @@ import type {
   SessionRow,
 } from './types';
 
+export type AnswerMark = 'correct' | 'incorrect' | 'clear';
+
 export type QuestionAction = 'lock' | 'unlock' | 'add_time' | 'end' | 'expire';
 
 export type LiveActions = {
@@ -18,6 +21,9 @@ export type LiveActions = {
   setShowResults: (questionId: string, value: boolean) => Promise<void>;
   toggleCorrect: (questionId: string, optionId: string) => Promise<void>;
   submitAnswer: (questionId: string, optionId: string) => Promise<MyAnswer>;
+  submitTextAnswer: (questionId: string, text: string) => Promise<MyAnswer>;
+  markAnswer: (questionId: string, key: string, mark: AnswerMark) => Promise<void>;
+  setScored: (questionId: string, value: boolean) => Promise<void>;
   endSession: () => Promise<void>;
   pauseSession: () => Promise<void>;
   resumeSession: () => Promise<void>;
@@ -30,6 +36,8 @@ export type LiveData = {
   participants: ParticipantRow[];
   states: Record<string, QuestionStateRow>;
   keys: Record<string, string[]>;
+  /** Word-cloud words the host marked incorrect. */
+  incorrect: Record<string, string[]>;
   answers: AnswerRow[];
   mine: Record<string, MyAnswer>;
   score: MyScore | null;
@@ -70,6 +78,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
   const [participants, setParticipants] = useState<ParticipantRow[]>([]);
   const [states, setStates] = useState<Record<string, QuestionStateRow>>({});
   const [keys, setKeys] = useState<Record<string, string[]>>({});
+  const [incorrect, setIncorrect] = useState<Record<string, string[]>>({});
   const [answers, setAnswers] = useState<AnswerRow[]>([]);
   const [mine, setMine] = useState<Record<string, MyAnswer>>({});
   const [score, setScore] = useState<MyScore | null>(null);
@@ -91,6 +100,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
         option_id: a.option_id,
         is_correct: a.is_correct,
         show_results: a.show_results,
+        answer_text: a.answer_text,
       };
     }
     setMine(next);
@@ -168,6 +178,9 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
         if (fresh('answers')) setAnswers(aRows);
         if (fresh('keys') && kRes.data) {
           setKeys(Object.fromEntries(kRes.data.map((r) => [r.question_id, r.correct_option_ids])));
+          setIncorrect(
+            Object.fromEntries(kRes.data.map((r) => [r.question_id, r.incorrect_option_ids])),
+          );
         }
       } else {
         if (!loaded.current && sessionRes.data.mode === 'self') {
@@ -290,8 +303,13 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
           (p) => {
             if (p.eventType === 'DELETE') return;
             bump('keys');
-            const row = p.new as { question_id: string; correct_option_ids: string[] };
+            const row = p.new as {
+              question_id: string;
+              correct_option_ids: string[];
+              incorrect_option_ids: string[];
+            };
             setKeys((cur) => ({ ...cur, [row.question_id]: row.correct_option_ids }));
+            setIncorrect((cur) => ({ ...cur, [row.question_id]: row.incorrect_option_ids }));
           },
         );
     }
@@ -433,6 +451,61 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
         void loadMineRef.current();
         return answer;
       },
+      async submitTextAnswer(questionId, text) {
+        if (!sessionId) throw new Error('No session');
+        const { data, error: err } = await getClient().rpc('submit_text_answer', {
+          p_session: sessionId,
+          p_question: questionId,
+          p_text: text,
+        });
+        if (err) throw err;
+        const st = statesRef.current[questionId];
+        const answer: MyAnswer = {
+          option_id: data.option_id,
+          is_correct: st?.show_results ? data.is_correct : null,
+          show_results: Boolean(st?.show_results),
+          answer_text: data.answer_text,
+        };
+        setMine((cur) => ({ ...cur, [questionId]: answer }));
+        void loadMineRef.current();
+        return answer;
+      },
+      async markAnswer(questionId, key, mark) {
+        if (!sessionId) return;
+        const { error: err } = await getClient().rpc('mark_answer', {
+          p_session: sessionId,
+          p_question: questionId,
+          p_key: key,
+          p_mark: mark,
+        });
+        if (err) throw err;
+        const k = normalizeAnswer(key);
+        const without = (list: string[] | undefined) => (list ?? []).filter((w) => w !== k);
+        bump('keys');
+        setKeys((cur) => ({
+          ...cur,
+          [questionId]:
+            mark === 'correct' ? [...without(cur[questionId]), k] : without(cur[questionId]),
+        }));
+        setIncorrect((cur) => ({
+          ...cur,
+          [questionId]:
+            mark === 'incorrect' ? [...without(cur[questionId]), k] : without(cur[questionId]),
+        }));
+      },
+      async setScored(questionId, value) {
+        if (!sessionId) return;
+        const { error: err } = await getClient().rpc('set_question_scored', {
+          p_session: sessionId,
+          p_question: questionId,
+          p_value: value,
+        });
+        if (err) throw err;
+        bump('states');
+        setStates((cur) =>
+          cur[questionId] ? { ...cur, [questionId]: { ...cur[questionId], scored: value } } : cur,
+        );
+      },
       async endSession() {
         if (!sessionId) return;
         const { error: err } = await getClient().rpc('end_session', { p_session: sessionId });
@@ -464,6 +537,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
     participants,
     states,
     keys,
+    incorrect,
     answers,
     mine,
     score,

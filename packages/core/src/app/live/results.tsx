@@ -6,7 +6,7 @@ import { useDocumentTitle } from '@/lib/use-document-title';
 import { format, plural, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import type { Locale } from '../../locale/types';
-import type { MultipleChoiceQuestion } from '../lib/sdk';
+import { type InteractiveQuestion, isMultipleChoice } from '../lib/sdk';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireHost } from './auth';
 import { getClient } from './client';
@@ -22,8 +22,9 @@ import {
 import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
 import { PauseSessionButton } from './pause-session';
+import { WordList } from './presenter-panels';
 import { SlideThumb } from './slide-thumb';
-import type { SessionRow } from './types';
+import type { AnswerRow, SessionRow } from './types';
 import { useLiveSession } from './use-live-session';
 
 function statusLabel(t: Locale, status: SessionRow['status']) {
@@ -145,7 +146,7 @@ function ResultsDetail() {
     () =>
       Object.values({
         ...(slide?.questions ?? {}),
-        ...((session?.questions ?? {}) as Record<string, MultipleChoiceQuestion>),
+        ...((session?.questions ?? {}) as Record<string, InteractiveQuestion>),
       }),
     [slide, session],
   );
@@ -166,8 +167,10 @@ function ResultsDetail() {
 
   const now = Date.now() + data.serverOffset;
   const byUser = new Map(data.participants.map((p) => [p.user_id, p]));
-  const label = (q: MultipleChoiceQuestion, id: string) =>
-    q.options.find((o) => o.id === id)?.label ?? id;
+  const label = (q: InteractiveQuestion, a: AnswerRow) =>
+    isMultipleChoice(q)
+      ? (q.options.find((o) => o.id === a.option_id)?.label ?? a.option_id)
+      : (a.answer_text ?? a.option_id);
   const toggle = (questionId: string, optionId: string) =>
     void data.actions
       .toggleCorrect(questionId, optionId)
@@ -250,41 +253,70 @@ function ResultsDetail() {
             const correctN = data.answers.filter(
               (a) => a.question_id === q.id && a.is_correct,
             ).length;
+            const gradedN = data.answers.filter(
+              (a) => a.question_id === q.id && a.is_correct !== null,
+            ).length;
+            const scored = data.states[q.id]?.scored ?? true;
             return (
               <section key={q.id} className="rounded-[8px] border border-hairline bg-card/40 p-4">
                 <div className="flex items-baseline justify-between gap-4">
                   <h2 className="text-[14px] font-medium">{q.question}</h2>
                   <span className="font-mono text-[11.5px] text-muted-foreground">
                     {format(t.live.answeredOf, { answered: n, total: data.participants.length })}
-                    {key.length > 0 &&
-                      ` · ${format(t.live.percentCorrect, { value: pct(n ? correctN / n : null) })}`}
+                    {scored &&
+                      gradedN > 0 &&
+                      ` · ${format(t.live.percentCorrect, { value: pct(correctN / gradedN) })}`}
+                    <button
+                      type="button"
+                      title={t.live.scoredHint}
+                      aria-pressed={scored}
+                      onClick={() =>
+                        void data.actions
+                          .setScored(q.id, !scored)
+                          .catch((e: unknown) => toast.error(liveErrorMessage(t, e)))
+                      }
+                      className={cn(
+                        'ml-3 rounded-[4px] border px-1.5 py-0.5 text-[11px]',
+                        scored
+                          ? 'border-brand/50 text-foreground'
+                          : 'border-border text-muted-foreground',
+                      )}
+                    >
+                      {scored ? t.live.scored : t.live.notScored}
+                    </button>
                   </span>
                 </div>
-                <div className="mt-3 flex flex-col gap-1.5">
-                  {q.options.map((o) => (
-                    <button
-                      key={o.id}
-                      type="button"
-                      title={t.live.toggleCorrect}
-                      aria-pressed={key.includes(o.id)}
-                      onClick={() => toggle(q.id, o.id)}
-                      className="grid grid-cols-[1.5rem_1fr_2fr_2rem] items-center gap-2 text-left text-[12.5px]"
-                    >
-                      <span className="text-emerald-400">{key.includes(o.id) ? '✓' : ''}</span>
-                      <span className="truncate">{o.label}</span>
-                      <span className="h-3 overflow-hidden rounded-[3px] bg-muted">
-                        <span
-                          className={cn(
-                            'block h-full',
-                            key.includes(o.id) ? 'bg-emerald-400' : 'bg-brand',
-                          )}
-                          style={{ width: `${((counts[o.id] ?? 0) / max) * 100}%` }}
-                        />
-                      </span>
-                      <span className="text-right font-mono tabular-nums">{counts[o.id] ?? 0}</span>
-                    </button>
-                  ))}
-                </div>
+                {isMultipleChoice(q) ? (
+                  <div className="mt-3 flex flex-col gap-1.5">
+                    {q.options.map((o) => (
+                      <button
+                        key={o.id}
+                        type="button"
+                        title={t.live.toggleCorrect}
+                        aria-pressed={key.includes(o.id)}
+                        onClick={() => toggle(q.id, o.id)}
+                        className="grid grid-cols-[1.5rem_1fr_2fr_2rem] items-center gap-2 text-left text-[12.5px]"
+                      >
+                        <span className="text-emerald-400">{key.includes(o.id) ? '✓' : ''}</span>
+                        <span className="truncate">{o.label}</span>
+                        <span className="h-3 overflow-hidden rounded-[3px] bg-muted">
+                          <span
+                            className={cn(
+                              'block h-full',
+                              key.includes(o.id) ? 'bg-emerald-400' : 'bg-brand',
+                            )}
+                            style={{ width: `${((counts[o.id] ?? 0) / max) * 100}%` }}
+                          />
+                        </span>
+                        <span className="text-right font-mono tabular-nums">
+                          {counts[o.id] ?? 0}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <WordList question={q} data={data} />
+                )}
                 <details className="mt-3 text-[12px]">
                   <summary className="cursor-pointer text-muted-foreground">
                     {t.live.whoAnsweredWhat}
@@ -298,8 +330,7 @@ function ResultsDetail() {
                             {byUser.get(a.user_id)?.display_name ?? a.user_id.slice(0, 6)}
                           </span>
                           <span className="text-muted-foreground">
-                            {label(q, a.option_id)}{' '}
-                            {a.is_correct === null ? '' : a.is_correct ? '✓' : '✗'}
+                            {label(q, a)} {a.is_correct === null ? '' : a.is_correct ? '✓' : '✗'}
                           </span>
                         </li>
                       ))}
@@ -359,8 +390,7 @@ function ResultsDetail() {
                         <td key={q.id} className="max-w-40 truncate px-3 py-2">
                           {a ? (
                             <span className={a.is_correct === false ? 'text-destructive' : ''}>
-                              {label(q, a.option_id)}{' '}
-                              {a.is_correct === null ? '' : a.is_correct ? '✓' : '✗'}
+                              {label(q, a)} {a.is_correct === null ? '' : a.is_correct ? '✓' : '✗'}
                             </span>
                           ) : (
                             <span className="text-muted-foreground">—</span>

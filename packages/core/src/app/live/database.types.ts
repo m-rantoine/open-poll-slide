@@ -36,16 +36,19 @@ export type Database = {
       answer_keys: {
         Row: {
           correct_option_ids: string[];
+          incorrect_option_ids: string[];
           question_id: string;
           session_id: string;
         };
         Insert: {
           correct_option_ids?: string[];
+          incorrect_option_ids?: string[];
           question_id: string;
           session_id: string;
         };
         Update: {
           correct_option_ids?: string[];
+          incorrect_option_ids?: string[];
           question_id?: string;
           session_id?: string;
         };
@@ -61,6 +64,7 @@ export type Database = {
       };
       answers: {
         Row: {
+          answer_text: string | null;
           id: string;
           is_correct: boolean | null;
           option_id: string;
@@ -70,6 +74,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          answer_text?: string | null;
           id?: string;
           is_correct?: boolean | null;
           option_id: string;
@@ -79,6 +84,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          answer_text?: string | null;
           id?: string;
           is_correct?: boolean | null;
           option_id?: string;
@@ -251,6 +257,7 @@ export type Database = {
           key_version: number;
           paused_remaining_ms: number | null;
           question_id: string;
+          scored: boolean;
           session_id: string;
           show_results: boolean;
           state: string;
@@ -260,6 +267,7 @@ export type Database = {
           key_version?: number;
           paused_remaining_ms?: number | null;
           question_id: string;
+          scored?: boolean;
           session_id: string;
           show_results?: boolean;
           state: string;
@@ -269,6 +277,7 @@ export type Database = {
           key_version?: number;
           paused_remaining_ms?: number | null;
           question_id?: string;
+          scored?: boolean;
           session_id?: string;
           show_results?: boolean;
           state?: string;
@@ -385,6 +394,7 @@ export type Database = {
           key_version: number;
           paused_remaining_ms: number | null;
           question_id: string;
+          scored: boolean;
           session_id: string;
           show_results: boolean;
           state: string;
@@ -449,6 +459,7 @@ export type Database = {
       my_answers: {
         Args: { p_session: string };
         Returns: {
+          answer_text: string | null;
           is_correct: boolean;
           option_id: string;
           question_id: string;
@@ -483,6 +494,14 @@ export type Database = {
         Args: { p_active: boolean; p_session: string };
         Returns: undefined;
       };
+      mark_answer: {
+        Args: { p_key: string; p_mark: string; p_question: string; p_session: string };
+        Returns: undefined;
+      };
+      set_question_scored: {
+        Args: { p_question: string; p_session: string; p_value: boolean };
+        Returns: undefined;
+      };
       set_show_results: {
         Args: { p_question: string; p_session: string; p_value: boolean };
         Returns: undefined;
@@ -490,6 +509,26 @@ export type Database = {
       submit_answer: {
         Args: { p_option: string; p_question: string; p_session: string };
         Returns: {
+          answer_text: string | null;
+          id: string;
+          is_correct: boolean | null;
+          option_id: string;
+          question_id: string;
+          session_id: string;
+          submitted_at: string;
+          user_id: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'answers';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      submit_text_answer: {
+        Args: { p_question: string; p_session: string; p_text: string };
+        Returns: {
+          answer_text: string | null;
           id: string;
           is_correct: boolean | null;
           option_id: string;

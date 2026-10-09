@@ -14,6 +14,8 @@ export type MyAnswer = {
   option_id: string;
   is_correct: boolean | null;
   show_results: boolean;
+  /** What the participant typed, for word-cloud questions. */
+  answer_text?: string | null;
 };
 
 export type MyScore = { correct: number; graded: number; class_average: number | null };

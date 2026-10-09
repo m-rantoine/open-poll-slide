@@ -9,6 +9,50 @@ export function optionCounts(answers: AnswerRow[], questionId: string): Record<s
   return counts;
 }
 
+/** Mirrors `normalize_answer` in the database. */
+export function normalizeAnswer(text: string): string {
+  return text.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+export type WordCount = {
+  key: string;
+  /** The spelling used most often, for display. */
+  text: string;
+  count: number;
+  mark: 'correct' | 'incorrect' | null;
+  userIds: string[];
+};
+
+export function wordCounts(
+  answers: AnswerRow[],
+  questionId: string,
+  correct: string[] = [],
+  incorrect: string[] = [],
+): WordCount[] {
+  const byKey = new Map<string, { forms: Map<string, number>; userIds: string[] }>();
+  for (const a of answers) {
+    if (a.question_id !== questionId) continue;
+    const entry = byKey.get(a.option_id) ?? { forms: new Map<string, number>(), userIds: [] };
+    const form = a.answer_text ?? a.option_id;
+    entry.forms.set(form, (entry.forms.get(form) ?? 0) + 1);
+    entry.userIds.push(a.user_id);
+    byKey.set(a.option_id, entry);
+  }
+  return [...byKey.entries()]
+    .map(([key, { forms, userIds }]) => ({
+      key,
+      text: [...forms.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))[0][0],
+      count: userIds.length,
+      mark: correct.includes(key)
+        ? ('correct' as const)
+        : incorrect.includes(key)
+          ? ('incorrect' as const)
+          : null,
+      userIds,
+    }))
+    .sort((x, y) => y.count - x.count || x.key.localeCompare(y.key));
+}
+
 export function answeredCount(answers: AnswerRow[], questionId: string): number {
   let n = 0;
   for (const a of answers) if (a.question_id === questionId) n++;

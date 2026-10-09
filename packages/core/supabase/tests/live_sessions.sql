@@ -19,6 +19,13 @@ declare
   ans public.answers;
   p public.session_participants;
   saved_domains jsonb;
+  sess2 public.sessions;
+  qs2 jsonb := '{
+    "wc": {"id":"wc","type":"word_cloud","question":"One word?","startLocked":false},
+    "wcs": {"id":"wcs","type":"word_cloud","question":"Capital?","scored":true,"correct":[" Ottawa "],"startLocked":false},
+    "mcu": {"id":"mcu","type":"multiple_choice","question":"No key","options":[{"id":"a","label":"A"},{"id":"b","label":"B"}],"startLocked":false},
+    "mcn": {"id":"mcn","type":"multiple_choice","question":"Unscored","options":[{"id":"a","label":"A"},{"id":"b","label":"B"}],"correct":["a"],"scored":false,"startLocked":false}
+  }'::jsonb;
 begin
   insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at, email_confirmed_at)
   values
@@ -295,6 +302,120 @@ begin
   if public.hook_restrict_signup_domain('{"user":{"email":"kid@school.example.test"}}') <> '{}'::jsonb then
     raise exception 'FAIL hook rejected an allowed domain';
   end if;
+
+  -- Word cloud questions and per-question scoring.
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select * into sess2 from public.create_session('sql-test-deck2', 'Deck2', 'host', 4, qs2);
+  execute 'reset role';
+  select count(*) into n from public.session_question_state
+    where session_id = sess2.id and ((question_id = 'wc' and not scored) or (question_id = 'wcs' and scored)
+      or (question_id = 'mcu' and scored) or (question_id = 'mcn' and not scored));
+  if n <> 4 then raise exception 'FAIL scored defaults wrong (% of 4 ok)', n; end if;
+  select count(*) into n from public.answer_keys where session_id = sess2.id and question_id = 'wcs' and correct_option_ids = array['ottawa'];
+  if n <> 1 then raise exception 'FAIL word-cloud key should be normalised'; end if;
+  if sess2.questions::text like '%"correct"%' then raise exception 'FAIL word-cloud key leaked into sessions.questions'; end if;
+  r := r || 'PASS create_session: scored defaults and normalised word-cloud keys' || E'\n';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.join_session(sess2.code);
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s2, 'email', 'sql-test-s2@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.join_session(sess2.code);
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select * into ans from public.submit_text_answer(sess2.id, 'wc', '  Hello   World ');
+  if ans.answer_text <> 'Hello World' or ans.option_id <> 'hello world' or ans.is_correct is not null then
+    raise exception 'FAIL text answer stored as %/%/%', ans.answer_text, ans.option_id, ans.is_correct;
+  end if;
+  begin perform public.submit_text_answer(sess2.id, 'wc', 'again'); raise exception 'FAIL second text answer';
+  exception when unique_violation then null; end;
+  begin perform public.submit_text_answer(sess2.id, 'wcs', '   '); raise exception 'FAIL blank answer accepted';
+  exception when invalid_parameter_value then null; end;
+  begin perform public.submit_text_answer(sess2.id, 'wcs', repeat('x', 61)); raise exception 'FAIL over-long answer accepted';
+  exception when invalid_parameter_value then null; end;
+  begin perform public.submit_answer(sess2.id, 'wc', 'a'); raise exception 'FAIL option answer to a word cloud';
+  exception when invalid_parameter_value then null; end;
+  begin perform public.submit_text_answer(sess2.id, 'mcu', 'a'); raise exception 'FAIL text answer to multiple choice';
+  exception when invalid_parameter_value then null; end;
+  r := r || 'PASS text answers: normalised, one per student, validated by type and length' || E'\n';
+
+  select * into ans from public.submit_text_answer(sess2.id, 'wcs', 'OTTAWA');
+  if ans.is_correct is distinct from true then raise exception 'FAIL seeded correct word graded %', ans.is_correct; end if;
+  select * into ans from public.submit_answer(sess2.id, 'mcu', 'a');
+  if ans.is_correct is not null then raise exception 'FAIL unkeyed multiple choice graded %', ans.is_correct; end if;
+  select * into ans from public.submit_answer(sess2.id, 'mcn', 'a');
+  if ans.is_correct is not null then raise exception 'FAIL unscored question graded %', ans.is_correct; end if;
+  execute 'reset role';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', s2, 'email', 'sql-test-s2@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.join_session(sess2.code);
+  select * into ans from public.submit_text_answer(sess2.id, 'wcs', ' Toronto');
+  if ans.is_correct is not null then raise exception 'FAIL unmarked word graded %', ans.is_correct; end if;
+  begin perform public.mark_answer(sess2.id, 'wcs', 'toronto', 'incorrect'); raise exception 'FAIL student marked an answer';
+  exception when insufficient_privilege then null; end;
+  begin perform public.set_question_scored(sess2.id, 'wcs', false); raise exception 'FAIL student changed scoring';
+  exception when insufficient_privilege then null; end;
+  execute 'reset role';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.mark_answer(sess2.id, 'wcs', ' TORONTO ', 'incorrect');
+  execute 'reset role';
+  select is_correct into b from public.answers where session_id = sess2.id and question_id = 'wcs' and user_id = s2;
+  if b is distinct from false then raise exception 'FAIL marked-incorrect word graded %', b; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.mark_answer(sess2.id, 'wcs', 'toronto', 'clear');
+  execute 'reset role';
+  select is_correct into b from public.answers where session_id = sess2.id and question_id = 'wcs' and user_id = s2;
+  if b is not null then raise exception 'FAIL cleared word graded %', b; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.mark_answer(sess2.id, 'wcs', 'toronto', 'correct');
+  begin perform public.mark_answer(sess2.id, 'mcu', 'a', 'correct'); raise exception 'FAIL marked a multiple-choice answer';
+  exception when invalid_parameter_value then null; end;
+  perform public.set_show_results(sess2.id, 'wcs', true);
+  perform public.set_show_results(sess2.id, 'mcu', true);
+  perform public.set_show_results(sess2.id, 'mcn', true);
+  execute 'reset role';
+  select key_version into n from public.session_question_state where session_id = sess2.id and question_id = 'wcs';
+  if n <> 3 then raise exception 'FAIL marking should bump key_version (got %)', n; end if;
+  r := r || 'PASS marking words regrades answers; clear returns them to ungraded' || E'\n';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select format('%s/%s', correct, graded) into v from public.my_score(sess2.id);
+  if v <> '1/1' then raise exception 'FAIL s1 score should count only the marked scored word, got %', v; end if;
+  select answer_text into v from public.my_answers(sess2.id) where question_id = 'wc';
+  if v <> 'Hello World' then raise exception 'FAIL my_answers answer_text %', v; end if;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.set_question_scored(sess2.id, 'mcn', true);
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select format('%s/%s', correct, graded) into v from public.my_score(sess2.id);
+  if v <> '2/2' then raise exception 'FAIL scoring a keyed question should count it, got %', v; end if;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.set_question_scored(sess2.id, 'wcs', false);
+  select format('%s', round(class_average, 2)) into v from public.session_summaries(5) where session_id = sess2.id;
+  execute 'reset role';
+  if v <> '1.00' then raise exception 'FAIL class average should ignore unscored questions, got %', v; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', s2, 'email', 'sql-test-s2@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select format('%s/%s', correct, graded) into v from public.my_score(sess2.id);
+  if v <> '0/0' then raise exception 'FAIL s2 has nothing scored, got %', v; end if;
+  execute 'reset role';
+  r := r || 'PASS only scored, graded answers count toward scores' || E'\n';
+
   if public.hook_restrict_signup_domain('{"user":{"email":"sql-test-host@example.test"}}') <> '{}'::jsonb then
     raise exception 'FAIL hook rejected a host';
   end if;

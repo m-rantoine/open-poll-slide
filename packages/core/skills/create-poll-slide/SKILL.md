@@ -58,7 +58,33 @@ Rules:
 - `correct` is an array of string literal option ids; omit it entirely when unknown. Several correct options are allowed. It never reaches the browser: the build strips it, and `open-slide live keys` uploads it to the database, so tell the user to run that command after adding or changing answer keys.
 - One question per page. The component fills the whole 1920×1080 page itself (it brings its own frame, heading and options), so do not wrap it in a padded container. It uses `--osd-*` design variables when the deck exports `design`, so declare `design` as `create-slide` recommends.
 - Optional: `export const isPrivate = true;` hides the deck from non-hosts (it then only opens through a session). Without it the deck follows `SLIDES_DEFAULT_AS_PRIVATE` (public when unset).
-- Only multiple choice exists today (`type: 'multiple_choice'`).
+- Two question types exist: `type: 'multiple_choice'` (`<MultipleChoice>`) and `type: 'word_cloud'` (`<WordCloud>`).
+- `scored` (optional, any type): whether answers count toward the score. Default `true` for multiple choice, `false` for word clouds. An answer that has no grade (no `correct` set, or a word the host has not marked) never counts, and is never treated as wrong.
+
+### Word cloud
+
+Participants type one word or short phrase (up to 60 characters). While the question is open the Screen shows only the answer count; when the host stops it (or everyone has answered) the Screen and Presenter show a word cloud, sized by how often each word was given. Words are matched ignoring case and extra spaces. The host marks words correct or incorrect in the Presenter panel or the results page (or by clicking a word on the Screen).
+
+```tsx
+export const questions = {
+  winter: {
+    id: 'winter',
+    type: 'word_cloud',
+    question: 'In one word, what comes to mind when you think of winter?',
+    startLocked: true,
+    showResults: true,
+  },
+  colour: {
+    id: 'colour',
+    type: 'word_cloud',
+    question: 'Name one primary colour.',
+    correct: ['red', 'blue', 'yellow'], // optional accepted answers
+    scored: true,
+  },
+} satisfies Record<string, InteractiveQuestion>;
+```
+
+Place it like a multiple-choice page (`<h1>` plus `<WordCloud question={questions.winter} />`). Import `WordCloud` and `type InteractiveQuestion` from `@open-slide/core`. `correct` here is stripped from the bundle like multiple-choice keys; run `open-slide live keys` after changing it.
 
 ## Page structure
 

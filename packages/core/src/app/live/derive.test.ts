@@ -7,9 +7,11 @@ import {
   formatDuration,
   inactiveSeconds,
   isParticipantActive,
+  normalizeAnswer,
   optionCounts,
   pct,
   studentResults,
+  wordCounts,
 } from './derive';
 import type { AnswerRow, ParticipantRow } from './types';
 
@@ -40,6 +42,7 @@ function answer(over: Partial<AnswerRow> = {}): AnswerRow {
     user_id: 'u1',
     option_id: 'a',
     is_correct: null,
+    answer_text: null,
     submitted_at: ago(1),
     ...over,
   };
@@ -106,6 +109,45 @@ describe('answers', () => {
     ]);
     expect(classAverage(results)).toBe(0.75);
     expect(classAverage([])).toBeNull();
+  });
+});
+
+describe('word clouds', () => {
+  const words = [
+    answer({ user_id: 'u1', question_id: 'w', option_id: 'ottawa', answer_text: 'Ottawa' }),
+    answer({ user_id: 'u2', question_id: 'w', option_id: 'ottawa', answer_text: 'ottawa' }),
+    answer({ user_id: 'u3', question_id: 'w', option_id: 'ottawa', answer_text: 'Ottawa' }),
+    answer({ user_id: 'u4', question_id: 'w', option_id: 'toronto', answer_text: 'Toronto' }),
+    answer({ user_id: 'u5', question_id: 'other', option_id: 'x', answer_text: 'X' }),
+  ];
+
+  it('normalises like the database', () => {
+    expect(normalizeAnswer('  Hello   World ')).toBe('hello world');
+  });
+
+  it('groups answers by word, most common first, with the commonest spelling', () => {
+    const counts = wordCounts(words, 'w');
+    expect(counts.map((c) => [c.key, c.text, c.count])).toEqual([
+      ['ottawa', 'Ottawa', 3],
+      ['toronto', 'Toronto', 1],
+    ]);
+    expect(counts[0].userIds).toEqual(['u1', 'u2', 'u3']);
+  });
+
+  it('reports the host mark per word and leaves unmarked words null', () => {
+    const counts = wordCounts(words, 'w', ['ottawa'], ['toronto']);
+    expect(counts.map((c) => c.mark)).toEqual(['correct', 'incorrect']);
+    expect(wordCounts(words, 'w').map((c) => c.mark)).toEqual([null, null]);
+  });
+
+  it('does not count ungraded answers toward a score', () => {
+    const ps = [participant({ user_id: 'u1' })];
+    const results = studentResults(ps, [
+      answer({ user_id: 'u1', question_id: 'a', is_correct: null }),
+      answer({ user_id: 'u1', question_id: 'b', is_correct: true }),
+    ]);
+    expect([results[0].correct, results[0].graded, results[0].answered]).toEqual([1, 1, 2]);
+    expect(classAverage(results)).toBe(1);
   });
 });
 

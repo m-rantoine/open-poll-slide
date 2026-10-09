@@ -614,6 +614,18 @@ export type Locale = {
     score: string;
     thanksForAnswer: string;
     youChose: string;
+    wordPlaceholder: string;
+    sendWord: string;
+    youWrote: string;
+    wordsHeading: string;
+    noAnswersYet: string;
+    markCorrect: string;
+    markIncorrect: string;
+    clearMark: string;
+    scored: string;
+    notScored: string;
+    scoredHint: string;
+    collectingAnswers: string;
     correct: string;
     notQuite: string;
     waitingForHostToOpen: string;
@@ -716,6 +728,8 @@ export type Locale = {
       not_a_participant: string;
       host_only: string;
       unknown_option: string;
+      invalid_answer: string;
+      wrong_question_type: string;
       generic: string;
     };
   };

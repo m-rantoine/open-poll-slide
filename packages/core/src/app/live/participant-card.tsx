@@ -1,9 +1,10 @@
 import { Lock } from 'lucide-react';
 import type { CSSProperties } from 'react';
-import type { MultipleChoiceQuestion } from '../lib/sdk';
+import { type InteractiveQuestion, isMultipleChoice } from '../lib/sdk';
 import { format, useLocale } from '../lib/use-locale';
 import { BAD, FONT, GOOD, INK } from './question-style';
 import { useParticipantQuestion } from './use-participant-question';
+import { WordForm } from './word-cloud';
 
 // Same look as the question drawn on the slide (see multiple-choice.tsx), at phone scale. The
 // heading stays on the slide itself, so only the interactive part is drawn here.
@@ -21,11 +22,12 @@ const optionStyle: CSSProperties = {
   cursor: 'pointer',
 };
 
-export function ParticipantQuestionCard({ question }: { question: MultipleChoiceQuestion }) {
+export function ParticipantQuestionCard({ question }: { question: InteractiveQuestion }) {
   const t = useLocale();
   const q = useParticipantQuestion(question);
   if (!q) return null;
-  const { state, mine, chosen, revealed, countdown, score, pending, failure, submit } = q;
+  const { state, mine, chosen, revealed, countdown, score, pending, failure, submit, submitText } =
+    q;
 
   return (
     <section
@@ -46,7 +48,8 @@ export function ParticipantQuestionCard({ question }: { question: MultipleChoice
           <div style={{ fontSize: 22 }}>
             {t.live.thanksForAnswer}
             <div style={{ opacity: 0.7, marginTop: 8, fontSize: 18 }}>
-              {t.live.youChose} <strong>{chosen?.label ?? mine.option_id}</strong>
+              {isMultipleChoice(question) ? t.live.youChose : t.live.youWrote}{' '}
+              <strong>{chosen?.label ?? mine.answer_text ?? mine.option_id}</strong>
             </div>
           </div>
           {revealed && mine.is_correct !== null && (
@@ -82,6 +85,14 @@ export function ParticipantQuestionCard({ question }: { question: MultipleChoice
         </div>
       ) : state === 'ended' ? (
         <div style={{ fontSize: 22, opacity: 0.7 }}>{t.live.answerPeriodEnded}</div>
+      ) : !isMultipleChoice(question) ? (
+        <WordForm
+          maxLength={question.maxLength}
+          disabled={pending !== null}
+          onSubmit={submitText}
+          fontSize={20}
+          padding="18px 20px"
+        />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {question.options.map((o) => (

@@ -1,11 +1,12 @@
 import {
   ClassResults,
   type DesignSystem,
+  type InteractiveQuestion,
   Lobby,
   MultipleChoice,
-  type MultipleChoiceQuestion,
   type Page,
   type SlideMeta,
+  WordCloud,
 } from '@open-slide/core';
 
 export const meta: SlideMeta = { title: 'Live quiz demo', createdAt: '2026-10-07T00:00:00.000Z' };
@@ -164,7 +165,23 @@ export const questions = {
     startLocked: true,
     showResults: true,
   },
-} satisfies Record<string, MultipleChoiceQuestion>;
+  winter: {
+    id: 'winter',
+    type: 'word_cloud',
+    question: 'In one word, what comes to mind when you think of winter?',
+    startLocked: true,
+    showResults: true,
+  },
+  colour: {
+    id: 'colour',
+    type: 'word_cloud',
+    question: 'Name one primary colour.',
+    correct: ['red', 'blue', 'yellow'],
+    scored: true,
+    startLocked: true,
+    showResults: true,
+  },
+} satisfies Record<string, InteractiveQuestion>;
 
 const Intro: Page = () => (
   <div
@@ -538,6 +555,66 @@ export default [
         {questions.season.question}
       </h1>
       <MultipleChoice question={questions.season} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.winter.question}
+      </h1>
+      <WordCloud question={questions.winter} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.colour.question}
+      </h1>
+      <WordCloud question={questions.colour} />
     </div>
   ),
   () => (

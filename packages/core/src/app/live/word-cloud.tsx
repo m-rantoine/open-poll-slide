@@ -1,9 +1,9 @@
-import { type CSSProperties, type HTMLAttributes, type ReactNode, useRef, useState } from 'react';
+import { type FormEvent, type HTMLAttributes, type ReactNode, useRef, useState } from 'react';
 import { LanguageScope, type PollLanguage } from '../lib/locale-store';
-import type { MultipleChoiceQuestion } from '../lib/sdk';
+import type { WordCloudQuestion } from '../lib/sdk';
 import { useIsActivePage } from '../lib/step-context';
 import { format, useLocale } from '../lib/use-locale';
-import { answeredCount, expectedCount, formatClock, optionCounts } from './derive';
+import { answeredCount, expectedCount, formatClock, wordCounts } from './derive';
 import { liveErrorMessage } from './errors';
 import { useLive, useRegisterQuestion } from './live-context';
 import { useLockHotkey } from './lock-hotkey';
@@ -11,127 +11,137 @@ import {
   ControlButton,
   Countdown,
   Fit,
-  FitBox,
   Footer,
   HostBar,
   Padlock,
   ProgressBar,
   rootStyle,
-  rowFont,
   useShrinkToFit,
 } from './question-chrome';
 import { ACCENT, BAD, FONT, GOOD, INK } from './question-style';
 import { useParticipantQuestion } from './use-participant-question';
 
-function optionStyle(n: number, extra?: CSSProperties): CSSProperties {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.6em',
+const MAX_LENGTH = 60;
+
+export function WordForm({
+  maxLength,
+  disabled,
+  onSubmit,
+  fontSize,
+  padding,
+}: {
+  maxLength?: number;
+  disabled: boolean;
+  onSubmit: (text: string) => void;
+  fontSize: string | number;
+  padding: string;
+}) {
+  const t = useLocale();
+  const [text, setText] = useState('');
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const clean = text.trim();
+    if (clean) onSubmit(clean);
+  };
+  const field = {
+    boxSizing: 'border-box' as const,
     width: '100%',
-    boxSizing: 'border-box',
-    padding: '0.6em 1em',
-    fontSize: rowFont(n, 40),
-    lineHeight: 1.2,
-    minHeight: 0,
-    overflow: 'hidden',
+    padding,
+    fontSize,
     fontFamily: FONT,
-    textAlign: 'left',
     color: INK,
     background: 'transparent',
     border: `0.1em solid color-mix(in srgb, ${INK} 22%, transparent)`,
-    borderRadius: 'var(--osd-radius, 20px)',
-    cursor: 'default',
-    ...extra,
+    borderRadius: 'var(--osd-radius, 16px)',
   };
+  return (
+    <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '0.6em' }}>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        maxLength={Math.min(MAX_LENGTH, maxLength ?? MAX_LENGTH)}
+        placeholder={t.live.wordPlaceholder}
+        aria-label={t.live.wordPlaceholder}
+        autoComplete="off"
+        disabled={disabled}
+        style={field}
+      />
+      <button
+        type="submit"
+        disabled={disabled || !text.trim()}
+        style={{
+          ...field,
+          width: 'auto',
+          alignSelf: 'flex-start',
+          cursor: disabled || !text.trim() ? 'default' : 'pointer',
+          opacity: disabled || !text.trim() ? 0.5 : 1,
+          color: 'var(--osd-bg, #fff)',
+          background: ACCENT,
+          border: 0,
+          fontWeight: 600,
+        }}
+      >
+        {t.live.sendWord}
+      </button>
+    </form>
+  );
 }
 
-function ResultsChart({
-  question,
-  counts,
-  correct,
-  total,
-  onToggle,
-  toggleLabel,
+function Cloud({
+  words,
+  showMarks,
+  onMark,
 }: {
-  question: MultipleChoiceQuestion;
-  counts: Record<string, number>;
-  correct: string[];
-  total: number;
-  onToggle?: (optionId: string) => void;
-  toggleLabel: string;
+  words: ReturnType<typeof wordCounts>;
+  showMarks: boolean;
+  onMark?: (key: string, next: 'correct' | 'incorrect' | 'clear') => void;
 }) {
-  const max = Math.max(1, ...Object.values(counts));
+  const t = useLocale();
   const ref = useRef<HTMLDivElement>(null);
   useShrinkToFit(ref, 'parent');
+  const max = Math.max(1, ...words.map((w) => w.count));
   return (
     <div
       ref={ref}
       style={{
         display: 'flex',
-        flexDirection: 'column',
-        gap: '2cqh',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '0.15em 0.5em',
         width: '100%',
-        fontSize: rowFont(question.options.length, 36),
+        fontSize: 'calc(min(110px, 16cqh) * var(--osd-fit, 1))',
+        lineHeight: 1.1,
       }}
     >
-      {question.options.map((o) => {
-        const n = counts[o.id] ?? 0;
-        const isCorrect = correct.includes(o.id);
+      {words.length === 0 && (
+        <span style={{ fontSize: '0.4em', opacity: 0.6 }}>{t.live.noAnswersYet}</span>
+      )}
+      {words.map((w, i) => {
+        const mark = showMarks ? w.mark : null;
+        const next = w.mark === null ? 'correct' : w.mark === 'correct' ? 'incorrect' : 'clear';
         return (
           <button
-            key={o.id}
+            key={w.key}
             type="button"
-            disabled={!onToggle}
-            title={onToggle ? toggleLabel : undefined}
-            aria-pressed={onToggle ? isCorrect : undefined}
-            onClick={() => onToggle?.(o.id)}
+            disabled={!onMark}
+            title={onMark ? t.live.toggleCorrect : undefined}
+            onClick={() => onMark?.(w.key, next)}
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 30%) minmax(0, 1fr) 3.5em',
-              alignItems: 'center',
-              gap: '0.8em',
-              padding: 0,
-              background: 'transparent',
-              border: 0,
+              fontSize: `${0.35 + 0.65 * (w.count / max)}em`,
               fontFamily: FONT,
-              fontSize: 'inherit',
-              lineHeight: 1.2,
-              color: INK,
-              textAlign: 'left',
-              cursor: onToggle ? 'pointer' : 'default',
+              fontWeight: 700,
+              padding: 0,
+              border: 0,
+              background: 'transparent',
+              cursor: onMark ? 'pointer' : 'default',
+              color:
+                mark === 'correct' ? GOOD : mark === 'incorrect' ? BAD : i === 0 ? ACCENT : INK,
+              textDecoration: mark === 'incorrect' ? 'line-through' : 'none',
+              opacity: mark === 'incorrect' ? 0.7 : 1,
             }}
           >
-            <span style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <span style={{ color: GOOD, width: '1.1em', fontSize: '1.2em', fontWeight: 700 }}>
-                {isCorrect ? '✓' : ''}
-              </span>
-              {o.label}
-            </span>
-            <span
-              style={{
-                height: '1.5em',
-                borderRadius: 12,
-                background: `color-mix(in srgb, ${INK} 8%, transparent)`,
-                overflow: 'hidden',
-              }}
-            >
-              <span
-                style={{
-                  display: 'block',
-                  height: '100%',
-                  width: `${(n / max) * 100}%`,
-                  background: isCorrect ? GOOD : ACCENT,
-                  transition: 'width 300ms ease',
-                }}
-              />
-            </span>
-            <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {n}
-              <span style={{ opacity: 0.5, fontSize: '0.8em' }}>
-                {total > 0 ? ` · ${Math.round((n / total) * 100)}%` : ''}
-              </span>
-            </span>
+            {w.text}
           </button>
         );
       })}
@@ -139,15 +149,13 @@ function ResultsChart({
   );
 }
 
-export type MultipleChoiceProps = {
-  question: MultipleChoiceQuestion;
-  /** Number of option columns. Default 1. */
-  columns?: number;
+export type WordCloudProps = {
+  question: WordCloudQuestion;
   /** Interface language for this component. Defaults to the app language. */
   language?: PollLanguage;
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children'>;
 
-function MultipleChoiceInner({ question, columns, style, ...rest }: MultipleChoiceProps) {
+function WordCloudInner({ question, style, ...rest }: WordCloudProps) {
   const live = useLive();
   const t = useLocale();
   useRegisterQuestion(question.id);
@@ -164,49 +172,25 @@ function MultipleChoiceInner({ question, columns, style, ...rest }: MultipleChoi
       live.data.session?.status === 'active',
   );
 
-  const cols = Math.max(1, Math.min(6, Math.round(columns ?? 1)));
-  const rows = Math.ceil(question.options.length / cols);
-  const n = rows;
   const noop = () => {};
-  const progress = (answered: number, total: number, controls: boolean) => (
-    <ProgressBar answered={answered} total={total} large={controls} />
-  );
   const root = (children: ReactNode) => (
-    <div {...rest} data-quiz-columns={cols} style={{ ...rootStyle, ...style }}>
+    <div {...rest} style={{ ...rootStyle, ...style }}>
       {children}
     </div>
-  );
-  const optionList = (children: (o: MultipleChoiceQuestion['options'][number]) => ReactNode) => (
-    <Fit>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-          gap: '2cqh 2cqw',
-          height: '100%',
-          minHeight: 0,
-        }}
-      >
-        {question.options.map(children)}
-      </div>
-    </Fit>
   );
 
   if (!live) {
     return root(
       <>
-        {optionList((o) => (
-          <FitBox key={o.id} style={optionStyle(n)}>
-            {o.label}
-          </FitBox>
-        ))}
+        <Fit style={{ justifyContent: 'center' }}>
+          <WordForm disabled onSubmit={noop} fontSize="min(44px, 7cqh)" padding="0.5em 0.8em" />
+        </Fit>
         {import.meta.env.DEV ? (
           <div style={{ opacity: 0.45, pointerEvents: 'none' }}>
             <HostBar
               ghost
               remaining={null}
-              progress={progress(0, 0, true)}
+              progress={<ProgressBar answered={0} total={0} large />}
               onLock={noop}
               onAddTime={noop}
               onStop={noop}
@@ -230,12 +214,10 @@ function MultipleChoiceInner({ question, columns, style, ...rest }: MultipleChoi
     fn().catch((e: unknown) => setFailure(liveErrorMessage(t, e)));
   };
 
-  if (view === 'participant' && compact) {
-    return root(null);
-  }
+  if (view === 'participant' && compact) return root(null);
 
   if (view === 'participant' && participant) {
-    const { mine, chosen, revealed, score, pending, submit } = participant;
+    const { mine, revealed, score, pending, submitText } = participant;
     let body: ReactNode;
     if (mine) {
       body = (
@@ -244,7 +226,7 @@ function MultipleChoiceInner({ question, columns, style, ...rest }: MultipleChoi
             <div style={{ fontSize: 'min(44px, 7cqh)' }}>
               {t.live.thanksForAnswer}
               <div style={{ opacity: 0.7, marginTop: '1.5cqh' }}>
-                {t.live.youChose} <strong>{chosen?.label ?? mine.option_id}</strong>
+                {t.live.youWrote} <strong>{mine.answer_text ?? mine.option_id}</strong>
               </div>
             </div>
             {revealed && mine.is_correct !== null && (
@@ -283,21 +265,17 @@ function MultipleChoiceInner({ question, columns, style, ...rest }: MultipleChoi
         </Fit>
       );
     } else {
-      body = optionList((o) => (
-        <FitBox
-          as="button"
-          key={o.id}
-          type="button"
-          disabled={pending !== null}
-          onClick={() => submit(o.id)}
-          style={optionStyle(n, {
-            cursor: 'pointer',
-            opacity: pending && pending !== o.id ? 0.5 : 1,
-          })}
-        >
-          {o.label}
-        </FitBox>
-      ));
+      body = (
+        <Fit style={{ justifyContent: 'center' }}>
+          <WordForm
+            maxLength={question.maxLength}
+            disabled={pending !== null}
+            onSubmit={submitText}
+            fontSize="min(44px, 7cqh)"
+            padding="0.5em 0.8em"
+          />
+        </Fit>
+      );
     }
     return root(
       <>
@@ -317,11 +295,13 @@ function MultipleChoiceInner({ question, columns, style, ...rest }: MultipleChoi
   const controls = view === 'screen' && !mirror;
   const total = expectedCount(data.participants, data.answers, question.id, now);
   const answered = answeredCount(data.answers, question.id);
-  const counts = optionCounts(data.answers, question.id);
-  const correct = data.keys[question.id] ?? [];
-  const toggle = controls
-    ? (id: string) => run(() => data.actions.toggleCorrect(question.id, id))
-    : undefined;
+  const words = wordCounts(
+    data.answers,
+    question.id,
+    data.keys[question.id],
+    data.incorrect[question.id],
+  );
+  const progress = <ProgressBar answered={answered} total={total} large={controls} />;
 
   let body: ReactNode;
   if (state === 'locked') {
@@ -357,15 +337,15 @@ function MultipleChoiceInner({ question, columns, style, ...rest }: MultipleChoi
   } else if (state === 'open') {
     body = (
       <>
-        {optionList((o) => (
-          <FitBox key={o.id} style={optionStyle(n)}>
-            {o.label}
-          </FitBox>
-        ))}
+        <Fit style={{ alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ fontSize: 'min(56px, 9cqh)', opacity: 0.7 }}>
+            {t.live.collectingAnswers}
+          </div>
+        </Fit>
         {controls ? (
           <HostBar
             remaining={remaining}
-            progress={progress(answered, total, true)}
+            progress={progress}
             onLock={() => run(() => data.actions.questionAction(question.id, 'lock'))}
             onAddTime={(sec) =>
               run(() => data.actions.questionAction(question.id, 'add_time', sec))
@@ -375,34 +355,27 @@ function MultipleChoiceInner({ question, columns, style, ...rest }: MultipleChoi
         ) : (
           <Footer style={{ gap: 28 }}>
             {countdown && <Countdown remaining={remaining} size={56} />}
-            {progress(answered, total, false)}
+            {progress}
           </Footer>
         )}
       </>
     );
-  } else if (st?.show_results) {
-    body = (
-      <Fit>
-        <ResultsChart
-          question={question}
-          counts={counts}
-          correct={correct}
-          total={answered}
-          onToggle={toggle}
-          toggleLabel={t.live.toggleCorrect}
-        />
-      </Fit>
-    );
   } else {
     body = (
-      <Fit style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <div
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4cqh' }}
-        >
-          <div style={{ fontSize: 'min(48px, 8cqh)', opacity: 0.7 }}>
-            {format(t.live.answersClosed, { answered, total })}
-          </div>
-          {controls && (
+      <>
+        <Fit style={{ alignItems: 'center', justifyContent: 'center' }}>
+          <Cloud
+            words={words}
+            showMarks={Boolean(st?.show_results)}
+            onMark={
+              controls
+                ? (key, next) => run(() => data.actions.markAnswer(question.id, key, next))
+                : undefined
+            }
+          />
+        </Fit>
+        <Footer>
+          {controls && !st?.show_results && (
             <ControlButton
               label={t.live.showResults}
               tone="accent"
@@ -411,8 +384,8 @@ function MultipleChoiceInner({ question, columns, style, ...rest }: MultipleChoi
               {t.live.showResults}
             </ControlButton>
           )}
-        </div>
-      </Fit>
+        </Footer>
+      </>
     );
   }
 
@@ -424,10 +397,10 @@ function MultipleChoiceInner({ question, columns, style, ...rest }: MultipleChoi
   );
 }
 
-export function MultipleChoice({ language, ...props }: MultipleChoiceProps) {
+export function WordCloud({ language, ...props }: WordCloudProps) {
   return (
     <LanguageScope language={language}>
-      <MultipleChoiceInner {...props} data-poll-language={language ?? 'en'} />
+      <WordCloudInner {...props} data-poll-language={language ?? 'en'} />
     </LanguageScope>
   );
 }

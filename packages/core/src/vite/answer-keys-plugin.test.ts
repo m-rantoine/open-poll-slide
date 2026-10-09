@@ -12,6 +12,8 @@ const deck = `export const questions = {
   },
   open: { id: 'open', question: 'Fav?', options: [], correct: ['a', 'b'] },
   computed: { id: 'computed', question: 'Q', options: [], correct: KEY },
+  words: { id: 'words', type: 'word_cloud', question: 'Capital?', correct: ['Gatineau'], scored: true },
+  cloud: { id: 'cloud', type: 'word_cloud', question: 'Ideas?' },
 };
 const other = { correct: ['not-a-question'] };
 export default [() => <div />];
@@ -24,6 +26,7 @@ describe('findAnswerKeys', () => {
       ['capital', ['ottawa']],
       ['open', ['a', 'b']],
       ['computed', null],
+      ['words', ['Gatineau']],
     ]);
   });
 });
@@ -36,6 +39,8 @@ describe('stripAnswerKeys', () => {
     expect(out.split('\n')).toHaveLength(deck.split('\n').length);
     expect(out).not.toContain("'ottawa']");
     expect(out).not.toContain('KEY');
+    expect(out).not.toContain('Gatineau');
+    expect(out).toContain('scored: true');
     expect(out).toContain("{ correct: ['not-a-question'] }");
     expect(out.indexOf('showResults')).toBe(deck.indexOf('showResults'));
   });

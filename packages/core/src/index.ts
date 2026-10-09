@@ -12,11 +12,13 @@ export { cssVarsToString, defaultDesign, designToCssVars } from './app/lib/desig
 export type { PollLanguage } from './app/lib/locale-store.tsx';
 export { useSlidePageNumber } from './app/lib/page-context.tsx';
 export type {
+  InteractiveQuestion,
   MultipleChoiceQuestion,
   Page,
   QuestionOption,
   SlideMeta,
   SlideModule,
+  WordCloudQuestion,
 } from './app/lib/sdk.ts';
 export { CANVAS_HEIGHT, CANVAS_WIDTH } from './app/lib/sdk.ts';
 export type { StepProps, StepsProps } from './app/lib/step-context.tsx';
@@ -32,5 +34,7 @@ export type { LobbyProps } from './app/live/lobby.tsx';
 export { Lobby } from './app/live/lobby.tsx';
 export type { MultipleChoiceProps } from './app/live/multiple-choice.tsx';
 export { MultipleChoice } from './app/live/multiple-choice.tsx';
+export type { WordCloudProps } from './app/live/word-cloud.tsx';
+export { WordCloud } from './app/live/word-cloud.tsx';
 export type { OpenSlideConfig, OpenSlideLiveConfig } from './config.ts';
 export type { Locale, Plural } from './locale/types.ts';

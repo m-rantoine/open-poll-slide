@@ -13,21 +13,45 @@ export type SlideMeta = {
 
 export type QuestionOption = { id: string; label: string };
 
-export type MultipleChoiceQuestion = {
+type QuestionBase = {
   id: string;
-  type: 'multiple_choice';
   question: string;
+  /**
+   * Whether answers count toward the score. Defaults to true for multiple choice and false for
+   * word clouds. Answers without a grade (no correct answer set, or not marked yet) never count.
+   */
+  scored?: boolean;
+  /** Host-paced sessions: start with the padlock down. Default true. */
+  startLocked?: boolean;
+  /** Reveal correctness to participants once the answer period ends. Default false. */
+  showResults?: boolean;
+};
+
+export type MultipleChoiceQuestion = QuestionBase & {
+  type: 'multiple_choice';
   options: QuestionOption[];
   /**
    * Ids of correct options. Omit to let the host mark them live. Stripped from the browser
    * bundle; `open-slide live keys` uploads it to the database.
    */
   correct?: string[];
-  /** Host-paced sessions: start with the padlock down. Default true. */
-  startLocked?: boolean;
-  /** Reveal correctness to participants once the answer period ends. Default false. */
-  showResults?: boolean;
 };
+
+export type WordCloudQuestion = QuestionBase & {
+  type: 'word_cloud';
+  /**
+   * Accepted answers (compared ignoring case and extra spaces). Omit to mark words live.
+   * Stripped from the browser bundle like multiple-choice keys.
+   */
+  correct?: string[];
+  /** Longest accepted answer, 1 to 60 characters. Default 60. */
+  maxLength?: number;
+};
+
+export type InteractiveQuestion = MultipleChoiceQuestion | WordCloudQuestion;
+
+export const isMultipleChoice = (q: InteractiveQuestion): q is MultipleChoiceQuestion =>
+  q.type === 'multiple_choice';
 
 export type SlideModule = {
   default: Page[];
@@ -35,7 +59,7 @@ export type SlideModule = {
   design?: DesignSystem;
   // Index-aligned with `default`.
   notes?: (string | undefined)[];
-  questions?: Record<string, MultipleChoiceQuestion>;
+  questions?: Record<string, InteractiveQuestion>;
   transition?: SlideTransition;
 };
 
