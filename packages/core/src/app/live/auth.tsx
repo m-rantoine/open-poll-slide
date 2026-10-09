@@ -1,5 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import {
+  type Context,
   createContext,
   type FormEvent,
   type ReactNode,
@@ -23,7 +24,12 @@ type AuthState = {
   signOut: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthState | null>(null);
+// On globalThis because Vite pre-bundles some `@/lib` modules that reach this file, which gives
+// them a second copy of this module whenever the app runs from node_modules.
+const AUTH_KEY = '__open_slide_auth_context__';
+const g = globalThis as typeof globalThis & { [AUTH_KEY]?: Context<AuthState | null> };
+g[AUTH_KEY] ??= createContext<AuthState | null>(null);
+const AuthContext = g[AUTH_KEY];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);

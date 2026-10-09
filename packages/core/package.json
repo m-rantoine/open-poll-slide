@@ -1,6 +1,6 @@
 {
   "name": "@rantoine/open-poll-slide-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Runtime and CLI for open-poll-slide, a fork of open-slide with live interactive polling sessions.",
   "type": "module",
   "exports": {

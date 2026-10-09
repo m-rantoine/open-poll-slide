@@ -56,19 +56,19 @@ describe('update routes helpers', () => {
   it('uses fixed update commands for each package manager', () => {
     expect(updateCommandFor('pnpm')).toEqual({
       cmd: 'pnpm',
-      args: ['add', '@open-slide/core@latest'],
+      args: ['add', '@open-slide/core@npm:@rantoine/open-poll-slide-core@latest'],
     });
     expect(updateCommandFor('yarn')).toEqual({
       cmd: 'yarn',
-      args: ['add', '@open-slide/core@latest'],
+      args: ['add', '@open-slide/core@npm:@rantoine/open-poll-slide-core@latest'],
     });
     expect(updateCommandFor('bun')).toEqual({
       cmd: 'bun',
-      args: ['add', '@open-slide/core@latest'],
+      args: ['add', '@open-slide/core@npm:@rantoine/open-poll-slide-core@latest'],
     });
     expect(updateCommandFor('npm')).toEqual({
       cmd: 'npm',
-      args: ['install', '@open-slide/core@latest'],
+      args: ['install', '@open-slide/core@npm:@rantoine/open-poll-slide-core@latest'],
     });
   });
 });
