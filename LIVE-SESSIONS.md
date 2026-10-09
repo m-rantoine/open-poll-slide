@@ -1,6 +1,6 @@
 # Live sessions
 
-Pear Deck–style sessions on top of open-slide. A host runs a deck, participants join with a code and answer multiple-choice or word-cloud questions, and hosts review results afterwards. The build stays a static site; state lives in your own Supabase project (Auth, Postgres with RLS, Realtime).
+Pear Deck–style sessions on top of open-slide. A host runs a deck, participants join with a code and answer multiple-choice, word-cloud or drag-and-drop sorting questions, and hosts review results afterwards. The build stays a static site; state lives in your own Supabase project (Auth, Postgres with RLS, Realtime).
 
 ## Setup
 
@@ -42,6 +42,7 @@ Only the publishable key is read; it is meant for browsers. Never put the servic
 
 - **Authoring:** use the `/create-poll-slide` skill, or write `export const questions`, `<Lobby />`, `<MultipleChoice question={questions.x} />` and `<ClassResults />` by hand (see `apps/demo/slides/live-quiz-demo`, ten questions).
 - **Question types:** multiple choice (`<MultipleChoice>`) and word cloud (`<WordCloud>`, participants type a word or short phrase; the Screen and Presenter show a word cloud once the answer period ends, and the host marks words correct or incorrect from the Presenter panel, the results page, or by clicking a word on the Screen).
+- **Sorting questions:** `<DragDrop>` with `<DropZone>` and `<ItemPool>` placed on the slide. Participants drag tiles into zones (saved as they drop, changeable until they press Submit); each tile in its right zone is worth one point. The Screen and Presenter show, per zone, the tiles placed there from most to least often.
 - **Scoring:** each question is scored or not (`scored`, default on for multiple choice and off for word clouds; hosts can flip it live in the Presenter panel or results page). Only scored answers that have a grade count toward scores, so a question with no correct answer set, or a word the host has not marked, is left out of the total instead of counting as wrong.
 - **Hosts** sign in, then on a deck choose **Present ▾ → Start host-paced / self-paced session**.
   - Host-paced opens `/s/<deck>/screen` (projector). Hover the bottom-left to open the presenter view (`/s/<deck>/presenter?session=<id>`) on the host's own computer. Arrow keys / space move everyone.

@@ -6,6 +6,7 @@ export type SessionRow = Tables['sessions']['Row'];
 export type ParticipantRow = Tables['session_participants']['Row'];
 export type QuestionStateRow = Tables['session_question_state']['Row'];
 export type AnswerRow = Tables['answers']['Row'];
+export type PlacementRow = Tables['placements']['Row'];
 export type PresenceEventRow = Tables['presence_events']['Row'];
 
 export type LiveView = 'static' | 'screen' | 'presenter' | 'participant';
@@ -16,6 +17,12 @@ export type MyAnswer = {
   show_results: boolean;
   /** What the participant typed, for word-cloud questions. */
   answer_text?: string | null;
+};
+
+export type MyPlacement = {
+  item_id: string;
+  zone_id: string;
+  is_correct: boolean | null;
 };
 
 export type MyScore = { correct: number; graded: number; class_average: number | null };

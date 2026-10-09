@@ -20,6 +20,10 @@ declare
   p public.session_participants;
   saved_domains jsonb;
   sess2 public.sessions;
+  sess3 public.sessions;
+  qs3 jsonb := '{
+    "sort": {"id":"sort","type":"drag_drop","question":"Sort","items":[{"id":"a","label":"A"},{"id":"b","label":"B"},{"id":"c","label":"C"}],"zones":[{"id":"z1","label":"Z1"},{"id":"z2","label":"Z2"}],"correct":{"a":"z1","b":"z2"},"startLocked":false}
+  }'::jsonb;
   qs2 jsonb := '{
     "wc": {"id":"wc","type":"word_cloud","question":"One word?","startLocked":false},
     "wcs": {"id":"wcs","type":"word_cloud","question":"Capital?","scored":true,"correct":[" Ottawa "],"startLocked":false},
@@ -415,6 +419,94 @@ begin
   if v <> '0/0' then raise exception 'FAIL s2 has nothing scored, got %', v; end if;
   execute 'reset role';
   r := r || 'PASS only scored, graded answers count toward scores' || E'\n';
+
+
+  -- Drag-and-drop sorting.
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select * into sess3 from public.create_session('sql-test-deck3', 'Deck3', 'host', 2, qs3);
+  execute 'reset role';
+  select count(*) into n from public.answer_keys where session_id = sess3.id and correct_option_ids = array['a>z1', 'b>z2'];
+  if n <> 1 then raise exception 'FAIL drag-drop key should be stored as item>zone pairs'; end if;
+  if sess3.questions::text like '%"correct"%' then raise exception 'FAIL drag-drop key leaked into sessions.questions'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.join_session(sess3.code);
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s2, 'email', 'sql-test-s2@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.join_session(sess3.code);
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.place_tile(sess3.id, 'sort', 'a', 'z1');
+  perform public.place_tile(sess3.id, 'sort', 'b', 'z1');
+  perform public.place_tile(sess3.id, 'sort', 'c', 'z2');
+  begin perform public.place_tile(sess3.id, 'sort', 'a', 'nowhere'); raise exception 'FAIL unknown zone accepted';
+  exception when invalid_parameter_value then null; end;
+  begin perform public.place_tile(sess3.id, 'sort', 'zzz', 'z1'); raise exception 'FAIL unknown tile accepted';
+  exception when invalid_parameter_value then null; end;
+  select count(*) into n from public.my_placements(sess3.id) where is_correct is not null;
+  if n <> 0 then raise exception 'FAIL placements graded before results are shown'; end if;
+  execute 'reset role';
+  select count(*) into n from public.placements where session_id = sess3.id and user_id = s1
+    and ((item_id = 'a' and is_correct) or (item_id = 'b' and not is_correct) or (item_id = 'c' and not is_correct));
+  if n <> 3 then raise exception 'FAIL tile grading wrong (% of 3)', n; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.place_tile(sess3.id, 'sort', 'b', 'z2');
+  perform public.place_tile(sess3.id, 'sort', 'c', null);
+  execute 'reset role';
+  select count(*) into n from public.placements where session_id = sess3.id and user_id = s1;
+  if n <> 2 then raise exception 'FAIL removing a tile should delete its row (% rows)', n; end if;
+  select count(*) into n from public.placements where session_id = sess3.id and user_id = s1 and is_correct;
+  if n <> 2 then raise exception 'FAIL moving b to z2 should grade it correct'; end if;
+  r := r || 'PASS drag-drop: keys as pairs, per-tile grading, move and remove' || E'\n';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.submit_placements(sess3.id, 'sort');
+  begin perform public.place_tile(sess3.id, 'sort', 'c', 'z1'); raise exception 'FAIL placed after submitting';
+  exception when unique_violation then null; end;
+  begin perform public.submit_placements(sess3.id, 'sort'); raise exception 'FAIL submitted twice';
+  exception when unique_violation then null; end;
+  execute 'reset role';
+  select * into st from public.session_question_state where session_id = sess3.id and question_id = 'sort';
+  if st.state <> 'open' then raise exception 'FAIL question should stay open until everyone submits, got %', st.state; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', s2, 'email', 'sql-test-s2@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.submit_placements(sess3.id, 'sort');
+  execute 'reset role';
+  select * into st from public.session_question_state where session_id = sess3.id and question_id = 'sort';
+  if st.state <> 'ended' then raise exception 'FAIL question should end once everyone submitted, got %', st.state; end if;
+  r := r || 'PASS drag-drop: submit locks placements and drives auto-end' || E'\n';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.set_show_results(sess3.id, 'sort', true);
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select format('%s/%s avg=%s', correct, graded, round(class_average, 2)) into v from public.my_score(sess3.id);
+  if v <> '2/2 avg=0.50' then raise exception 'FAIL s1 sort score %', v; end if;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s2, 'email', 'sql-test-s2@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select format('%s/%s', correct, graded) into v from public.my_score(sess3.id);
+  if v <> '0/2' then raise exception 'FAIL s2 sort score (empty submission is worth 0 of 2), got %', v; end if;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select round(class_average, 2)::text into v from public.session_summaries(10) where session_id = sess3.id;
+  if v <> '0.50' then raise exception 'FAIL summary average %', v; end if;
+  perform public.set_question_scored(sess3.id, 'sort', false);
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select format('%s/%s', correct, graded) into v from public.my_score(sess3.id);
+  if v <> '0/0' then raise exception 'FAIL unscored sort should not count, got %', v; end if;
+  execute 'reset role';
+  r := r || 'PASS drag-drop: one point per key tile, unscored excluded' || E'\n';
 
   if public.hook_restrict_signup_domain('{"user":{"email":"sql-test-host@example.test"}}') <> '{}'::jsonb then
     raise exception 'FAIL hook rejected a host';

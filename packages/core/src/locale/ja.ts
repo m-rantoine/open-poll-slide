@@ -599,6 +599,11 @@ export const ja: Locale = {
     notScored: '採点なし',
     scoredHint: 'スコアに含まれます',
     collectingAnswers: '回答を集めています…',
+    submitSorting: '送信',
+    submittedSorting: '送信済み',
+    placedOf: '{placed} / {total} 配置済み',
+    sortingHint:
+      'タイルをゾーンにドラッグするか、タイルをタップしてからゾーンをタップしてください。',
     correct: '✓ 正解',
     notQuite: '✗ 不正解',
     waitingForHostToOpen: 'ホストが質問を開くのを待っています',

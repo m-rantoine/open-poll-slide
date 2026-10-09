@@ -626,6 +626,10 @@ export type Locale = {
     notScored: string;
     scoredHint: string;
     collectingAnswers: string;
+    submitSorting: string;
+    submittedSorting: string;
+    placedOf: string;
+    sortingHint: string;
     correct: string;
     notQuite: string;
     waitingForHostToOpen: string;

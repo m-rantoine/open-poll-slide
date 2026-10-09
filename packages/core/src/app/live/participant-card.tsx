@@ -1,7 +1,8 @@
 import { Lock } from 'lucide-react';
 import type { CSSProperties } from 'react';
-import { type InteractiveQuestion, isMultipleChoice } from '../lib/sdk';
+import { type InteractiveQuestion, isDragDrop, isMultipleChoice } from '../lib/sdk';
 import { format, useLocale } from '../lib/use-locale';
+import { DragDropCard } from './drag-drop';
 import { BAD, FONT, GOOD, INK } from './question-style';
 import { useParticipantQuestion } from './use-participant-question';
 import { WordForm } from './word-cloud';
@@ -23,6 +24,18 @@ const optionStyle: CSSProperties = {
 };
 
 export function ParticipantQuestionCard({ question }: { question: InteractiveQuestion }) {
+  return isDragDrop(question) ? (
+    <DragDropCard question={question} />
+  ) : (
+    <ChoiceCard question={question} />
+  );
+}
+
+function ChoiceCard({
+  question,
+}: {
+  question: Exclude<InteractiveQuestion, { type: 'drag_drop' }>;
+}) {
   const t = useLocale();
   const q = useParticipantQuestion(question);
   if (!q) return null;

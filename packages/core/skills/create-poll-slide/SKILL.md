@@ -58,8 +58,46 @@ Rules:
 - `correct` is an array of string literal option ids; omit it entirely when unknown. Several correct options are allowed. It never reaches the browser: the build strips it, and `open-slide live keys` uploads it to the database, so tell the user to run that command after adding or changing answer keys.
 - One question per page. The component fills the whole 1920×1080 page itself (it brings its own frame, heading and options), so do not wrap it in a padded container. It uses `--osd-*` design variables when the deck exports `design`, so declare `design` as `create-slide` recommends.
 - Optional: `export const isPrivate = true;` hides the deck from non-hosts (it then only opens through a session). Without it the deck follows `SLIDES_DEFAULT_AS_PRIVATE` (public when unset).
-- Two question types exist: `type: 'multiple_choice'` (`<MultipleChoice>`) and `type: 'word_cloud'` (`<WordCloud>`).
-- `scored` (optional, any type): whether answers count toward the score. Default `true` for multiple choice, `false` for word clouds. An answer that has no grade (no `correct` set, or a word the host has not marked) never counts, and is never treated as wrong.
+- Three question types exist: `type: 'multiple_choice'` (`<MultipleChoice>`), `type: 'word_cloud'` (`<WordCloud>`) and `type: 'drag_drop'` (`<DragDrop>` with `<DropZone>` and `<ItemPool>`).
+- `scored` (optional, any type): whether answers count toward the score. Default `true` for multiple choice and sorting, `false` for word clouds. An answer that has no grade (no `correct` set, or a word the host has not marked) never counts, and is never treated as wrong.
+
+### Drag-and-drop sorting
+
+Participants drag tiles (inline blocks) from a pool into drop zones you place on the slide. Dropping saves immediately and can be changed until the participant presses Submit (or the host stops the question); Submit is what the "everyone has answered" auto-stop counts. Each tile in its right zone is worth one point. When the question ends, each zone on the Screen and Presenter lists the tiles placed in it, most often placed first, with a count; a zone shows at least its first tile and hides the rest if they do not fit.
+
+```tsx
+export const questions = {
+  animals: {
+    id: 'animals',
+    type: 'drag_drop',
+    question: 'Sort the animals into their groups.',
+    zones: [
+      { id: 'mammals', label: 'Mammals' },
+      { id: 'birds', label: 'Birds' },
+    ],
+    items: [
+      { id: 'dolphin', label: 'Dolphin' },
+      { id: 'eagle', label: 'Eagle' },
+      { id: 'oak', label: 'Oak tree (decoy)' },
+    ],
+    correct: { dolphin: 'mammals', eagle: 'birds' }, // leave a tile out to make it a decoy
+  },
+} satisfies Record<string, InteractiveQuestion>;
+```
+
+```tsx
+<DragDrop question={questions.animals}>
+  <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 0.5fr', gap: 32 }}>
+    <DropZone zone="mammals" />
+    <DropZone zone="birds" />
+    <ItemPool style={{ gridColumn: '1 / -1' }} />
+  </div>
+</DragDrop>
+```
+
+- Lay the zones and pool out inside `<DragDrop>` however the slide needs; give every `<DropZone>` and the `<ItemPool>` a definite width and height (grid cells, `position: absolute`, or explicit sizes), because tiles shrink to fit the box.
+- In the editor preview the tiles sit in their correct zones (from `correct`) so you can judge how big each zone must be; decoys stay in the pool. `correct` is stripped from production builds, so there the preview shows an empty zone. Run `open-slide live keys` after changing it.
+- On phones the slide is too small to drag on, so participants get a larger list of zones under the slide (drag, or tap a tile and then a zone).
 
 ### Word cloud
 

@@ -12,6 +12,7 @@ export { cssVarsToString, defaultDesign, designToCssVars } from './app/lib/desig
 export type { PollLanguage } from './app/lib/locale-store.tsx';
 export { useSlidePageNumber } from './app/lib/page-context.tsx';
 export type {
+  DragDropQuestion,
   InteractiveQuestion,
   MultipleChoiceQuestion,
   Page,
@@ -30,6 +31,8 @@ export type {
 } from './app/lib/transition.ts';
 export type { ClassResultsProps } from './app/live/class-results.tsx';
 export { ClassResults } from './app/live/class-results.tsx';
+export type { DragDropProps, DropZoneProps, ItemPoolProps } from './app/live/drag-drop.tsx';
+export { DragDrop, DropZone, ItemPool } from './app/live/drag-drop.tsx';
 export type { LobbyProps } from './app/live/lobby.tsx';
 export { Lobby } from './app/live/lobby.tsx';
 export type { MultipleChoiceProps } from './app/live/multiple-choice.tsx';

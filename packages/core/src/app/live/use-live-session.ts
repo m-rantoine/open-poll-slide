@@ -5,8 +5,10 @@ import { errorText } from './errors';
 import type {
   AnswerRow,
   MyAnswer,
+  MyPlacement,
   MyScore,
   ParticipantRow,
+  PlacementRow,
   QuestionStateRow,
   SessionRow,
 } from './types';
@@ -24,6 +26,9 @@ export type LiveActions = {
   submitTextAnswer: (questionId: string, text: string) => Promise<MyAnswer>;
   markAnswer: (questionId: string, key: string, mark: AnswerMark) => Promise<void>;
   setScored: (questionId: string, value: boolean) => Promise<void>;
+  /** Put a tile in a zone, or back in the pool when `zoneId` is null. */
+  placeTile: (questionId: string, itemId: string, zoneId: string | null) => Promise<void>;
+  submitPlacements: (questionId: string) => Promise<void>;
   endSession: () => Promise<void>;
   pauseSession: () => Promise<void>;
   resumeSession: () => Promise<void>;
@@ -39,6 +44,10 @@ export type LiveData = {
   /** Word-cloud words the host marked incorrect. */
   incorrect: Record<string, string[]>;
   answers: AnswerRow[];
+  /** Every participant's placed tiles (hosts only). */
+  placements: PlacementRow[];
+  /** This participant's placed tiles by question. */
+  myPlacements: Record<string, MyPlacement[]>;
   mine: Record<string, MyAnswer>;
   score: MyScore | null;
   /** The participant's own saved slide in a self-paced session. */
@@ -63,7 +72,7 @@ async function fetchAll<T>(
   }
 }
 
-type Slice = 'session' | 'states' | 'participants' | 'answers' | 'keys';
+type Slice = 'session' | 'states' | 'participants' | 'answers' | 'keys' | 'placements';
 
 function upsertBy<T>(list: T[], row: T, same: (a: T) => boolean): T[] {
   const i = list.findIndex(same);
@@ -79,6 +88,10 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
   const [states, setStates] = useState<Record<string, QuestionStateRow>>({});
   const [keys, setKeys] = useState<Record<string, string[]>>({});
   const [incorrect, setIncorrect] = useState<Record<string, string[]>>({});
+  const [placements, setPlacements] = useState<PlacementRow[]>([]);
+  const [myPlacements, setMyPlacements] = useState<Record<string, MyPlacement[]>>({});
+  // Bumped on every local drop so a slower server read cannot roll a drop back.
+  const placementEdits = useRef(0);
   const [answers, setAnswers] = useState<AnswerRow[]>([]);
   const [mine, setMine] = useState<Record<string, MyAnswer>>({});
   const [score, setScore] = useState<MyScore | null>(null);
@@ -90,10 +103,25 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
   const loadMine = useCallback(async () => {
     if (!sessionId) return;
     const supabase = getClient();
-    const [answersRes, scoreRes] = await Promise.all([
+    const edits = placementEdits.current;
+    const [answersRes, scoreRes, placementsRes] = await Promise.all([
       supabase.rpc('my_answers', { p_session: sessionId }),
       supabase.rpc('my_score', { p_session: sessionId }),
+      supabase.rpc('my_placements', { p_session: sessionId }),
     ]);
+    if (placementEdits.current === edits && placementsRes.data) {
+      const byQuestion: Record<string, MyPlacement[]> = {};
+      for (const pl of placementsRes.data) {
+        const list = byQuestion[pl.question_id] ?? [];
+        list.push({
+          item_id: pl.item_id,
+          zone_id: pl.zone_id,
+          is_correct: pl.is_correct,
+        });
+        byQuestion[pl.question_id] = list;
+      }
+      setMyPlacements(byQuestion);
+    }
     const next: Record<string, MyAnswer> = {};
     for (const a of answersRes.data ?? []) {
       next[a.question_id] = {
@@ -116,6 +144,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
     participants: 0,
     answers: 0,
     keys: 0,
+    placements: 0,
   });
   const bump = useCallback((slice: Slice) => {
     versions.current[slice]++;
@@ -155,7 +184,7 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
         setServerOffset(new Date(timeRes.data).getTime() + rtt / 2 - Date.now());
       }
       if (asHost) {
-        const [pRows, aRows, kRes] = await Promise.all([
+        const [pRows, aRows, kRes, plRows] = await Promise.all([
           fetchAll<ParticipantRow>((from, to) =>
             supabase
               .from('session_participants')
@@ -173,9 +202,20 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
               .range(from, to),
           ),
           supabase.from('answer_keys').select('*').eq('session_id', sessionId),
+          fetchAll<PlacementRow>((from, to) =>
+            supabase
+              .from('placements')
+              .select('*')
+              .eq('session_id', sessionId)
+              .order('question_id')
+              .order('user_id')
+              .order('item_id')
+              .range(from, to),
+          ),
         ]);
         if (fresh('participants')) setParticipants(pRows);
         if (fresh('answers')) setAnswers(aRows);
+        if (fresh('placements')) setPlacements(plRows);
         if (fresh('keys') && kRes.data) {
           setKeys(Object.fromEntries(kRes.data.map((r) => [r.question_id, r.correct_option_ids])));
           setIncorrect(
@@ -290,6 +330,27 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
             }
             const row = p.new as AnswerRow;
             setAnswers((cur) => upsertBy(cur, row, (x) => x.id === row.id));
+          },
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'placements',
+            filter: `session_id=eq.${sessionId}`,
+          },
+          (p) => {
+            bump('placements');
+            const same = (r: PlacementRow, k: Partial<PlacementRow>) =>
+              r.question_id === k.question_id && r.user_id === k.user_id && r.item_id === k.item_id;
+            if (p.eventType === 'DELETE') {
+              const old = p.old as Partial<PlacementRow>;
+              setPlacements((cur) => cur.filter((r) => !same(r, old)));
+              return;
+            }
+            const row = p.new as PlacementRow;
+            setPlacements((cur) => upsertBy(cur, row, (x) => same(x, row)));
           },
         )
         .on(
@@ -493,6 +554,49 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
             mark === 'incorrect' ? [...without(cur[questionId]), k] : without(cur[questionId]),
         }));
       },
+      async placeTile(questionId, itemId, zoneId) {
+        if (!sessionId) return;
+        placementEdits.current++;
+        setMyPlacements((cur) => {
+          const rest = (cur[questionId] ?? []).filter((x) => x.item_id !== itemId);
+          return {
+            ...cur,
+            [questionId]: zoneId
+              ? [...rest, { item_id: itemId, zone_id: zoneId, is_correct: null }]
+              : rest,
+          };
+        });
+        const { error: err } = await getClient().rpc('place_tile', {
+          p_session: sessionId,
+          p_question: questionId,
+          p_item: itemId,
+          p_zone: zoneId,
+        });
+        if (err) {
+          placementEdits.current++;
+          void loadMineRef.current();
+          throw err;
+        }
+      },
+      async submitPlacements(questionId) {
+        if (!sessionId) return;
+        const { data, error: err } = await getClient().rpc('submit_placements', {
+          p_session: sessionId,
+          p_question: questionId,
+        });
+        if (err) throw err;
+        const st = statesRef.current[questionId];
+        setMine((cur) => ({
+          ...cur,
+          [questionId]: {
+            option_id: data.option_id,
+            is_correct: null,
+            show_results: Boolean(st?.show_results),
+            answer_text: null,
+          },
+        }));
+        void loadMineRef.current();
+      },
       async setScored(questionId, value) {
         if (!sessionId) return;
         const { error: err } = await getClient().rpc('set_question_scored', {
@@ -539,6 +643,8 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
     keys,
     incorrect,
     answers,
+    placements,
+    myPlacements,
     mine,
     score,
     selfIndex,

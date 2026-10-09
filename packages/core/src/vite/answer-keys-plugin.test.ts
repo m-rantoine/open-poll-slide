@@ -14,6 +14,14 @@ const deck = `export const questions = {
   computed: { id: 'computed', question: 'Q', options: [], correct: KEY },
   words: { id: 'words', type: 'word_cloud', question: 'Capital?', correct: ['Gatineau'], scored: true },
   cloud: { id: 'cloud', type: 'word_cloud', question: 'Ideas?' },
+  sort: {
+    id: 'sort',
+    type: 'drag_drop',
+    question: 'Sort',
+    items: [],
+    zones: [],
+    correct: { cat: 'mammals', eel: 'fish' },
+  },
 };
 const other = { correct: ['not-a-question'] };
 export default [() => <div />];
@@ -27,6 +35,7 @@ describe('findAnswerKeys', () => {
       ['open', ['a', 'b']],
       ['computed', null],
       ['words', ['Gatineau']],
+      ['sort', ['cat>mammals', 'eel>fish']],
     ]);
   });
 });
@@ -47,6 +56,16 @@ describe('stripAnswerKeys', () => {
 
   it('leaves sources without keys alone', () => {
     expect(stripAnswerKeys('export default [() => <div />];')).toBeNull();
+  });
+});
+
+describe('drag-and-drop keys', () => {
+  it('are stripped from builds but kept for the dev preview', () => {
+    const built = stripAnswerKeys(deck);
+    expect(built).not.toContain('mammals');
+    const dev = stripAnswerKeys(deck, { keepDragDrop: true });
+    expect(dev).toContain("{ cat: 'mammals', eel: 'fish' }");
+    expect(dev).not.toContain("'ottawa']");
   });
 });
 

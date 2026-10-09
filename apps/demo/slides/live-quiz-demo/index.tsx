@@ -1,7 +1,10 @@
 import {
   ClassResults,
   type DesignSystem,
+  DragDrop,
+  DropZone,
   type InteractiveQuestion,
+  ItemPool,
   Lobby,
   MultipleChoice,
   type Page,
@@ -178,6 +181,35 @@ export const questions = {
     question: 'Name one primary colour.',
     correct: ['red', 'blue', 'yellow'],
     scored: true,
+    startLocked: true,
+    showResults: true,
+  },
+  animals: {
+    id: 'animals',
+    type: 'drag_drop',
+    question: 'Sort the animals into their groups.',
+    zones: [
+      { id: 'mammals', label: 'Mammals' },
+      { id: 'birds', label: 'Birds' },
+      { id: 'fish', label: 'Fish' },
+    ],
+    items: [
+      { id: 'dolphin', label: 'Dolphin' },
+      { id: 'eagle', label: 'Eagle' },
+      { id: 'salmon', label: 'Salmon' },
+      { id: 'bat', label: 'Bat' },
+      { id: 'penguin', label: 'Penguin' },
+      { id: 'shark', label: 'Shark' },
+      { id: 'oak', label: 'Oak tree (not an animal)' },
+    ],
+    correct: {
+      dolphin: 'mammals',
+      bat: 'mammals',
+      eagle: 'birds',
+      penguin: 'birds',
+      salmon: 'fish',
+      shark: 'fish',
+    },
     startLocked: true,
     showResults: true,
   },
@@ -615,6 +647,52 @@ export default [
         {questions.colour.question}
       </h1>
       <WordCloud question={questions.colour} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.animals.question}
+      </h1>
+      <DragDrop question={questions.animals}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateRows: '1fr 0.55fr',
+            gap: 32,
+          }}
+        >
+          <DropZone zone="mammals" />
+          <DropZone zone="birds" />
+          <DropZone zone="fish" />
+          <ItemPool style={{ gridColumn: '1 / -1' }} />
+        </div>
+      </DragDrop>
     </div>
   ),
   () => (

@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import {
+  type DragDropQuestion,
   type InteractiveQuestion,
   isMultipleChoice,
+  isWordCloud,
   type MultipleChoiceQuestion,
   type WordCloudQuestion,
 } from '../lib/sdk';
@@ -20,8 +22,10 @@ import {
   isParticipantActive,
   optionCounts,
   pct,
+  placementScores,
   studentResults,
   wordCounts,
+  zoneTiles,
 } from './derive';
 import { liveErrorMessage } from './errors';
 import { useLive } from './live-context';
@@ -379,12 +383,97 @@ function WordCloudPanel({ question }: { question: WordCloudQuestion }) {
   );
 }
 
-export function QuestionPanel({ question }: { question: InteractiveQuestion }) {
-  return isMultipleChoice(question) ? (
-    <MultipleChoicePanel question={question} />
-  ) : (
-    <WordCloudPanel question={question} />
+export function ZoneSummary({ question, data }: { question: DragDropQuestion; data: LiveData }) {
+  const t = useLocale();
+  const zones = zoneTiles(
+    data.placements,
+    question.id,
+    question.items.map((i) => i.id),
   );
+  const key = data.keys[question.id] ?? [];
+  const names = new Map(data.participants.map((p) => [p.user_id, p.display_name]));
+  const byStudent = new Map<string, DragDropQuestion['items']>();
+  for (const p of data.placements) {
+    if (p.question_id !== question.id) continue;
+    byStudent.set(p.user_id, [
+      ...(byStudent.get(p.user_id) ?? []),
+      { id: p.item_id, label: p.zone_id },
+    ]);
+  }
+  const submitted = new Set(
+    data.answers.filter((a) => a.question_id === question.id).map((a) => a.user_id),
+  );
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      {question.zones.map((z) => (
+        <div key={z.id} className="rounded-[6px] border border-hairline p-2">
+          <div className="mb-1 text-[11px] font-medium text-muted-foreground">{z.label}</div>
+          <div className="flex flex-wrap gap-1">
+            {(zones[z.id] ?? []).length === 0 && (
+              <span className="text-[11px] text-muted-foreground">{t.live.noAnswersYet}</span>
+            )}
+            {(zones[z.id] ?? []).map((tile) => {
+              const good = key.length > 0 ? key.includes(`${tile.itemId}>${z.id}`) : null;
+              return (
+                <span
+                  key={tile.itemId}
+                  className={cn(
+                    'rounded-[4px] border px-1.5 py-0.5 text-[11.5px]',
+                    good === null && 'border-border',
+                    good === true && 'border-emerald-400/60 bg-emerald-400/10',
+                    good === false && 'border-red-400/60 bg-red-400/10',
+                  )}
+                >
+                  {question.items.find((i) => i.id === tile.itemId)?.label ?? tile.itemId}
+                  <span className="ml-1 font-mono text-muted-foreground">×{tile.count}</span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      {byStudent.size > 0 && (
+        <div className="max-h-40 overflow-y-auto rounded-[6px] border border-hairline text-[11.5px]">
+          {[...byStudent.entries()].map(([userId, tiles]) => (
+            <div
+              key={userId}
+              className="flex justify-between gap-3 border-t border-hairline px-2 py-1 first:border-t-0"
+            >
+              <span>{names.get(userId) ?? userId.slice(0, 6)}</span>
+              <span className="text-muted-foreground">
+                {tiles.length}/{question.items.length}
+                {submitted.has(userId) ? ' ✓' : ''}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DragDropPanel({ question }: { question: DragDropQuestion }) {
+  const b = useQuestionBasics(question);
+  if (!b) return null;
+  return (
+    <Section
+      title={question.question}
+      aside={
+        <span className="font-mono text-[11px] text-muted-foreground uppercase">
+          {b.stateLabel}
+        </span>
+      }
+    >
+      <PanelControls question={question} />
+      <ZoneSummary question={question} data={b.data} />
+    </Section>
+  );
+}
+
+export function QuestionPanel({ question }: { question: InteractiveQuestion }) {
+  if (isMultipleChoice(question)) return <MultipleChoicePanel question={question} />;
+  if (isWordCloud(question)) return <WordCloudPanel question={question} />;
+  return <DragDropPanel question={question} />;
 }
 
 export function StudentsPanel() {
@@ -432,7 +521,11 @@ export function ResultsPanel() {
   const t = useLocale();
   if (!live) return null;
   const { data } = live;
-  const results = studentResults(data.participants, data.answers);
+  const results = studentResults(
+    data.participants,
+    data.answers,
+    placementScores(data.placements, data.answers, data.keys, data.states),
+  );
   const byUser = new Map(results.map((r) => [r.userId, r]));
   return (
     <Section title={`${t.live.classAverage} · ${pct(classAverage(results))}`}>

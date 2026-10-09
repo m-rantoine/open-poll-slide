@@ -151,6 +151,44 @@ export type Database = {
         };
         Relationships: [];
       };
+      placements: {
+        Row: {
+          is_correct: boolean | null;
+          item_id: string;
+          placed_at: string;
+          question_id: string;
+          session_id: string;
+          user_id: string;
+          zone_id: string;
+        };
+        Insert: {
+          is_correct?: boolean | null;
+          item_id: string;
+          placed_at?: string;
+          question_id: string;
+          session_id: string;
+          user_id: string;
+          zone_id: string;
+        };
+        Update: {
+          is_correct?: boolean | null;
+          item_id?: string;
+          placed_at?: string;
+          question_id?: string;
+          session_id?: string;
+          user_id?: string;
+          zone_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'placements_session_id_fkey';
+            columns: ['session_id'];
+            isOneToOne: false;
+            referencedRelation: 'sessions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       presence_events: {
         Row: {
           at: string;
@@ -465,6 +503,39 @@ export type Database = {
           question_id: string;
           show_results: boolean;
         }[];
+      };
+      my_placements: {
+        Args: { p_session: string };
+        Returns: {
+          is_correct: boolean;
+          item_id: string;
+          question_id: string;
+          show_results: boolean;
+          zone_id: string;
+        }[];
+      };
+      place_tile: {
+        Args: { p_item: string; p_question: string; p_session: string; p_zone: string | null };
+        Returns: undefined;
+      };
+      submit_placements: {
+        Args: { p_question: string; p_session: string };
+        Returns: {
+          answer_text: string | null;
+          id: string;
+          is_correct: boolean | null;
+          option_id: string;
+          question_id: string;
+          session_id: string;
+          submitted_at: string;
+          user_id: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'answers';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       my_score: {
         Args: { p_session: string };

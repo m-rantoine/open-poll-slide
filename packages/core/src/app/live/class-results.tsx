@@ -1,7 +1,7 @@
 import type { CSSProperties, HTMLAttributes } from 'react';
 import { LanguageScope, type PollLanguage } from '../lib/locale-store';
 import { useLocale } from '../lib/use-locale';
-import { classAverage, pct, studentResults } from './derive';
+import { classAverage, pct, placementScores, studentResults } from './derive';
 import { useLive, useQuestionRegistryFlag } from './live-context';
 
 const u = (px: number) => `${(px / 10.8).toFixed(2)}cqmin`;
@@ -65,7 +65,13 @@ function ClassResultsInner({ title: titleProp, style, ...rest }: ClassResultsPro
     );
   }
 
-  const average = classAverage(studentResults(data.participants, data.answers));
+  const average = classAverage(
+    studentResults(
+      data.participants,
+      data.answers,
+      placementScores(data.placements, data.answers, data.keys, data.states),
+    ),
+  );
   return (
     <div {...rest} style={{ ...frame, ...style }}>
       <h1 style={{ margin: 0, fontSize: u(96) }}>{title}</h1>

@@ -1,4 +1,4 @@
-import type { AnswerRow, ParticipantRow } from './types';
+import type { AnswerRow, ParticipantRow, PlacementRow } from './types';
 import { INACTIVE_AFTER_MS } from './types';
 
 export function optionCounts(answers: AnswerRow[], questionId: string): Record<string, number> {
@@ -99,13 +99,77 @@ export type StudentResult = {
   answered: number;
 };
 
+export type PlacementScores = Map<string, { graded: number; correct: number }>;
+
+/**
+ * Points from sorting questions, mirroring `score_units`: one point per key tile, earned for each
+ * tile sitting in its right zone, for anyone who placed a tile or submitted. Unscored questions and
+ * questions without a key are worth nothing.
+ */
+export function placementScores(
+  placements: PlacementRow[],
+  answers: AnswerRow[],
+  keys: Record<string, string[]>,
+  states: Record<string, { scored: boolean }>,
+): PlacementScores {
+  const scores: PlacementScores = new Map();
+  const participants = new Map<string, Set<string>>();
+  const add = (questionId: string, userId: string) => {
+    const users = participants.get(questionId) ?? new Set<string>();
+    users.add(userId);
+    participants.set(questionId, users);
+  };
+  for (const p of placements) add(p.question_id, p.user_id);
+  for (const a of answers) if (a.option_id === 'submitted') add(a.question_id, a.user_id);
+  for (const [questionId, users] of participants) {
+    const key = keys[questionId] ?? [];
+    if (key.length === 0 || !(states[questionId]?.scored ?? true)) continue;
+    for (const userId of users) {
+      const earned = placements.filter(
+        (p) => p.question_id === questionId && p.user_id === userId && p.is_correct === true,
+      ).length;
+      const cur = scores.get(userId) ?? { graded: 0, correct: 0 };
+      scores.set(userId, { graded: cur.graded + key.length, correct: cur.correct + earned });
+    }
+  }
+  return scores;
+}
+
+export type ZoneTile = { itemId: string; count: number };
+
+/** The tiles placed in each zone, most often placed first; ties keep the author's tile order. */
+export function zoneTiles(
+  placements: PlacementRow[],
+  questionId: string,
+  itemOrder: string[],
+): Record<string, ZoneTile[]> {
+  const counts = new Map<string, Map<string, number>>();
+  for (const p of placements) {
+    if (p.question_id !== questionId) continue;
+    const zone = counts.get(p.zone_id) ?? new Map<string, number>();
+    zone.set(p.item_id, (zone.get(p.item_id) ?? 0) + 1);
+    counts.set(p.zone_id, zone);
+  }
+  const out: Record<string, ZoneTile[]> = {};
+  for (const [zoneId, zone] of counts) {
+    out[zoneId] = [...zone.entries()]
+      .map(([itemId, count]) => ({ itemId, count }))
+      .sort(
+        (a, b) => b.count - a.count || itemOrder.indexOf(a.itemId) - itemOrder.indexOf(b.itemId),
+      );
+  }
+  return out;
+}
+
 export function studentResults(
   participants: ParticipantRow[],
   answers: AnswerRow[],
+  extra?: PlacementScores,
 ): StudentResult[] {
   return participants.map((p) => {
-    let correct = 0;
-    let graded = 0;
+    const bonus = extra?.get(p.user_id);
+    let correct = bonus?.correct ?? 0;
+    let graded = bonus?.graded ?? 0;
     let answered = 0;
     for (const a of answers) {
       if (a.user_id !== p.user_id) continue;

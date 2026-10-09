@@ -6,7 +6,7 @@ import { useDocumentTitle } from '@/lib/use-document-title';
 import { format, plural, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import type { Locale } from '../../locale/types';
-import { type InteractiveQuestion, isMultipleChoice } from '../lib/sdk';
+import { type InteractiveQuestion, isMultipleChoice, isWordCloud } from '../lib/sdk';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireHost } from './auth';
 import { getClient } from './client';
@@ -17,12 +17,13 @@ import {
   inactiveSeconds,
   optionCounts,
   pct,
+  placementScores,
   studentResults,
 } from './derive';
 import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
 import { PauseSessionButton } from './pause-session';
-import { WordList } from './presenter-panels';
+import { WordList, ZoneSummary } from './presenter-panels';
 import { SlideThumb } from './slide-thumb';
 import type { AnswerRow, SessionRow } from './types';
 import { useLiveSession } from './use-live-session';
@@ -151,8 +152,13 @@ function ResultsDetail() {
     [slide, session],
   );
   const results = useMemo(
-    () => studentResults(data.participants, data.answers),
-    [data.participants, data.answers],
+    () =>
+      studentResults(
+        data.participants,
+        data.answers,
+        placementScores(data.placements, data.answers, data.keys, data.states),
+      ),
+    [data.participants, data.answers, data.placements, data.keys, data.states],
   );
 
   if (data.loading) return <LoadingLine />;
@@ -170,7 +176,9 @@ function ResultsDetail() {
   const label = (q: InteractiveQuestion, a: AnswerRow) =>
     isMultipleChoice(q)
       ? (q.options.find((o) => o.id === a.option_id)?.label ?? a.option_id)
-      : (a.answer_text ?? a.option_id);
+      : isWordCloud(q)
+        ? (a.answer_text ?? a.option_id)
+        : t.live.submittedSorting;
   const toggle = (questionId: string, optionId: string) =>
     void data.actions
       .toggleCorrect(questionId, optionId)
@@ -314,8 +322,10 @@ function ResultsDetail() {
                       </button>
                     ))}
                   </div>
-                ) : (
+                ) : isWordCloud(q) ? (
                   <WordList question={q} data={data} />
+                ) : (
+                  <ZoneSummary question={q} data={data} />
                 )}
                 <details className="mt-3 text-[12px]">
                   <summary className="cursor-pointer text-muted-foreground">

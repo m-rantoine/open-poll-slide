@@ -10,10 +10,12 @@ import {
   normalizeAnswer,
   optionCounts,
   pct,
+  placementScores,
   studentResults,
   wordCounts,
+  zoneTiles,
 } from './derive';
-import type { AnswerRow, ParticipantRow } from './types';
+import type { AnswerRow, ParticipantRow, PlacementRow } from './types';
 
 const NOW = Date.parse('2026-10-07T12:00:00Z');
 const ago = (s: number) => new Date(NOW - s * 1000).toISOString();
@@ -148,6 +150,60 @@ describe('word clouds', () => {
     ]);
     expect([results[0].correct, results[0].graded, results[0].answered]).toEqual([1, 1, 2]);
     expect(classAverage(results)).toBe(1);
+  });
+});
+
+describe('sorting questions', () => {
+  const pl = (user: string, item: string, zone: string, ok: boolean | null): PlacementRow => ({
+    session_id: 's',
+    question_id: 'sort',
+    user_id: user,
+    item_id: item,
+    zone_id: zone,
+    is_correct: ok,
+    placed_at: ago(1),
+  });
+  const placements = [
+    pl('u1', 'cat', 'mammals', true),
+    pl('u1', 'eel', 'fish', true),
+    pl('u2', 'cat', 'mammals', true),
+    pl('u2', 'eel', 'mammals', false),
+    pl('u3', 'eel', 'mammals', false),
+  ];
+
+  it('lists each zone most often placed first', () => {
+    const zones = zoneTiles(placements, 'sort', ['cat', 'eel']);
+    expect(zones.mammals).toEqual(
+      [
+        { itemId: 'eel', count: 2 },
+        { itemId: 'cat', count: 2 },
+      ].sort((a, b) => ['cat', 'eel'].indexOf(a.itemId) - ['cat', 'eel'].indexOf(b.itemId)),
+    );
+    expect(zones.fish).toEqual([{ itemId: 'eel', count: 1 }]);
+    expect(zoneTiles(placements, 'other', ['cat'])).toEqual({});
+  });
+
+  it('is worth one point per key tile, for anyone who placed or submitted', () => {
+    const key = { sort: ['cat>mammals', 'eel>fish'] };
+    const submitted = answer({ user_id: 'u4', question_id: 'sort', option_id: 'submitted' });
+    const scores = placementScores(placements, [submitted], key, { sort: { scored: true } });
+    expect(scores.get('u1')).toEqual({ graded: 2, correct: 2 });
+    expect(scores.get('u2')).toEqual({ graded: 2, correct: 1 });
+    expect(scores.get('u3')).toEqual({ graded: 2, correct: 0 });
+    expect(scores.get('u4')).toEqual({ graded: 2, correct: 0 });
+  });
+
+  it('leaves unscored or keyless questions out', () => {
+    expect(placementScores(placements, [], { sort: [] }, { sort: { scored: true } }).size).toBe(0);
+    expect(
+      placementScores(placements, [], { sort: ['cat>mammals'] }, { sort: { scored: false } }).size,
+    ).toBe(0);
+  });
+
+  it('adds sorting points to the student total', () => {
+    const extra = new Map([['u1', { graded: 2, correct: 1 }]]);
+    const [r] = studentResults([participant({ user_id: 'u1' })], [], extra);
+    expect([r.correct, r.graded]).toEqual([1, 2]);
   });
 });
 
