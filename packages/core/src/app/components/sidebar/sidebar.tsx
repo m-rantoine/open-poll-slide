@@ -212,7 +212,6 @@ export function Sidebar({
             onDropSlide={() => {}}
           />
         )}
-        <AccountRow />
       </div>
 
       <div className="mt-5 flex h-6 items-center justify-between pr-2.5 pl-4 pb-0.5">
@@ -349,6 +348,9 @@ export function Sidebar({
         )}
       </div>
 
+      <div className="px-2 pb-1">
+        <AccountRow />
+      </div>
       <SidebarFooter />
     </aside>
   );

@@ -30,9 +30,9 @@ export function AccountRow() {
       type="button"
       onClick={run}
       className={cn(
-        'flex w-full items-center gap-2.5 rounded-[5px] px-2 py-[5px] text-left text-[12.5px] outline-none',
-        'text-foreground/70 transition-[background-color,color] duration-150 hover:bg-muted/60 hover:text-foreground',
-        'focus-visible:ring-1 focus-visible:ring-brand',
+        'flex h-8 w-full items-center gap-2.5 rounded-[6px] border border-border bg-card px-2.5 text-left text-[12.5px] shadow-edge outline-none',
+        'text-foreground transition-[border-color,background-color] duration-100 hover:border-foreground/20',
+        'focus-visible:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring/30',
       )}
     >
       <span
