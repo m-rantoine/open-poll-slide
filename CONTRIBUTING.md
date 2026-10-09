@@ -19,8 +19,8 @@ pnpm + Turbo monorepo.
 
 | Path | Package | Role |
 | --- | --- | --- |
-| [`packages/core`](packages/core) | `@open-slide/core` | Runtime (viewer, present mode, inspector), Vite plugin, `open-slide` dev/build CLI. |
-| [`packages/cli`](packages/cli) | `@open-slide/cli` | `npx @open-slide/cli init` scaffolder + project template. |
+| [`packages/core`](packages/core) | `@rjantoine/open-poll-slide-core` | Runtime (viewer, present mode, inspector), Vite plugin, `open-slide` dev/build CLI. |
+| [`packages/cli`](packages/cli) | `@rjantoine/open-poll-slide-cli` | `pnpm dlx @rjantoine/open-poll-slide-cli init` scaffolder + project template. |
 | [`apps/demo`](apps/demo) | private | Local consumer of `@open-slide/core` via `workspace:*`. The dogfood target for the framework. |
 | [`apps/web`](apps/web) | private | Marketing site (Next.js). |
 
@@ -109,6 +109,10 @@ pnpm cli <script>
 - For runtime/UI changes, please verify the change in `apps/demo` and describe what you exercised in the PR.
 
 ## Releases
+
+### Merging upstream
+
+This is a fork. To take upstream fixes: `git fetch upstream && git merge upstream/main`. Keep this fork's `name`, `version` and `CHANGELOG.md` in `packages/core` and `packages/cli` when resolving conflicts; slides and docs keep importing `@open-slide/core`, which projects resolve to the fork through an npm alias.
 
 Releases are cut by the maintainer via `pnpm release`, which builds `@open-slide/core` + `@open-slide/cli` and runs `changeset publish`. Contributors don't need to publish anything — just land the changeset alongside your code.
 

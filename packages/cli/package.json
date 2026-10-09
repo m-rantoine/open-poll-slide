@@ -1,10 +1,10 @@
 {
-  "name": "@open-slide/cli",
-  "version": "2.0.0",
-  "description": "Scaffold an open-slide workspace with Claude Code skills preconfigured.",
+  "name": "@rjantoine/open-poll-slide-cli",
+  "version": "0.1.0",
+  "description": "Scaffold an open-poll-slide workspace (a fork of open-slide with live polling sessions) with agent skills preconfigured.",
   "type": "module",
   "bin": {
-    "open-slide": "dist/cli.js"
+    "open-poll-slide-cli": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -28,17 +28,17 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "1weiho",
-    "url": "https://github.com/1weiho"
+    "name": "rjantoine",
+    "url": "https://github.com/m-rantoine"
   },
-  "homepage": "https://open-slide.dev",
+  "homepage": "https://github.com/m-rantoine/open-poll-slide#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/open-slide/open-slide.git",
+    "url": "git+https://github.com/m-rantoine/open-poll-slide.git",
     "directory": "packages/cli"
   },
   "bugs": {
-    "url": "https://github.com/open-slide/open-slide/issues"
+    "url": "https://github.com/m-rantoine/open-poll-slide/issues"
   },
   "publishConfig": {
     "access": "public"

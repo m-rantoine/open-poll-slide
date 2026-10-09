@@ -27,7 +27,7 @@ importers:
   apps/demo:
     dependencies:
       '@open-slide/core':
-        specifier: workspace:*
+        specifier: workspace:@rjantoine/open-poll-slide-core@*
         version: link:../../packages/core
       react:
         specifier: ^19.2.8
@@ -250,7 +250,7 @@ importers:
   packages/core/e2e/fixture:
     dependencies:
       '@open-slide/core':
-        specifier: workspace:*
+        specifier: workspace:@rjantoine/open-poll-slide-core@*
         version: link:../..
       react:
         specifier: ^19.2.8
