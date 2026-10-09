@@ -661,7 +661,7 @@ export const zhCN: Locale = {
     inactiveTime: '不活跃时长',
     startHostPaced: '开始主持人控制会话',
     startSelfPaced: '开始自主节奏会话',
-    signInToStart: '登录后开始会话',
+    signInToStart: '登录后演示投票',
     couldNotStart: '无法开始会话',
     errors: {
       question_closed: '此问题已关闭。',

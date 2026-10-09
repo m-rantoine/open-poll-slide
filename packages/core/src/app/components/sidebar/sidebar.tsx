@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import type { Folder, FolderIcon } from '@/lib/sdk';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
+import { AccountRow } from '../../live/account-row';
 import { useAuth, useCanSeeThemes } from '../../live/auth';
 import { liveConfigured } from '../../live/client';
 import { COMMAND_MENU_SHORTCUT } from '../command/command-menu';
@@ -211,6 +212,7 @@ export function Sidebar({
             onDropSlide={() => {}}
           />
         )}
+        <AccountRow />
       </div>
 
       <div className="mt-5 flex h-6 items-center justify-between pr-2.5 pl-4 pb-0.5">

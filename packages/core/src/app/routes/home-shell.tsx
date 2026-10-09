@@ -29,6 +29,7 @@ import {
 import type { FoldersManifest } from '../lib/sdk';
 import { themes as themeRegistry } from '../lib/themes';
 import { useVisibleSlideIds } from '../lib/use-visible-slides';
+import { useAccountAction } from '../live/account-row';
 import { useCanSeeThemes } from '../live/auth';
 
 export type HomeOutletContext = {
@@ -73,6 +74,7 @@ export function HomeShell() {
   const [searchParams] = useSearchParams();
   const t = useLocale();
   const canSeeThemes = useCanSeeThemes();
+  const account = useAccountAction();
 
   const selectedId = pathToSelectedId(location.pathname, searchParams);
 
@@ -246,6 +248,12 @@ export function HomeShell() {
                       <SystemViewIcon kind="assets" className="text-muted-foreground" />
                       <span className="flex-1 truncate">{t.home.assets}</span>
                       <span className="folio">{pad2(globalAssets.length)}</span>
+                    </DropdownMenuItem>
+                  )}
+                  {account && (
+                    <DropdownMenuItem onClick={account.run}>
+                      <account.Icon className="text-muted-foreground" />
+                      <span className="flex-1 truncate">{account.label}</span>
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>

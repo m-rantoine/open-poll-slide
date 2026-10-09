@@ -684,7 +684,7 @@ export const frCA: Locale = {
     inactiveTime: 'Temps inactif',
     startHostPaced: 'Lancer une session au rythme de l’animateur',
     startSelfPaced: 'Lancer une session à rythme libre',
-    signInToStart: 'Connectez-vous pour lancer une session',
+    signInToStart: 'Connectez-vous pour présenter des sondages',
     couldNotStart: 'Impossible de lancer la session',
     errors: {
       question_closed: 'Cette question est fermée.',

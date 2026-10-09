@@ -14,6 +14,7 @@ import {
 } from './live/auth';
 import { liveConfigured } from './live/client';
 import { JoinPage } from './live/join';
+import { LoginPage } from './live/login';
 import { PlayPage } from './live/play';
 import { ResultsDetailPage, ResultsListPage } from './live/results';
 import { ScreenPage } from './live/screen';
@@ -69,6 +70,7 @@ export function App() {
             />
             <Route path="/s/:slideId/screen" element={<ScreenPage />} />
             <Route path="/s/:slideId/play/:sessionId" element={<PlayPage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/join" element={<JoinPage />} />
             <Route path="/join/:code" element={<JoinPage />} />
             <Route path="*" element={<NotFound />} />

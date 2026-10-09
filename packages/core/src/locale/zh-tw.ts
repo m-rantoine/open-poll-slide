@@ -661,7 +661,7 @@ export const zhTW: Locale = {
     inactiveTime: '不活躍時長',
     startHostPaced: '開始主持人控制工作階段',
     startSelfPaced: '開始自主節奏工作階段',
-    signInToStart: '登入後開始工作階段',
+    signInToStart: '登入後展示投票',
     couldNotStart: '無法開始工作階段',
     errors: {
       question_closed: '此問題已關閉。',

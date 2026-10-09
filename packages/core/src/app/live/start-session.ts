@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { SlideModule } from '../lib/sdk';
 import { useLocale } from '../lib/use-locale';
@@ -8,8 +8,9 @@ import { getClient, liveConfigured } from './client';
 import { liveErrorMessage } from './errors';
 
 export function useStartSession(slideId: string, slide: SlideModule | null) {
-  const { isHost, session } = useAuth();
+  const { isHost, session, loading } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const t = useLocale();
 
   const start = useCallback(
@@ -36,10 +37,10 @@ export function useStartSession(slideId: string, slide: SlideModule | null) {
   );
 
   return {
-    available: liveConfigured,
+    available: liveConfigured && !loading,
     signedIn: Boolean(session),
     canStart: liveConfigured && isHost && Boolean(slide),
     start,
-    goSignIn: () => navigate('/sessions'),
+    goSignIn: () => navigate(`/login?next=${encodeURIComponent(pathname)}`),
   };
 }

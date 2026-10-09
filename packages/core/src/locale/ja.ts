@@ -674,7 +674,7 @@ export const ja: Locale = {
     inactiveTime: '非アクティブ時間',
     startHostPaced: 'ホスト主導のセッションを開始',
     startSelfPaced: '自分のペースのセッションを開始',
-    signInToStart: 'サインインしてセッションを開始',
+    signInToStart: 'サインインしてポールを発表',
     couldNotStart: 'セッションを開始できませんでした',
     errors: {
       question_closed: 'この質問は締め切られました。',
