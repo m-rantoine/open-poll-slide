@@ -37,7 +37,7 @@ export async function isDirNonEmpty(target: string): Promise<boolean> {
 declare const __CORE_VERSION_AT_BUILD__: string;
 
 function coreVersionRange(): string {
-  return `npm:@rjantoine/open-poll-slide-core@^${__CORE_VERSION_AT_BUILD__}`;
+  return `npm:@rantoine/open-poll-slide-core@^${__CORE_VERSION_AT_BUILD__}`;
 }
 
 async function linkOrCopy(relSrc: string, dst: string): Promise<void> {
@@ -76,7 +76,7 @@ export async function scaffold(opts: ScaffoldOptions): Promise<void> {
 
   if (!existsSync(TEMPLATE_DIR)) {
     throw new Error(
-      `Template missing at ${TEMPLATE_DIR}. If you are running from source, run \`pnpm --filter @rjantoine/open-poll-slide-cli build\` first.`,
+      `Template missing at ${TEMPLATE_DIR}. If you are running from source, run \`pnpm --filter @rantoine/open-poll-slide-cli build\` first.`,
     );
   }
 

@@ -4,7 +4,7 @@ Pear Deck–style sessions on top of open-slide. A host runs a deck, participant
 
 ## Setup
 
-Start a project with `pnpm dlx @rjantoine/open-poll-slide-cli init my-slide` (see the README), or add the fork to an existing one with `pnpm add @open-slide/core@npm:@rjantoine/open-poll-slide-core`.
+Start a project with `pnpm dlx @rantoine/open-poll-slide-cli init my-slide` (see the README), or add the fork to an existing one with `pnpm add @open-slide/core@npm:@rantoine/open-poll-slide-core`.
 
 You need a Supabase project and the [Supabase CLI](https://supabase.com/docs/guides/cli), logged in (`supabase login`).
 

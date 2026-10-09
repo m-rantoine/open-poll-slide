@@ -11,7 +11,7 @@ const coreRoot = path.resolve(here, '..');
 
 if (!existsSync(path.join(coreRoot, 'dist', 'cli', 'bin.js'))) {
   console.error(
-    'packages/core/dist is missing. Run `pnpm --filter @rjantoine/open-poll-slide-core build` first.',
+    'packages/core/dist is missing. Run `pnpm --filter @rantoine/open-poll-slide-core build` first.',
   );
   process.exit(1);
 }

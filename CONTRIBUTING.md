@@ -19,8 +19,8 @@ pnpm + Turbo monorepo.
 
 | Path | Package | Role |
 | --- | --- | --- |
-| [`packages/core`](packages/core) | `@rjantoine/open-poll-slide-core` | Runtime (viewer, present mode, inspector), Vite plugin, `open-slide` dev/build CLI. |
-| [`packages/cli`](packages/cli) | `@rjantoine/open-poll-slide-cli` | `pnpm dlx @rjantoine/open-poll-slide-cli init` scaffolder + project template. |
+| [`packages/core`](packages/core) | `@rantoine/open-poll-slide-core` | Runtime (viewer, present mode, inspector), Vite plugin, `open-slide` dev/build CLI. |
+| [`packages/cli`](packages/cli) | `@rantoine/open-poll-slide-cli` | `pnpm dlx @rantoine/open-poll-slide-cli init` scaffolder + project template. |
 | [`apps/demo`](apps/demo) | private | Local consumer of `@open-slide/core` via `workspace:*`. The dogfood target for the framework. |
 | [`apps/web`](apps/web) | private | Marketing site (Next.js). |
 

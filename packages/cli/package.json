@@ -1,5 +1,5 @@
 {
-  "name": "@rjantoine/open-poll-slide-cli",
+  "name": "@rantoine/open-poll-slide-cli",
   "version": "0.1.0",
   "description": "Scaffold an open-poll-slide workspace (a fork of open-slide with live polling sessions) with agent skills preconfigured.",
   "type": "module",
@@ -28,7 +28,7 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "rjantoine",
+    "name": "rantoine",
     "url": "https://github.com/m-rantoine"
   },
   "homepage": "https://github.com/m-rantoine/open-poll-slide#readme",

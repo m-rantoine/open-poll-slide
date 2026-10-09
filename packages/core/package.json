@@ -1,5 +1,5 @@
 {
-  "name": "@rjantoine/open-poll-slide-core",
+  "name": "@rantoine/open-poll-slide-core",
   "version": "0.1.0",
   "description": "Runtime and CLI for open-poll-slide, a fork of open-slide with live interactive polling sessions.",
   "type": "module",
@@ -51,7 +51,7 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "rjantoine",
+    "name": "rantoine",
     "url": "https://github.com/m-rantoine"
   },
   "homepage": "https://github.com/m-rantoine/open-poll-slide#readme",

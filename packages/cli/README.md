@@ -1,11 +1,11 @@
-# @rjantoine/open-poll-slide-cli
+# @rantoine/open-poll-slide-cli
 
 Scaffold a workspace for open-poll-slide, a fork of [open-slide](https://github.com/open-slide/open-slide) with live polling sessions and Claude Code skills preconfigured.
 
 ## Usage
 
 ```bash
-pnpm dlx @rjantoine/open-poll-slide-cli init my-slide
+pnpm dlx @rantoine/open-poll-slide-cli init my-slide
 cd my-slide
 pnpm install
 pnpm dev
@@ -14,7 +14,7 @@ pnpm dev
 This creates a workspace containing:
 
 - `slides/getting-started/` — a starter slide you can edit or delete.
-- `package.json` — depends on `@open-slide/core` (an alias for `@rjantoine/open-poll-slide-core`), which provides the runtime (home page, slide viewer, fullscreen mode) and the `open-slide` CLI.
+- `package.json` — depends on `@open-slide/core` (an alias for `@rantoine/open-poll-slide-core`), which provides the runtime (home page, slide viewer, fullscreen mode) and the `open-slide` CLI.
 - `open-slide.config.ts` — optional typed config (slidesDir, port).
 - `.claude/skills/` and `.agents/skills/` — Claude Code skills (`create-slide`, `apply-comments`, …).
 - `CLAUDE.md` — agent guide for authoring slides.
