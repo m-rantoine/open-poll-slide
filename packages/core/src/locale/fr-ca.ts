@@ -609,6 +609,7 @@ export const frCA: Locale = {
     submittedSorting: 'Envoyé',
     placedOf: '{placed} sur {total} placés',
     sortingHint: 'Glissez une tuile dans une zone, ou touchez une tuile puis une zone.',
+    dropHere: 'Déposez ici',
     correct: '✓ Bonne réponse',
     notQuite: '✗ Pas tout à fait',
     waitingForHostToOpen: 'En attente de l’ouverture de la question par l’animateur',

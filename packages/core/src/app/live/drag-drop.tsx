@@ -1,3 +1,4 @@
+import { ArrowDownToLine } from 'lucide-react';
 import {
   type CSSProperties,
   createContext,
@@ -61,6 +62,8 @@ const DragDropContext = createContext<Ctx | null>(null);
 type Engine = {
   hover: string | null;
   selected: string | null;
+  /** A tile is being dragged or selected, so zones show they can take it. */
+  carrying: boolean;
   tileProps: (itemId: string, label: string) => HTMLAttributes<HTMLElement>;
   targetProps: (target: string) => HTMLAttributes<HTMLElement> & {
     'data-dd-target': string;
@@ -68,6 +71,10 @@ type Engine = {
   };
   ghost: ReactNode;
 };
+
+// Opaque, bordered and raised, so a tile reads differently from the tinted pool it starts in and
+// the dashed zones it is dropped on.
+const TILE_BG = `color-mix(in srgb, ${ACCENT} 18%, var(--osd-bg, #fff))`;
 
 const tileStyle = (extra?: CSSProperties): CSSProperties => ({
   display: 'inline-block',
@@ -79,8 +86,9 @@ const tileStyle = (extra?: CSSProperties): CSSProperties => ({
   fontSize: 'inherit',
   lineHeight: 1.25,
   color: INK,
-  background: `color-mix(in srgb, ${ACCENT} 14%, transparent)`,
-  border: `0.07em solid color-mix(in srgb, ${INK} 28%, transparent)`,
+  background: TILE_BG,
+  border: `0.08em solid ${INK}`,
+  boxShadow: `0 0.08em 0 color-mix(in srgb, ${INK} 35%, transparent)`,
   borderRadius: 'var(--osd-radius, 0.5em)',
   textAlign: 'left',
   userSelect: 'none',
@@ -214,7 +222,14 @@ function useDragEngine(
         )
       : null;
 
-  return { hover, selected, tileProps, targetProps, ghost };
+  return {
+    hover,
+    selected,
+    carrying: drag !== null || selected !== null,
+    tileProps,
+    targetProps,
+    ghost,
+  };
 }
 
 /** Shrinks the font until the content fits its parent (`all`) or its first tile is fully visible. */
@@ -285,9 +300,11 @@ function Tile({
 }) {
   const colour = tone === 'good' ? GOOD : tone === 'bad' ? BAD : null;
   const style = tileStyle({
-    borderColor: colour ?? (selected ? ACCENT : undefined),
-    boxShadow: selected ? `0 0 0 0.08em ${ACCENT}` : undefined,
-    background: colour ? `color-mix(in srgb, ${colour} 16%, transparent)` : undefined,
+    ...(colour && {
+      borderColor: colour,
+      background: `color-mix(in srgb, ${colour} 20%, var(--osd-bg, #fff))`,
+    }),
+    ...(selected && { borderColor: ACCENT, boxShadow: `0 0 0 0.1em ${ACCENT}` }),
   });
   const body = (
     <>
@@ -318,6 +335,7 @@ export type DropZoneProps = {
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children'>;
 
 export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
+  const t = useLocale();
   const ctx = useContext(DragDropContext);
   const ref = useRef<HTMLDivElement>(null);
   const isResults = Boolean(ctx?.results);
@@ -381,8 +399,13 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
         padding: '0.4em',
         fontFamily: FONT,
         color: INK,
-        border: `0.12em dashed ${over ? ACCENT : `color-mix(in srgb, ${INK} 35%, transparent)`}`,
-        background: over ? `color-mix(in srgb, ${ACCENT} 10%, transparent)` : 'transparent',
+        border: `0.12em ${over ? 'solid' : 'dashed'} ${ACCENT}`,
+        background: `color-mix(in srgb, ${ACCENT} ${over ? 20 : 7}%, transparent)`,
+        boxShadow:
+          interactive && engine.carrying
+            ? `0 0 0 0.14em color-mix(in srgb, ${ACCENT} 45%, transparent)`
+            : undefined,
+        transition: 'background 120ms, box-shadow 120ms',
         borderRadius: 'var(--osd-radius, 16px)',
         cursor: interactive && engine.selected ? 'copy' : undefined,
         ...style,
@@ -397,9 +420,23 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
       >
         {!hideLabel && (
           <div
-            style={{ fontWeight: 700, opacity: 0.75, fontSize: '0.8em', margin: '0 0.15em 0.2em' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3em',
+              fontWeight: 700,
+              fontSize: '0.8em',
+              margin: '0 0.15em 0.2em',
+              color: ACCENT,
+            }}
           >
-            {zoneLabel(question, zone)}
+            <ArrowDownToLine aria-hidden style={{ width: '1em', height: '1em', flexShrink: 0 }} />
+            <span style={{ color: INK, opacity: 0.8 }}>{zoneLabel(question, zone)}</span>
+          </div>
+        )}
+        {interactive && (!tiles || (Array.isArray(tiles) && tiles.length === 0)) && (
+          <div style={{ opacity: 0.55, fontSize: '0.75em', margin: '0.3em 0.2em' }}>
+            {t.live.dropHere}
           </div>
         )}
         {tiles}
@@ -435,9 +472,10 @@ export function ItemPool({ style, ...rest }: ItemPoolProps) {
         fontFamily: FONT,
         color: INK,
         borderRadius: 'var(--osd-radius, 16px)',
+        border: `0.06em solid color-mix(in srgb, ${INK} 18%, transparent)`,
         background: over
-          ? `color-mix(in srgb, ${ACCENT} 10%, transparent)`
-          : `color-mix(in srgb, ${INK} 5%, transparent)`,
+          ? `color-mix(in srgb, ${ACCENT} 12%, transparent)`
+          : `color-mix(in srgb, ${INK} 9%, transparent)`,
         ...style,
       }}
     >

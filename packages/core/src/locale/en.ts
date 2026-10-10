@@ -595,6 +595,7 @@ export const en: Locale = {
     submittedSorting: 'Submitted',
     placedOf: '{placed} of {total} placed',
     sortingHint: 'Drag a tile to a zone, or tap a tile and then a zone.',
+    dropHere: 'Drop here',
     correct: '✓ Correct',
     notQuite: '✗ Not quite',
     waitingForHostToOpen: 'Waiting for your host to open this question',

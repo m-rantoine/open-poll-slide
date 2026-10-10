@@ -630,6 +630,7 @@ export type Locale = {
     submittedSorting: string;
     placedOf: string;
     sortingHint: string;
+    dropHere: string;
     correct: string;
     notQuite: string;
     waitingForHostToOpen: string;

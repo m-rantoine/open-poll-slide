@@ -604,6 +604,7 @@ export const ja: Locale = {
     placedOf: '{placed} / {total} 配置済み',
     sortingHint:
       'タイルをゾーンにドラッグするか、タイルをタップしてからゾーンをタップしてください。',
+    dropHere: 'ここにドロップ',
     correct: '✓ 正解',
     notQuite: '✗ 不正解',
     waitingForHostToOpen: 'ホストが質問を開くのを待っています',
