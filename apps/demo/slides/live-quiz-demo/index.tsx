@@ -748,17 +748,26 @@ export default [
           style={{
             position: 'absolute',
             inset: 0,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gridTemplateRows: '1fr 0.5fr',
-            gap: 32,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 28,
+            fontSize: 44,
+            lineHeight: 1.3,
           }}
         >
-          <DropZone zone="canada" />
-          <DropZone zone="france" />
-          <DropZone zone="japan" />
-          <DropZone zone="egypt" />
-          <ItemPool style={{ gridColumn: '1 / -1' }} />
+          <p style={{ margin: 0 }}>
+            The capital of Canada is <DropZone zone="canada" />.
+          </p>
+          <p style={{ margin: 0 }}>
+            The capital of France is <DropZone zone="france" />.
+          </p>
+          <p style={{ margin: 0 }}>
+            The capital of Japan is <DropZone zone="japan" />.
+          </p>
+          <p style={{ margin: 0 }}>
+            The capital of Egypt is <DropZone zone="egypt" />.
+          </p>
+          <ItemPool style={{ marginTop: 'auto', height: 150 }} />
         </div>
       </DragDrop>
     </div>

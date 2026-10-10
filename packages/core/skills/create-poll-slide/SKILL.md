@@ -101,7 +101,7 @@ export const questions = {
 
 ### Association (matching)
 
-Same components and same `items` / `zones` / `correct` shape as sorting, with `type: 'association'`, but **each zone holds exactly one tile**: dropping a tile on an occupied zone sends the old tile back to the pool, or swaps the two when the dragged tile came from another zone. Scoring is one point per correct pair.
+Fill-in-the-blank matching: the zones are small blanks, each about one word wide and one line tall, that you place **inline in a sentence, a table cell, or around a diagram** (labels pointing at parts of a picture). Same components and `items` / `zones` / `correct` shape as sorting, with `type: 'association'`, but **each blank holds exactly one tile**: dropping a tile on an occupied blank sends the old tile back to the pool, or swaps the two when the dragged tile came from another blank. One point per correct pair.
 
 ```tsx
 capitals: {
@@ -114,9 +114,21 @@ capitals: {
 },
 ```
 
-- **Make every zone exactly the same size** (equal grid cells or one shared `style`). Never size a zone to its answer: a zone that is bigger or smaller than its neighbours gives the answer away.
-- Tiles shrink their text to fit the zone, so size the zones for the longest tile. In the editor preview a red note appears on any zone whose tile has to shrink below 90%; enlarge all the zones together until the notes disappear.
-- Zones stay a fixed size when a tile lands in them; nothing grows or shrinks.
+```tsx
+<DragDrop question={questions.capitals}>
+  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: 28, fontSize: 44 }}>
+    <p>The capital of Canada is <DropZone zone="canada" />.</p>
+    <p>The capital of France is <DropZone zone="france" />.</p>
+    <ItemPool style={{ marginTop: 'auto', height: 150 }} />
+  </div>
+</DragDrop>
+```
+
+- A blank has no label and takes the surrounding text's font size; by default it is `7em` wide and `2em` tall. Override `style.width` / `style.height` to fit your answers.
+- **Make every blank exactly the same size.** Never size a blank to its answer: a wider or taller blank gives the answer away. The default is the same everywhere, so just do not override it per blank (or override all of them identically).
+- Tiles shrink their text to fit the blank, so size blanks for a typical answer. In the editor preview a red outline appears on any blank whose tile has to shrink below 90% (hover it for the figure); enlarge all blanks together until none are outlined.
+- Blanks never grow or shrink when a tile lands in them.
+- Results show, in each blank, the tiles in order of how often they were placed there, with the overflow hidden and at least the first tile visible.
 
 ### Word cloud
 

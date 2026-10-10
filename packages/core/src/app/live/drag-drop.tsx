@@ -300,7 +300,13 @@ function Tile({
   interactive,
   selected,
   engine,
+  inline,
+  block,
 }: {
+  /** In a blank: one line, no margin. */
+  inline?: boolean;
+  /** One tile per line (results in a blank). */
+  block?: boolean;
   label: string;
   itemId: string;
   count?: number;
@@ -311,6 +317,8 @@ function Tile({
 }) {
   const colour = tone === 'good' ? GOOD : tone === 'bad' ? BAD : null;
   const style = tileStyle({
+    ...(inline && { margin: 0, whiteSpace: 'nowrap' as const }),
+    ...(block && { display: 'block' }),
     ...(colour && {
       borderColor: colour,
       background: `color-mix(in srgb, ${colour} 20%, var(--osd-bg, #fff))`,
@@ -355,6 +363,7 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
   if (!ctx) return <div {...rest} style={style} />;
   const { question, interactive, placed, results, engine, correctPairs, showMarks, previewKey } =
     ctx;
+  const inline = question.type === 'association';
 
   let tiles: ReactNode;
   if (results) {
@@ -367,6 +376,8 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
           itemId={t.itemId}
           label={itemLabel(question, t.itemId)}
           count={t.count}
+          block={inline}
+          inline={inline}
           tone={good === null ? null : good ? 'good' : 'bad'}
         />
       );
@@ -382,6 +393,7 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
           interactive={interactive}
           selected={engine.selected === i.id}
           engine={engine}
+          inline={inline}
           tone={
             ctx.tileOk[i.id] === undefined || ctx.tileOk[i.id] === null
               ? null
@@ -394,15 +406,20 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
   } else if (previewKey) {
     tiles = question.items
       .filter((i) => previewKey[i.id] === zone)
-      .map((i) => <Tile key={i.id} itemId={i.id} label={i.label} />);
+      .map((i) => <Tile key={i.id} itemId={i.id} label={i.label} inline={inline} />);
   }
 
   const over = engine.hover === zone;
+  const tooSmall = enabledWarning(shrink);
   return (
     <div
       {...rest}
       {...(interactive ? engine.targetProps(zone) : {})}
-      title={zoneLabel(question, zone)}
+      title={
+        inline && tooSmall
+          ? format(t.live.tileShrinks, { pct: Math.round(shrink * 100) })
+          : zoneLabel(question, zone)
+      }
       style={{
         position: 'relative',
         boxSizing: 'border-box',
@@ -420,23 +437,37 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
         transition: 'background 120ms, box-shadow 120ms',
         borderRadius: 'var(--osd-radius, 16px)',
         cursor: interactive && engine.selected ? 'copy' : undefined,
+        ...(inline && {
+          // A blank: about one word wide and one line tall, in the surrounding text's size.
+          display: isResults ? 'inline-block' : 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '7em',
+          height: '2em',
+          verticalAlign: 'middle',
+          padding: '0.1em 0.25em',
+          whiteSpace: 'nowrap' as const,
+          borderRadius: '0.35em',
+          ...(tooSmall && { borderColor: BAD }),
+        }),
         ...style,
       }}
     >
       <div
         ref={ref}
         style={{
-          fontSize: 'calc(min(40px, 14cqh) * var(--osd-fit, 1))',
+          fontSize: inline
+            ? 'calc(1em * var(--osd-fit, 1))'
+            : 'calc(min(40px, 14cqh) * var(--osd-fit, 1))',
           lineHeight: 1.2,
-          textAlign: question.type === 'association' ? 'center' : undefined,
+          textAlign: inline ? 'center' : undefined,
         }}
       >
-        {!hideLabel && (
+        {!hideLabel && !inline && (
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: question.type === 'association' ? 'center' : undefined,
               gap: '0.3em',
               fontWeight: 700,
               fontSize: '0.8em',
@@ -448,14 +479,14 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
             <span style={{ color: INK, opacity: 0.8 }}>{zoneLabel(question, zone)}</span>
           </div>
         )}
-        {interactive && (!tiles || (Array.isArray(tiles) && tiles.length === 0)) && (
+        {!inline && interactive && (!tiles || (Array.isArray(tiles) && tiles.length === 0)) && (
           <div style={{ opacity: 0.55, fontSize: '0.75em', margin: '0.3em 0.2em' }}>
             {t.live.dropHere}
           </div>
         )}
         {tiles}
       </div>
-      {enabledWarning(shrink) && (
+      {!inline && tooSmall && (
         <div
           style={{
             position: 'absolute',
@@ -514,7 +545,10 @@ export function ItemPool({ style, ...rest }: ItemPoolProps) {
       <div
         ref={ref}
         style={{
-          fontSize: 'calc(min(40px, 14cqh) * var(--osd-fit, 1))',
+          fontSize:
+            question.type === 'association'
+              ? 'calc(1em * var(--osd-fit, 1))'
+              : 'calc(min(40px, 14cqh) * var(--osd-fit, 1))',
           lineHeight: 1.2,
         }}
       >
