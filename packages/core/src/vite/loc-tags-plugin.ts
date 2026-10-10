@@ -14,6 +14,10 @@ const FORWARDING_COMPONENTS = new Set([
   'MultipleChoice',
   'Lobby',
   'ClassResults',
+  'WordCloud',
+  'DragDrop',
+  'DropZone',
+  'ItemPool',
 ]);
 
 function isTaggableJsxName(name: t.JSXOpeningElement['name']): name is t.JSXIdentifier {
