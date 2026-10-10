@@ -58,7 +58,7 @@ Rules:
 - `correct` is an array of string literal option ids; omit it entirely when unknown. Several correct options are allowed. It never reaches the browser: the build strips it, and `open-slide live keys` uploads it to the database, so tell the user to run that command after adding or changing answer keys.
 - One question per page. The component fills the whole 1920×1080 page itself (it brings its own frame, heading and options), so do not wrap it in a padded container. It uses `--osd-*` design variables when the deck exports `design`, so declare `design` as `create-slide` recommends.
 - Optional: `export const isPrivate = true;` hides the deck from non-hosts (it then only opens through a session). Without it the deck follows `SLIDES_DEFAULT_AS_PRIVATE` (public when unset).
-- Four question types exist: `type: 'multiple_choice'` (`<MultipleChoice>`), `type: 'word_cloud'` (`<WordCloud>`), `type: 'drag_drop'` (sorting) and `type: 'association'` (matching); the last two both use `<DragDrop>` with `<DropZone>` and `<ItemPool>`.
+- Question types: `multiple_choice` (`<MultipleChoice>`), `word_cloud` (`<WordCloud>`), `drag_drop` (sorting) and `association` (matching), the last two with `<DragDrop>`, `<DropZone>` and `<ItemPool>`, plus `scale` (`<Scale>`), `ranking` (`<Ranking>`), `points` (`<Points>`), `number` (`<NumberAnswer>`) and `open_text` (`<OpenText>`) described under "Scales, ranking, points, numbers and open text".
 - `scored` (optional, any type): whether answers count toward the score. Default `true` for multiple choice, sorting and association, `false` for word clouds. An answer that has no grade (no `correct` set, or a word the host has not marked) never counts, and is never treated as wrong.
 
 ### Drag-and-drop sorting
@@ -129,6 +129,42 @@ capitals: {
 - Tiles shrink their text to fit the blank, so size blanks for a typical answer. In the editor preview a red outline appears on any blank whose tile has to shrink below 90% (hover it for the figure); enlarge all blanks together until none are outlined.
 - Blanks never grow or shrink when a tile lands in them.
 - Results show only the most common tile in each blank. The host clicks it on the Screen to open a horizontal bar chart of that blank's answers (like multiple choice), with a Back button. The chart leaves out wrong tiles nobody chose; once results are revealed it also lists the correct tile even if nobody chose it.
+
+### Scales, ranking, points, numbers and open text
+
+Each is `<Component question={questions.x} />` below an `<h1>`, like multiple choice. The Screen shows a progress bar while open and the results when the question ends; Present mode shows an inert preview.
+
+```tsx
+export const questions = {
+  confidence: {
+    id: 'confidence', type: 'scale', question: 'How confident are you?',
+    min: 1, max: 5, minLabel: 'Not at all', maxLabel: 'Very',   // optional
+    items: [{ id: 'fractions', label: 'Fractions' }, { id: 'decimals', label: 'Decimals' }],
+  },
+  planets: {
+    id: 'planets', type: 'ranking', question: 'Order the planets from the Sun.',
+    items: [{ id: 'earth', label: 'Earth' }, { id: 'mercury', label: 'Mercury' }],
+    correct: ['mercury', 'earth'],            // optional: item ids first to last (makes it a quiz)
+  },
+  budget: {
+    id: 'budget', type: 'points', question: 'Spend 100 points.', total: 100,   // total optional
+    items: [{ id: 'food', label: 'Food' }, { id: 'hotel', label: 'Hotel' }],
+  },
+  howmany: {
+    id: 'howmany', type: 'number', question: 'How many provinces and territories?',
+    correct: 13, tolerance: 0, unit: 'regions',   // correct, tolerance, min, max, unit all optional
+  },
+  why: { id: 'why', type: 'open_text', question: 'What will you remember?', maxLength: 500 },
+} satisfies Record<string, InteractiveQuestion>;
+```
+
+- **Scale** (`<Scale>`): each statement is rated `min` to `max` (default 1 to 5). Results show the average and how many gave each rating. Not scored.
+- **Ranking** (`<Ranking>`): participants move items up and down. Results show the average position; with `correct` it is scored one point per item in its right place. `correct` is stripped from the bundle; run `open-slide live keys` after changing it.
+- **Points** (`<Points>`): participants share `total` points (default 100) between the options. Results show the average points per option. Not scored.
+- **Number** (`<NumberAnswer>`): one number per participant (a comma works as a decimal point). Results show a histogram with the mean, median and range; with `correct` (and optional `tolerance`) it is scored and the correct value is shown once results are revealed. `correct` is stripped from the bundle.
+- **Open text** (`<OpenText>`): a longer answer (up to `maxLength`, default 500). Results are a wall of response cards. Not scored.
+
+Scale, ranking and points save every change and finish with the Submit button, which is what the "everyone has answered" auto-stop counts. Number and open text send from their own field.
 
 ### Word cloud
 

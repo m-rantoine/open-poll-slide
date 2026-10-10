@@ -514,6 +514,10 @@ export type Database = {
           zone_id: string;
         }[];
       };
+      set_placements: {
+        Args: { p_question: string; p_session: string; p_values: Json };
+        Returns: undefined;
+      };
       place_tile: {
         Args: { p_item: string; p_question: string; p_session: string; p_zone: string | null };
         Returns: undefined;

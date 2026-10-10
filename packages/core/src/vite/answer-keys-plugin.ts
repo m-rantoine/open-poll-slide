@@ -33,6 +33,20 @@ function literalStrings(node: t.Node): string[] | null {
   return out;
 }
 
+function literalNumber(node: t.Node): string[] | null {
+  if (t.isNumericLiteral(node)) return [String(node.value)];
+  if (t.isUnaryExpression(node) && node.operator === '-' && t.isNumericLiteral(node.argument)) {
+    return [String(-node.argument.value)];
+  }
+  return null;
+}
+
+/** A ranking key lists item ids first to last; it is stored as `item>position` pairs. */
+function rankingPairs(node: t.Node): string[] | null {
+  const ids = literalStrings(node);
+  return ids ? ids.map((id, i) => `${id}>${i + 1}`) : null;
+}
+
 function literalPairs(node: t.Node): string[] | null {
   if (!t.isObjectExpression(node)) return null;
   const out: string[] = [];
@@ -62,18 +76,25 @@ export function findAnswerKeys(code: string): FoundAnswerKey[] {
     const type = props.get('type')?.value;
     const kind = type && t.isStringLiteral(type) ? type.value : null;
     const isDragDrop = kind === 'drag_drop' || kind === 'association';
-    const isWordCloud = kind === 'word_cloud';
+    const keyedTypes = ['word_cloud', 'ranking', 'number'];
+    const isOtherKeyed = kind !== null && keyedTypes.includes(kind);
     if (
       !correct ||
       !props.has('question') ||
-      !(props.has('options') || isWordCloud || isDragDrop)
+      !(props.has('options') || isOtherKeyed || isDragDrop)
     ) {
       return;
     }
     const id = props.get('id')?.value;
     found.push({
       questionId: id && t.isStringLiteral(id) ? id.value : null,
-      correct: isDragDrop ? literalPairs(correct.value) : literalStrings(correct.value),
+      correct: isDragDrop
+        ? literalPairs(correct.value)
+        : kind === 'ranking'
+          ? rankingPairs(correct.value)
+          : kind === 'number'
+            ? literalNumber(correct.value)
+            : literalStrings(correct.value),
       dragDrop: isDragDrop,
       start: correct.start ?? 0,
       end: correct.end ?? 0,

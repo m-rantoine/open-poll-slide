@@ -70,11 +70,70 @@ export type AssociationQuestion = Omit<DragDropQuestion, 'type'> & { type: 'asso
 
 export type SortingQuestion = DragDropQuestion | AssociationQuestion;
 
+/** Rate each statement on a numeric scale. Averages are shown; nothing is scored by default. */
+export type ScaleQuestion = QuestionBase & {
+  type: 'scale';
+  /** The statements to rate. */
+  items: QuestionOption[];
+  /** Lowest rating. Default 1. */
+  min?: number;
+  /** Highest rating. Default 5. */
+  max?: number;
+  /** Caption for the lowest rating, for example "Strongly disagree". */
+  minLabel?: string;
+  /** Caption for the highest rating, for example "Strongly agree". */
+  maxLabel?: string;
+};
+
+/** Put the items in order. With `correct` it is a quiz scored one point per item in its right place. */
+export type RankingQuestion = QuestionBase & {
+  type: 'ranking';
+  items: QuestionOption[];
+  /** Item ids from first to last. Stripped from the browser bundle; `live keys` uploads it. */
+  correct?: string[];
+};
+
+/** Share a number of points between the options. Averages are shown. */
+export type PointsQuestion = QuestionBase & {
+  type: 'points';
+  items: QuestionOption[];
+  /** Points to share out. Default 100. */
+  total?: number;
+};
+
+/** Type a number. The results show the spread; `correct` and `tolerance` make it a quiz. */
+export type NumberQuestion = QuestionBase & {
+  type: 'number';
+  /** The right answer. Stripped from the browser bundle; `live keys` uploads it. */
+  correct?: number;
+  /** How far an answer may be from `correct` and still count. Default 0. */
+  tolerance?: number;
+  min?: number;
+  max?: number;
+  /** Shown after the number, for example "km". */
+  unit?: string;
+};
+
+/** A longer free-text answer, shown as a list of responses. Not scored. */
+export type OpenTextQuestion = QuestionBase & {
+  type: 'open_text';
+  /** Longest answer, up to 1000 characters. Default 500. */
+  maxLength?: number;
+};
+
+/** The questions whose answers are stored as item-to-value placements. */
+export type RatingQuestion = ScaleQuestion | RankingQuestion | PointsQuestion;
+
 export type InteractiveQuestion =
   | MultipleChoiceQuestion
   | WordCloudQuestion
   | DragDropQuestion
-  | AssociationQuestion;
+  | AssociationQuestion
+  | ScaleQuestion
+  | RankingQuestion
+  | PointsQuestion
+  | NumberQuestion
+  | OpenTextQuestion;
 
 export const isMultipleChoice = (q: InteractiveQuestion): q is MultipleChoiceQuestion =>
   q.type === 'multiple_choice';
@@ -112,3 +171,6 @@ export type FoldersManifest = {
 
 export const CANVAS_WIDTH = 1920;
 export const CANVAS_HEIGHT = 1080;
+
+export const isRating = (q: InteractiveQuestion): q is RatingQuestion =>
+  q.type === 'scale' || q.type === 'ranking' || q.type === 'points';

@@ -22,8 +22,13 @@ export type {
   DragDropQuestion,
   InteractiveQuestion,
   MultipleChoiceQuestion,
+  NumberQuestion,
+  OpenTextQuestion,
   Page,
+  PointsQuestion,
   QuestionOption,
+  RankingQuestion,
+  ScaleQuestion,
   SlideMeta,
   SlideModule,
   SortingQuestion,
@@ -42,6 +47,14 @@ export type { ClassResultsProps } from './app/live/class-results.tsx';
 export { ClassResults } from './app/live/class-results.tsx';
 export type { DragDropProps, DropZoneProps, ItemPoolProps } from './app/live/drag-drop.tsx';
 export { DragDrop, DropZone, ItemPool } from './app/live/drag-drop.tsx';
+export type {
+  NumberAnswerProps,
+  OpenTextProps,
+  PointsProps,
+  RankingProps,
+  ScaleProps,
+} from './app/live/extra-questions.tsx';
+export { NumberAnswer, OpenText, Points, Ranking, Scale } from './app/live/extra-questions.tsx';
 export type { LobbyProps } from './app/live/lobby.tsx';
 export { Lobby } from './app/live/lobby.tsx';
 export type { MultipleChoiceProps } from './app/live/multiple-choice.tsx';
