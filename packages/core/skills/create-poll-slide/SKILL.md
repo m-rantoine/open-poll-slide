@@ -128,7 +128,7 @@ capitals: {
 - **Make every blank exactly the same size.** Never size a blank to its answer: a wider or taller blank gives the answer away. The default is the same everywhere, so just do not override it per blank (or override all of them identically).
 - Tiles shrink their text to fit the blank, so size blanks for a typical answer. In the editor preview a red outline appears on any blank whose tile has to shrink below 90% (hover it for the figure); enlarge all blanks together until none are outlined.
 - Blanks never grow or shrink when a tile lands in them.
-- Results show, in each blank, the tiles in order of how often they were placed there, with the overflow hidden and at least the first tile visible.
+- Results show only the most common tile in each blank. The host clicks it on the Screen to open a horizontal bar chart of that blank's answers (like multiple choice), with a Back button. The chart leaves out wrong tiles nobody chose; once results are revealed it also lists the correct tile even if nobody chose it.
 
 ### Word cloud
 

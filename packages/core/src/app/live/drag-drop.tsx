@@ -1,4 +1,4 @@
-import { ArrowDownToLine } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft } from 'lucide-react';
 import {
   type CSSProperties,
   createContext,
@@ -29,6 +29,7 @@ import {
   Padlock,
   ProgressBar,
   rootStyle,
+  useShrinkToFit,
 } from './question-chrome';
 import { ACCENT, BAD, FONT, GOOD, INK } from './question-style';
 import type { LiveData } from './use-live-session';
@@ -55,6 +56,8 @@ type Ctx = {
   previewKey: Record<string, string> | undefined;
   /** Participants' grading per tile after results are shown. */
   tileOk: Record<string, boolean | null>;
+  /** Results of an association question: open the breakdown for one blank. */
+  openDetail?: (zone: string) => void;
 };
 
 const DragDropContext = createContext<Ctx | null>(null);
@@ -302,7 +305,11 @@ function Tile({
   engine,
   inline,
   block,
+  onClick,
+  hint,
 }: {
+  onClick?: () => void;
+  hint?: string;
   /** In a blank: one line, no margin. */
   inline?: boolean;
   /** One tile per line (results in a blank). */
@@ -333,6 +340,13 @@ function Tile({
       )}
     </>
   );
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} title={hint} style={{ ...style, cursor: 'pointer' }}>
+        {body}
+      </button>
+    );
+  }
   if (!interactive || !engine) return <span style={style}>{body}</span>;
   return (
     <button
@@ -367,17 +381,21 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
 
   let tiles: ReactNode;
   if (results) {
-    tiles = (results[zone] ?? []).map((t) => {
+    // A blank shows only its most common tile; clicking it opens the full breakdown.
+    const ranked = results[zone] ?? [];
+    tiles = (inline ? ranked.slice(0, 1) : ranked).map((tile) => {
       const known = correctPairs.length > 0 && showMarks;
-      const good = known ? correctPairs.includes(`${t.itemId}>${zone}`) : null;
+      const good = known ? correctPairs.includes(`${tile.itemId}>${zone}`) : null;
       return (
         <Tile
-          key={t.itemId}
-          itemId={t.itemId}
-          label={itemLabel(question, t.itemId)}
-          count={t.count}
+          key={tile.itemId}
+          itemId={tile.itemId}
+          label={itemLabel(question, tile.itemId)}
+          count={tile.count}
           block={inline}
           inline={inline}
+          onClick={inline && ctx.openDetail ? () => ctx.openDetail?.(zone) : undefined}
+          hint={t.live.seeBreakdown}
           tone={good === null ? null : good ? 'good' : 'bad'}
         />
       );
@@ -605,6 +623,122 @@ export function useDragDropParticipant(question: SortingQuestion) {
   return { state, placed, ok, submitted, interactive, engine, submit, failure };
 }
 
+/** One blank's results as horizontal bars, like multiple choice; unchosen wrong tiles are left out. */
+function ZoneChart({
+  question,
+  zone,
+  tiles,
+  correctPairs,
+  showMarks,
+  onBack,
+}: {
+  question: SortingQuestion;
+  zone: string;
+  tiles: ReturnType<typeof zoneTiles>[string];
+  correctPairs: string[];
+  showMarks: boolean;
+  onBack: () => void;
+}) {
+  const t = useLocale();
+  const ref = useRef<HTMLDivElement>(null);
+  useShrinkToFit(ref, 'parent');
+  const rightItem = showMarks
+    ? correctPairs.find((p) => p.endsWith(`>${zone}`))?.slice(0, -(zone.length + 1))
+    : undefined;
+  const rows = [...tiles];
+  if (rightItem && !rows.some((r) => r.itemId === rightItem))
+    rows.push({ itemId: rightItem, count: 0 });
+  const total = tiles.reduce((n, r) => n + r.count, 0);
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: -6,
+        padding: 6,
+        boxSizing: 'border-box',
+        zIndex: 6,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '3cqh',
+        containerType: 'size',
+        background: 'var(--osd-bg, #fff)',
+        color: INK,
+        fontFamily: FONT,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+        <ControlButton label={t.live.back} onClick={onBack}>
+          <ArrowLeft size={28} />
+          {t.live.back}
+        </ControlButton>
+        <span style={{ fontSize: 'min(44px, 7cqh)', fontWeight: 700 }}>
+          {zoneLabel(question, zone)}
+        </span>
+      </div>
+      <div style={{ flex: '1 1 0', minHeight: 0, overflow: 'hidden' }}>
+        <div
+          ref={ref}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2cqh',
+            width: '100%',
+            fontSize: 'calc(min(36px, 6cqh) * var(--osd-fit, 1))',
+          }}
+        >
+          {rows.map((r) => {
+            const good = showMarks ? correctPairs.includes(`${r.itemId}>${zone}`) : false;
+            return (
+              <div
+                key={r.itemId}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(0, 30%) minmax(0, 1fr) 3.5em',
+                  alignItems: 'center',
+                  gap: '0.8em',
+                  lineHeight: 1.2,
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <span style={{ color: GOOD, width: '1.1em', fontSize: '1.2em', fontWeight: 700 }}>
+                    {good ? '✓' : ''}
+                  </span>
+                  {itemLabel(question, r.itemId)}
+                </span>
+                <span
+                  style={{
+                    height: '1.5em',
+                    borderRadius: 12,
+                    background: `color-mix(in srgb, ${INK} 8%, transparent)`,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'block',
+                      height: '100%',
+                      width: `${(r.count / max) * 100}%`,
+                      background: good ? GOOD : ACCENT,
+                      transition: 'width 300ms ease',
+                    }}
+                  />
+                </span>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {r.count}
+                  <span style={{ opacity: 0.5, fontSize: '0.8em' }}>
+                    {total > 0 ? ` · ${Math.round((r.count / total) * 100)}%` : ''}
+                  </span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export type DragDropProps = {
   question: SortingQuestion;
   /** Lay out `<DropZone zone="…" />` and `<ItemPool />` here. */
@@ -629,6 +763,7 @@ function DragDropInner({ question, children, style, ...rest }: DragDropProps) {
       live.data.session?.status === 'active',
   );
   const me = useDragDropParticipant(question);
+  const [detail, setDetail] = useState<string | null>(null);
 
   const noop = () => {};
   const view = live?.view;
@@ -655,8 +790,11 @@ function DragDropInner({ question, children, style, ...rest }: DragDropProps) {
       : null;
   const correctPairs = (data?.keys[question.id] ?? []).filter((p) => p.includes('>'));
 
+  const canDetail = question.type === 'association' && results !== null && controls;
+  const detailZone = canDetail ? detail : null;
   const ctx: Ctx = {
     question,
+    openDetail: canDetail ? setDetail : undefined,
     interactive: isParticipant && !compact && me.interactive,
     participant: isParticipant,
     state,
@@ -828,6 +966,16 @@ function DragDropInner({ question, children, style, ...rest }: DragDropProps) {
         <div style={{ position: 'relative', flex: '1 1 0', minHeight: 0, containerType: 'size' }}>
           {children}
           {overlay}
+          {detailZone && results && (
+            <ZoneChart
+              question={question}
+              zone={detailZone}
+              tiles={results[detailZone] ?? []}
+              correctPairs={correctPairs}
+              showMarks={Boolean(st?.show_results)}
+              onBack={() => setDetail(null)}
+            />
+          )}
         </div>
         {footer}
         {failure && <div style={{ fontSize: 'min(30px, 4cqh)', color: BAD }}>{failure}</div>}

@@ -594,6 +594,8 @@ export const zhCN: Locale = {
     sortingHint: '将方块拖到区域中，或先点按方块再点按区域。',
     dropHere: '拖放到这里',
     tileShrinks: '此处方块缩小至 {pct}%，请放大区域',
+    back: '返回',
+    seeBreakdown: '查看此空格的所有回答',
     correct: '✓ 正确',
     notQuite: '✗ 不正确',
     waitingForHostToOpen: '等待主持人开放此问题',

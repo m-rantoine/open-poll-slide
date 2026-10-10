@@ -597,6 +597,8 @@ export const en: Locale = {
     sortingHint: 'Drag a tile to a zone, or tap a tile and then a zone.',
     dropHere: 'Drop here',
     tileShrinks: 'Tiles shrink to {pct}% here; enlarge the zone',
+    back: 'Back',
+    seeBreakdown: 'See every answer for this blank',
     correct: '✓ Correct',
     notQuite: '✗ Not quite',
     waitingForHostToOpen: 'Waiting for your host to open this question',
