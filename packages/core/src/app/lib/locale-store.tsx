@@ -1,6 +1,7 @@
 import config from 'virtual:open-slide/config';
 import { createContext, type ReactNode, useContext, useSyncExternalStore } from 'react';
 import { en } from '../../locale/en';
+import { es } from '../../locale/es';
 import { frCA } from '../../locale/fr-ca';
 import { ja } from '../../locale/ja';
 import type { Locale } from '../../locale/types';
@@ -15,6 +16,7 @@ const LOCALES: Record<LocaleId, Locale> = {
   'zh-TW': zhTW,
   'zh-CN': zhCN,
   ja,
+  es,
 };
 
 export const LOCALE_OPTIONS: ReadonlyArray<{ id: LocaleId; label: string }> = [
@@ -23,6 +25,7 @@ export const LOCALE_OPTIONS: ReadonlyArray<{ id: LocaleId; label: string }> = [
   { id: 'zh-TW', label: '繁體中文' },
   { id: 'zh-CN', label: '简体中文' },
   { id: 'ja', label: '日本語' },
+  { id: 'es', label: 'Español' },
 ];
 
 const STORAGE_KEY = 'open-slide:locale';

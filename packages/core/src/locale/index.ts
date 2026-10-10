@@ -1,4 +1,5 @@
 export { en } from './en';
+export { es } from './es';
 export { format, plural } from './format';
 export { frCA } from './fr-ca';
 export { ja } from './ja';
