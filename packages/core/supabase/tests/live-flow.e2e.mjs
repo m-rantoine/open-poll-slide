@@ -1,8 +1,9 @@
 // End-to-end check of a host-paced session in real browsers.
 // Needs a running demo (pnpm dev in apps/demo with SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY set) and three
-// confirmed users: e2e-host@example.test (listed in public.hosts), e2e-s1@ and e2e-s2@mon-avenir.ca, all with
+// confirmed users: e2e-host@example.test (listed in public.hosts), e2e-s1@ and e2e-s2@<STUDENT_DOMAIN>, all with
 // password E2e-test-pass-1. Run from packages/core: node supabase/tests/live-flow.e2e.mjs
-// Env: BASE_URL (default http://localhost:5173), CHROMIUM_PATH (optional), SHOT_DIR (default ./e2e-shots).
+// Env: BASE_URL (default http://localhost:5173), STUDENT_DOMAIN (default school.example.test),
+// CHROMIUM_PATH (optional), SHOT_DIR (default ./e2e-shots).
 import { mkdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 
@@ -10,6 +11,7 @@ const B = process.env.BASE_URL ?? 'http://localhost:5173';
 const SHOT_DIR = process.env.SHOT_DIR ?? './e2e-shots';
 mkdirSync(SHOT_DIR, { recursive: true });
 const PASS = 'E2e-test-pass-1';
+const STUDENT_DOMAIN = process.env.STUDENT_DOMAIN ?? 'school.example.test';
 const b = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH,
   args: ['--no-sandbox'],
@@ -39,16 +41,16 @@ async function signIn(p, email, url) {
 const shot = (p, n) => p.screenshot({ path: `${SHOT_DIR}/${n}.png` });
 
 const host = await page('HOST', 'e2e-host@example.test');
-const s1 = await page('S1', 'e2e-s1@mon-avenir.ca');
-const s2 = await page('S2', 'e2e-s2@mon-avenir.ca');
+const s1 = await page('S1', `e2e-s1@${STUDENT_DOMAIN}`);
+const s2 = await page('S2', `e2e-s2@${STUDENT_DOMAIN}`);
 
 try {
-  await host.p.goto(B + '/sessions');
+  await host.p.goto(`${B}/sessions`);
   await host.p.locator('input[type=email]').fill(host.email);
   await host.p.locator('input[type=password]').fill(PASS);
   await host.p.getByRole('button', { name: 'Sign in' }).click();
   await host.p.locator('h1', { hasText: 'Active sessions' }).waitFor(T);
-  await host.p.goto(B + '/s/live-quiz-demo');
+  await host.p.goto(`${B}/s/live-quiz-demo`);
   await host.p.locator('button[aria-label="Present options"]').click();
   await host.p.getByText('Start host-paced session').click();
   await host.p.waitForURL(/\/screen\?session=/, T);
@@ -59,7 +61,7 @@ try {
   await shot(host.p, 's-lobby');
 
   for (const s of [s1, s2]) {
-    await signIn(s.p, s.email, '/join/' + code);
+    await signIn(s.p, s.email, `/join/${code}`);
     await s.p.waitForURL(/\/play\//, T);
     await s.p.getByText("You're in!").waitFor(T);
   }
@@ -69,7 +71,7 @@ try {
   await shot(s1.p, 's1-lobby');
 
   const presenter = await host.ctx.newPage();
-  presenter.on('pageerror', (e) => console.log('PRES pageerror: ' + e.message));
+  presenter.on('pageerror', (e) => console.log(`PRES pageerror: ${e.message}`));
   await presenter.goto(`${B}/s/live-quiz-demo/presenter?session=${sessionId}`);
   await presenter.getByText('Students · 2').waitFor(T);
   ok(true, 'presenter view lists 2 students');
@@ -114,7 +116,11 @@ try {
   await s1.p.getByRole('button', { name: 'Winter' }).click();
   await s2.p.getByRole('button', { name: 'Summer' }).click();
   await host.p.getByText('Winter').first().waitFor(T);
-  await host.p.getByRole('button', { name: /Winter/ }).click();
+  // Keys marked live are remembered for the deck, so a re-run may already be graded.
+  await s1.p.waitForTimeout(1500);
+  if (!(await s1.p.getByText('✓ Correct').isVisible())) {
+    await host.p.getByRole('button', { name: /Winter/ }).click();
+  }
   await s1.p.getByText('✓ Correct').waitFor(T);
   await s2.p.getByText('✗ Not quite').waitFor(T);
   ok(true, 'host marks correct answer live; all devices regraded');
@@ -133,13 +139,13 @@ try {
   await host.p.getByRole('button', { name: 'By question' }).click();
   await shot(host.p, 'results-question');
 
-  await host.p.goto(B + '/sessions');
+  await host.p.goto(`${B}/sessions`);
   await host.p.getByText('Live quiz demo').first().waitFor(T);
   ok(true, 'active sessions tab lists the session');
 } catch (e) {
   failures++;
-  console.log('ERROR ' + e.message.split('\n').slice(0, 4).join(' | '));
-  for (const x of [host, s1, s2]) await shot(x.p, 'fail-' + x.name).catch(() => {});
+  console.log(`ERROR ${e.message.split('\n').slice(0, 4).join(' | ')}`);
+  for (const x of [host, s1, s2]) await shot(x.p, `fail-${x.name}`).catch(() => {});
 }
 await b.close();
 console.log(failures ? `${failures} FAILURE(S)` : 'ALL PASSED');

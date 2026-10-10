@@ -1,10 +1,20 @@
 import config from 'virtual:open-slide/config';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { BrowserRouter, Route, Routes, useParams } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { TooltipProvider } from './components/ui/tooltip';
+import { isSlidePrivate } from './lib/slides';
 import { useLocale } from './lib/use-locale';
-import { AuthProvider } from './live/auth';
+import {
+  AuthProvider,
+  LivePageFrame,
+  LoadingLine,
+  useAuth,
+  useCanSeePrivateSlides,
+} from './live/auth';
+import { liveConfigured } from './live/client';
 import { JoinPage } from './live/join';
+import { LoginPage } from './live/login';
 import { PlayPage } from './live/play';
 import { ResultsDetailPage, ResultsListPage } from './live/results';
 import { ScreenPage } from './live/screen';
@@ -13,6 +23,7 @@ import { AssetsPage } from './routes/assets';
 import { Home } from './routes/home';
 import { HomeShell } from './routes/home-shell';
 import { Presenter } from './routes/presenter';
+import { Preview } from './routes/preview';
 import { Slide } from './routes/slide';
 import { ThemeDetailPage, ThemesGalleryPage } from './routes/themes';
 
@@ -35,10 +46,33 @@ export function App() {
                 <Route path="/results/:sessionId" element={<ResultsDetailPage />} />
               </Route>
             )}
-            <Route path="/s/:slideId" element={<Slide />} />
-            <Route path="/s/:slideId/presenter" element={<Presenter />} />
+            {!config.build.showSlideBrowser && (
+              <Route element={<LivePageFrame />}>
+                <Route path="/sessions" element={<SessionsPage />} />
+                <Route path="/results" element={<ResultsListPage />} />
+                <Route path="/results/:sessionId" element={<ResultsDetailPage />} />
+              </Route>
+            )}
+            <Route
+              path="/s/:slideId"
+              element={
+                <PrivateSlideGate>
+                  <Slide />
+                </PrivateSlideGate>
+              }
+            />
+            <Route
+              path="/s/:slideId/presenter"
+              element={
+                <PrivateSlideGate>
+                  <Presenter />
+                </PrivateSlideGate>
+              }
+            />
+            {import.meta.env.DEV && <Route path="/s/:slideId/preview" element={<Preview />} />}
             <Route path="/s/:slideId/screen" element={<ScreenPage />} />
             <Route path="/s/:slideId/play/:sessionId" element={<PlayPage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/join" element={<JoinPage />} />
             <Route path="/join/:code" element={<JoinPage />} />
             <Route path="*" element={<NotFound />} />
@@ -48,6 +82,17 @@ export function App() {
       <Toaster />
     </BrowserRouter>
   );
+}
+
+// Private decks only open directly for hosts; everyone else gets the same page as an unknown deck.
+// Participants reach a private deck through its session, which is not behind this gate.
+function PrivateSlideGate({ children }: { children: ReactNode }) {
+  const { slideId = '' } = useParams();
+  const { loading } = useAuth();
+  const canSeePrivate = useCanSeePrivateSlides();
+  if (!isSlidePrivate(slideId) || canSeePrivate) return children;
+  if (liveConfigured && loading) return <LoadingLine />;
+  return <NotFound />;
 }
 
 function NotFound() {

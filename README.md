@@ -16,8 +16,31 @@
 
 Every slide renders into a fixed **1920 × 1080** canvas. Pages are arbitrary React components, not a constrained DSL.
 
+> **open-poll-slide** is a fork of [open-slide](https://github.com/open-slide/open-slide) that adds live, Pear Deck–style polling sessions. The fork is published as `@rantoine/open-poll-slide-core` and `@rantoine/open-poll-slide-cli`.
+
+## Install via the open-poll-slide CLI
+
 ```bash
-npx @open-slide/cli init my-slide
+pnpm dlx @rantoine/open-poll-slide-cli init my-slide
+cd my-slide
+pnpm install
+pnpm dev
+```
+
+This scaffolds a workspace with a starter deck, the agent skills (including `/create-poll-slide`) and a `package.json` that installs the fork under the original name through an alias:
+
+```json
+"@open-slide/core": "npm:@rantoine/open-poll-slide-core@^0.1.0"
+```
+
+Your slides keep importing from `@open-slide/core`, and the `open-slide` command (also available as `open-poll-slide`) works as documented below. You can't install the original `@open-slide/core` in the same project.
+
+To turn on live sessions, create a Supabase project, set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in `.env.local`, and run `pnpm exec open-slide live init`. See [LIVE-SESSIONS.md](LIVE-SESSIONS.md).
+
+To add the fork to an existing project instead:
+
+```bash
+pnpm add @open-slide/core@npm:@rantoine/open-poll-slide-core
 ```
 
 ## Why open-slide

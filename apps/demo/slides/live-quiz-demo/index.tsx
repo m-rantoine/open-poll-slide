@@ -1,11 +1,15 @@
 import {
   ClassResults,
   type DesignSystem,
+  DragDrop,
+  DropZone,
+  type InteractiveQuestion,
+  ItemPool,
   Lobby,
   MultipleChoice,
-  type MultipleChoiceQuestion,
   type Page,
   type SlideMeta,
+  WordCloud,
 } from '@open-slide/core';
 
 export const meta: SlideMeta = { title: 'Live quiz demo', createdAt: '2026-10-07T00:00:00.000Z' };
@@ -26,7 +30,11 @@ export const questions = {
     type: 'multiple_choice',
     question: 'What is the capital of Canada?',
     options: [
-      { id: 'toronto', label: 'Toronto' },
+      {
+        id: 'toronto',
+        label:
+          'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      },
       { id: 'ottawa', label: 'Ottawa' },
       { id: 'montr-al', label: 'Montréal' },
       { id: 'vancouver', label: 'Vancouver' },
@@ -160,7 +168,73 @@ export const questions = {
     startLocked: true,
     showResults: true,
   },
-} satisfies Record<string, MultipleChoiceQuestion>;
+  winter: {
+    id: 'winter',
+    type: 'word_cloud',
+    question: 'In one word, what comes to mind when you think of winter?',
+    startLocked: true,
+    showResults: true,
+  },
+  colour: {
+    id: 'colour',
+    type: 'word_cloud',
+    question: 'Name one primary colour.',
+    correct: ['red', 'blue', 'yellow'],
+    scored: true,
+    startLocked: true,
+    showResults: true,
+  },
+  animals: {
+    id: 'animals',
+    type: 'drag_drop',
+    question: 'Sort the animals into their groups.',
+    zones: [
+      { id: 'mammals', label: 'Mammals' },
+      { id: 'birds', label: 'Birds' },
+      { id: 'fish', label: 'Fish' },
+    ],
+    items: [
+      { id: 'dolphin', label: 'Dolphin' },
+      { id: 'eagle', label: 'Eagle' },
+      { id: 'salmon', label: 'Salmon' },
+      { id: 'bat', label: 'Bat' },
+      { id: 'penguin', label: 'Penguin' },
+      { id: 'shark', label: 'Shark' },
+      { id: 'oak', label: 'Oak tree (not an animal)' },
+    ],
+    correct: {
+      dolphin: 'mammals',
+      bat: 'mammals',
+      eagle: 'birds',
+      penguin: 'birds',
+      salmon: 'fish',
+      shark: 'fish',
+    },
+    startLocked: true,
+    showResults: true,
+  },
+  capitals: {
+    id: 'capitals',
+    type: 'association',
+    question: 'Match each country to its capital.',
+    zones: [
+      { id: 'canada', label: 'Canada' },
+      { id: 'france', label: 'France' },
+      { id: 'japan', label: 'Japan' },
+      { id: 'egypt', label: 'Egypt' },
+    ],
+    items: [
+      { id: 'ottawa', label: 'Ottawa' },
+      { id: 'paris', label: 'Paris' },
+      { id: 'tokyo', label: 'Tokyo' },
+      { id: 'cairo', label: 'Cairo' },
+      { id: 'sydney', label: 'Sydney' },
+    ],
+    correct: { ottawa: 'canada', paris: 'france', tokyo: 'japan', cairo: 'egypt' },
+    startLocked: true,
+    showResults: true,
+  },
+} satisfies Record<string, InteractiveQuestion>;
 
 const Intro: Page = () => (
   <div
@@ -189,17 +263,529 @@ const Intro: Page = () => (
 );
 
 export default [
-  () => <Lobby title="Live quiz demo" />,
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <Lobby title="Live quiz demo" />
+    </div>
+  ),
   Intro,
-  () => <MultipleChoice question={questions.capital} />,
-  () => <MultipleChoice question={questions.planets} />,
-  () => <MultipleChoice question={questions.water} />,
-  () => <MultipleChoice question={questions.ocean} />,
-  () => <MultipleChoice question={questions.math} />,
-  () => <MultipleChoice question={questions.author} />,
-  () => <MultipleChoice question={questions.bones} />,
-  () => <MultipleChoice question={questions.lang} />,
-  () => <MultipleChoice question={questions.year} />,
-  () => <MultipleChoice question={questions.season} />,
-  () => <ClassResults />,
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.capital.question}
+      </h1>
+      <MultipleChoice question={questions.capital} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.planets.question}
+      </h1>
+      <MultipleChoice question={questions.planets} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.water.question}
+      </h1>
+      <MultipleChoice question={questions.water} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.ocean.question}
+      </h1>
+      <MultipleChoice question={questions.ocean} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.math.question}
+      </h1>
+      <MultipleChoice question={questions.math} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.author.question}
+      </h1>
+      <MultipleChoice question={questions.author} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.bones.question}
+      </h1>
+      <MultipleChoice question={questions.bones} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.lang.question}
+      </h1>
+      <MultipleChoice question={questions.lang} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.year.question}
+      </h1>
+      <MultipleChoice question={questions.year} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.season.question}
+      </h1>
+      <MultipleChoice question={questions.season} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.season.question}
+      </h1>
+      <MultipleChoice question={questions.season} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.winter.question}
+      </h1>
+      <WordCloud question={questions.winter} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.colour.question}
+      </h1>
+      <WordCloud question={questions.colour} />
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.animals.question}
+      </h1>
+      <DragDrop question={questions.animals}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateRows: '1fr 0.55fr',
+            gap: 32,
+          }}
+        >
+          <DropZone zone="mammals" />
+          <DropZone zone="birds" />
+          <DropZone zone="fish" />
+          <ItemPool style={{ gridColumn: '1 / -1' }} />
+        </div>
+      </DragDrop>
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.capitals.question}
+      </h1>
+      <DragDrop question={questions.capitals}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 28,
+            fontSize: 44,
+            lineHeight: 1.3,
+          }}
+        >
+          <p style={{ margin: 0 }}>
+            The capital of Canada is <DropZone zone="canada" />.
+          </p>
+          <p style={{ margin: 0 }}>
+            The capital of France is <DropZone zone="france" />.
+          </p>
+          <p style={{ margin: 0 }}>
+            The capital of Japan is <DropZone zone="japan" />.
+          </p>
+          <p style={{ margin: 0 }}>
+            The capital of Egypt is <DropZone zone="egypt" />.
+          </p>
+          <ItemPool style={{ marginTop: 'auto', height: 150 }} />
+        </div>
+      </DragDrop>
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <ClassResults />
+    </div>
+  ),
 ] satisfies Page[];

@@ -6,13 +6,17 @@ import { validateMutationRequest } from '../../http/request-guard.ts';
 import { type ApiContext, json } from './context.ts';
 
 // GET /__update-check  → { current, latest, outdated }
-//   Compares the running @open-slide/core version against the npm `latest`
+//   Compares the running core version against the npm `latest`
 //   dist-tag. Network/parse failures degrade to { latest: null, outdated: false }.
 // POST /__update-package → { packageManager, command, latest, message }
-//   Installs @open-slide/core@latest with the detected package manager, then
+//   Installs the latest core with the detected package manager, then
 //   runs `open-slide sync:skills`.
 
-const PKG = '@open-slide/core';
+// Projects install the fork under the original name through an alias, so the registry lookup and the
+// install spec must name the fork or an update would replace it with upstream.
+const PKG = '@rantoine/open-poll-slide-core';
+const DEP = '@open-slide/core';
+const INSTALL_SPEC = `${DEP}@npm:${PKG}@latest`;
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const COMMAND_TIMEOUT_MS = 300_000;
 
@@ -102,13 +106,13 @@ export async function detectPackageManager(cwd: string): Promise<PackageManager>
 export function updateCommandFor(packageManager: PackageManager): CommandSpec {
   switch (packageManager) {
     case 'pnpm':
-      return { cmd: 'pnpm', args: ['add', `${PKG}@latest`] };
+      return { cmd: 'pnpm', args: ['add', INSTALL_SPEC] };
     case 'yarn':
-      return { cmd: 'yarn', args: ['add', `${PKG}@latest`] };
+      return { cmd: 'yarn', args: ['add', INSTALL_SPEC] };
     case 'bun':
-      return { cmd: 'bun', args: ['add', `${PKG}@latest`] };
+      return { cmd: 'bun', args: ['add', INSTALL_SPEC] };
     case 'npm':
-      return { cmd: 'npm', args: ['install', `${PKG}@latest`] };
+      return { cmd: 'npm', args: ['install', INSTALL_SPEC] };
   }
 }
 
@@ -169,7 +173,7 @@ async function updatePackage(ctx: ApiContext): Promise<UpdateResult> {
     packageManager,
     command: `${formatCommand(updateCommand)} && open-slide sync:skills`,
     latest,
-    message: 'Updated @open-slide/core and synced skills.',
+    message: `Updated ${PKG} and synced skills.`,
   };
 }
 

@@ -179,9 +179,9 @@ export function FolderItem({
           : row.kind === 'assets'
             ? t.home.assets
             : row.kind === 'sessions'
-              ? 'Active sessions'
+              ? t.live.sessions
               : row.kind === 'results'
-                ? 'Results'
+                ? t.live.results
                 : row.folder.name;
 
   const commitRename = () => {

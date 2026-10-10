@@ -1,21 +1,25 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useDocumentTitle } from '@/lib/use-document-title';
-import type { StepController } from '../lib/step-context';
-import { useIsMobile } from '../lib/use-is-mobile';
+import { format, useLocale } from '@/lib/use-locale';
+import { cn } from '@/lib/utils';
+import { Player } from '../components/player';
+import { designToCssVars } from '../lib/design';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireAuth, useAuth } from './auth';
+import { liveErrorMessage } from './errors';
 import { LiveProvider, useQuestionRegistry } from './live-context';
 import { ParticipantQuestionCard } from './participant-card';
-import { clampIndex, LiveStage } from './stage';
+import { clampIndex } from './stage';
 import { useLiveSession, useParticipantPresence } from './use-live-session';
+import { usePortrait } from './use-portrait';
 
 export function PlayPage() {
+  const t = useLocale();
   return (
-    <RequireAuth heading="Sign in to join">
+    <RequireAuth heading={t.live.signInToJoin}>
       <Play />
     </RequireAuth>
   );
@@ -24,6 +28,7 @@ export function PlayPage() {
 function Play() {
   const { slideId = '', sessionId } = useParams();
   const navigate = useNavigate();
+  const t = useLocale();
   const { isHost } = useAuth();
   const { slide, error } = useSlideModule(slideId);
   const data = useLiveSession(sessionId, false);
@@ -34,111 +39,137 @@ function Play() {
   const total = slide?.default.length ?? 0;
   const isSelf = session?.mode === 'self';
   const [localIndex, setLocalIndex] = useState(0);
-  const controllerRef = useRef<StepController | null>(null);
-  const isMobile = useIsMobile();
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || data.selfIndex === null) return;
+    restored.current = true;
+    setLocalIndex(data.selfIndex);
+  }, [data.selfIndex]);
+  const navRef = useRef<{ next: () => void; prev: () => void } | null>(null);
+  const portrait = usePortrait();
   const { ids, Provider } = useQuestionRegistry();
 
   const index = clampIndex(isSelf ? localIndex : (session?.current_index ?? 0), total);
   const { setPosition } = data.actions;
 
-  const go = useCallback(
+  const onIndexChange = useCallback(
     (next: number) => {
-      const i = clampIndex(next, total);
-      setLocalIndex(i);
-      void setPosition(i, 0).catch(() => {});
+      if (!isSelf) return;
+      setLocalIndex(next);
+      void setPosition(next, 0).catch(() => {});
     },
-    [total, setPosition],
+    [isSelf, setPosition],
   );
-  const goNext = useCallback(() => {
-    if (controllerRef.current?.advance()) return;
-    go(index + 1);
-  }, [go, index]);
-  const goPrev = useCallback(() => {
-    if (controllerRef.current?.retreat()) return;
-    go(index - 1);
-  }, [go, index]);
 
-  useEffect(() => {
-    if (!isSelf) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target) || e.defaultPrevented) return;
-      if (isForwardKey(e)) {
-        e.preventDefault();
-        goNext();
-      } else if (isBackwardKey(e)) {
-        e.preventDefault();
-        goPrev();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isSelf, goNext, goPrev]);
-
-  if (error) return <LiveMessage title="Could not load this deck" body={error} />;
+  if (error) return <LiveMessage title={t.live.couldNotLoadDeck} body={error} />;
   if (data.error) {
     return (
       <LiveMessage
-        title="Session unavailable"
-        body={isHost ? data.error : 'Use the code from your host to join.'}
+        title={t.live.sessionUnavailable}
+        body={isHost ? liveErrorMessage(t, data.error) : t.live.useCodeFromHost}
       />
     );
   }
   if (!slide || data.loading || !session) return <LoadingLine />;
+  if (session.deck_id !== slideId) {
+    return <LiveMessage title={t.live.sessionUnavailable} body={t.live.useCodeFromHost} />;
+  }
 
   const questions = {
     ...(slide.questions ?? {}),
     ...((session.questions ?? {}) as NonNullable<typeof slide.questions>),
   };
 
+  const cards = portrait
+    ? ids
+        .map((id) => questions[id])
+        .filter(Boolean)
+        .map((q) => <ParticipantQuestionCard key={q.id} question={q} />)
+    : [];
+  const surface: CSSProperties | undefined = slide.design
+    ? { ...designToCssVars(slide.design), background: slide.design.palette.bg }
+    : undefined;
+
   return (
     <div className="dark flex h-dvh w-screen flex-col bg-background text-foreground">
-      <LiveProvider view="participant" compact={isMobile} data={data} deckId={slideId}>
-        <div
-          className={isMobile ? 'shrink-0' : 'min-h-0 flex-1'}
-          style={isMobile ? { aspectRatio: '16 / 9' } : undefined}
-        >
-          <LiveStage
-            slide={slide}
-            index={index}
-            step={isSelf ? undefined : session.current_step}
-            controllerRef={controllerRef}
-            wrap={(children) => <Provider>{children}</Provider>}
-          />
-        </div>
-        {isMobile && (
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-            {ids
-              .map((id) => questions[id])
-              .filter(Boolean)
-              .map((q) => (
-                <ParticipantQuestionCard key={q.id} question={q} />
-              ))}
+      <LiveProvider view="participant" compact={portrait} data={data} deckId={slideId}>
+        <div className="relative flex min-h-0 flex-1 flex-col" style={surface}>
+          {session.status === 'paused' && (
+            <div
+              role="status"
+              className="absolute inset-0 z-40 grid place-items-center px-8 text-center"
+              style={{ background: 'var(--osd-bg, #fff)' }}
+            >
+              <div
+                className="flex max-w-sm flex-col gap-3"
+                style={{ color: 'var(--osd-text, #0f172a)' }}
+              >
+                <h2 className="font-heading text-2xl font-semibold">{t.live.pausedTitle}</h2>
+                <p className="text-[15px] opacity-70">{t.live.pausedParticipantBody}</p>
+              </div>
+            </div>
+          )}
+          <div
+            className={cn('relative w-full', portrait ? 'shrink-0' : 'min-h-0 flex-1')}
+            style={portrait ? { aspectRatio: '16 / 9', marginTop: '12dvh' } : undefined}
+          >
+            <Provider>
+              <div className="absolute inset-0">
+                <Player
+                  pages={slide.default}
+                  design={slide.design}
+                  transition={slide.transition}
+                  index={index}
+                  onIndexChange={onIndexChange}
+                  onExit={() => {}}
+                  allowExit={false}
+                  fullscreen={false}
+                  contained
+                  navigation={isSelf ? 'free' : 'locked'}
+                  controlledRevealed={isSelf ? undefined : session.current_step}
+                  navRef={navRef}
+                />
+              </div>
+            </Provider>
           </div>
-        )}
+          {portrait && (
+            <div className="min-h-0 flex-1 space-y-8 overflow-y-auto px-6 py-6">{cards}</div>
+          )}
+        </div>
       </LiveProvider>
       <footer className="flex h-11 shrink-0 items-center justify-between border-t border-hairline px-4 text-[12.5px]">
         <span className="font-mono text-muted-foreground">
           {session.code} · {index + 1}/{total}
-          {session.status === 'ended' && ' · session ended'}
+          {session.status === 'ended' && ` · ${t.live.sessionEndedTag}`}
         </span>
         <div className="flex items-center gap-2">
           {data.score && data.score.graded > 0 && (
             <span className="font-mono text-muted-foreground">
-              Score {data.score.correct}/{data.score.graded}
+              {format(t.live.score, { correct: data.score.correct, graded: data.score.graded })}
             </span>
           )}
           {isSelf && (
             <>
-              <Button variant="outline" size="icon" aria-label="Previous" onClick={goPrev}>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label={t.live.previous}
+                onClick={() => navRef.current?.prev()}
+              >
                 <ChevronLeft />
               </Button>
-              <Button variant="outline" size="icon" aria-label="Next" onClick={goNext}>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label={t.live.next}
+                onClick={() => navRef.current?.next()}
+              >
                 <ChevronRight />
               </Button>
             </>
           )}
           <Button variant="ghost" onClick={() => navigate('/join')}>
-            Leave
+            {t.live.leave}
           </Button>
         </div>
       </footer>

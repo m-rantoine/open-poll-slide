@@ -5,6 +5,7 @@ import {
   Copy,
   FolderInput,
   FolderPlus,
+  Lock,
   MoreHorizontal,
   Palette,
   Pencil,
@@ -37,7 +38,9 @@ import { ALL_SLIDES_ID, DRAFT_ID } from '../components/sidebar/sidebar';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlidePageProvider } from '../lib/page-context';
 import type { Folder, SlideModule } from '../lib/sdk';
-import { loadSlide, slideCreatedAt, slideIds } from '../lib/slides';
+import { isSlidePrivate, loadSlide, slideCreatedAt } from '../lib/slides';
+import { useVisibleSlideIds } from '../lib/use-visible-slides';
+import { useCanSeeThemes } from '../live/auth';
 import type { HomeOutletContext } from './home-shell';
 
 type SortKey = 'created-desc' | 'created-asc' | 'title-asc' | 'title-desc';
@@ -85,6 +88,7 @@ export function Home() {
     deleteSlide,
   } = useOutletContext<HomeOutletContext>();
   const t = useLocale();
+  const slideIds = useVisibleSlideIds();
 
   const isAll = selectedId === ALL_SLIDES_ID;
   const isDraft = selectedId === DRAFT_ID;
@@ -464,6 +468,7 @@ function SlideCard({
   const [dragging, setDragging] = useState(false);
   const [dialog, setDialog] = useState<DialogKind>(null);
   const tCard = useLocale();
+  const canSeeThemes = useCanSeeThemes();
 
   useEffect(() => {
     let cancelled = false;
@@ -529,15 +534,27 @@ function SlideCard({
               {displayTitle}
             </h3>
           </Link>
-          {slide?.meta?.theme && (
-            <Link
-              to={`/themes/${encodeURIComponent(slide.meta.theme)}`}
-              className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-            >
-              <Palette className="size-3" aria-hidden />
-              <span className="max-w-[120px] truncate">{slide.meta.theme}</span>
-            </Link>
+          {isSlidePrivate(id) && (
+            <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+              <Lock className="size-3" aria-hidden />
+              {tCard.live.privateDeck}
+            </span>
           )}
+          {slide?.meta?.theme &&
+            (canSeeThemes ? (
+              <Link
+                to={`/themes/${encodeURIComponent(slide.meta.theme)}`}
+                className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                <Palette className="size-3" aria-hidden />
+                <span className="max-w-[120px] truncate">{slide.meta.theme}</span>
+              </Link>
+            ) : (
+              <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+                <Palette className="size-3" aria-hidden />
+                <span className="max-w-[120px] truncate">{slide.meta.theme}</span>
+              </span>
+            ))}
         </div>
 
         {import.meta.env.DEV && (

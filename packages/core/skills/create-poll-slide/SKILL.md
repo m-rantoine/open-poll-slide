@@ -14,7 +14,7 @@ Ask these in one `AskUserQuestion` call, together with or right after the `creat
 1. **Questions** — how many, and the question text with options. If the user gave a topic only, draft the questions yourself and show them for confirmation.
 2. **Correct answers** — known now, or leave unset so the host marks them live (clicking an option on the Screen or Presenter view while results are showing)?
 3. **Pacing default** — `startLocked` per question: `true` (host opens each question, default) or `false` (open as soon as the slide appears). This only affects host-paced sessions.
-4. **Show results** — `showResults` per question: reveal correctness to participants once answers close (default `true`), or keep hidden until the host flips it.
+4. **Show results** — `showResults` per question: reveal correctness to participants once answers close, or keep hidden until the host flips it (default `false`).
 
 ## The question contract
 
@@ -55,14 +55,111 @@ export default [
 Rules:
 
 - `id` must equal its key in `questions`, and be unique within the deck. Option `id`s are stable slugs (`ottawa`), never positions — answers are stored by option id, so reordering or rewording later does not corrupt past results.
-- `correct` is an array of option ids; omit it entirely when unknown. Several correct options are allowed.
+- `correct` is an array of string literal option ids; omit it entirely when unknown. Several correct options are allowed. It never reaches the browser: the build strips it, and `open-slide live keys` uploads it to the database, so tell the user to run that command after adding or changing answer keys.
 - One question per page. The component fills the whole 1920×1080 page itself (it brings its own frame, heading and options), so do not wrap it in a padded container. It uses `--osd-*` design variables when the deck exports `design`, so declare `design` as `create-slide` recommends.
-- Only multiple choice exists today (`type: 'multiple_choice'`).
+- Optional: `export const isPrivate = true;` hides the deck from non-hosts (it then only opens through a session). Without it the deck follows `SLIDES_DEFAULT_AS_PRIVATE` (public when unset).
+- Four question types exist: `type: 'multiple_choice'` (`<MultipleChoice>`), `type: 'word_cloud'` (`<WordCloud>`), `type: 'drag_drop'` (sorting) and `type: 'association'` (matching); the last two both use `<DragDrop>` with `<DropZone>` and `<ItemPool>`.
+- `scored` (optional, any type): whether answers count toward the score. Default `true` for multiple choice, sorting and association, `false` for word clouds. An answer that has no grade (no `correct` set, or a word the host has not marked) never counts, and is never treated as wrong.
+
+### Drag-and-drop sorting
+
+Participants drag tiles (inline blocks) from a pool into drop zones you place on the slide. Dropping saves immediately and can be changed until the participant presses Submit (or the host stops the question); Submit is what the "everyone has answered" auto-stop counts. Each tile in its right zone is worth one point. When the question ends, each zone on the Screen and Presenter lists the tiles placed in it, most often placed first, with a count; a zone shows at least its first tile and hides the rest if they do not fit.
+
+```tsx
+export const questions = {
+  animals: {
+    id: 'animals',
+    type: 'drag_drop',
+    question: 'Sort the animals into their groups.',
+    zones: [
+      { id: 'mammals', label: 'Mammals' },
+      { id: 'birds', label: 'Birds' },
+    ],
+    items: [
+      { id: 'dolphin', label: 'Dolphin' },
+      { id: 'eagle', label: 'Eagle' },
+      { id: 'oak', label: 'Oak tree (decoy)' },
+    ],
+    correct: { dolphin: 'mammals', eagle: 'birds' }, // leave a tile out to make it a decoy
+  },
+} satisfies Record<string, InteractiveQuestion>;
+```
+
+```tsx
+<DragDrop question={questions.animals}>
+  <div style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 0.5fr', gap: 32 }}>
+    <DropZone zone="mammals" />
+    <DropZone zone="birds" />
+    <ItemPool style={{ gridColumn: '1 / -1' }} />
+  </div>
+</DragDrop>
+```
+
+- Lay the zones and pool out inside `<DragDrop>` however the slide needs; give every `<DropZone>` and the `<ItemPool>` a definite width and height (grid cells, `position: absolute`, or explicit sizes), because tiles shrink to fit the box.
+- In the editor preview the tiles sit in their correct zones (from `correct`) so you can judge how big each zone must be; decoys stay in the pool. `correct` is stripped from production builds, so there the preview shows an empty zone. Run `open-slide live keys` after changing it.
+- On phones the slide is too small to drag on, so participants get a larger list of zones under the slide (drag, or tap a tile and then a zone).
+
+### Association (matching)
+
+Fill-in-the-blank matching: the zones are small blanks, each about one word wide and one line tall, that you place **inline in a sentence, a table cell, or around a diagram** (labels pointing at parts of a picture). Same components and `items` / `zones` / `correct` shape as sorting, with `type: 'association'`, but **each blank holds exactly one tile**: dropping a tile on an occupied blank sends the old tile back to the pool, or swaps the two when the dragged tile came from another blank. One point per correct pair.
+
+```tsx
+capitals: {
+  id: 'capitals',
+  type: 'association',
+  question: 'Match each country to its capital.',
+  zones: [{ id: 'canada', label: 'Canada' }, { id: 'france', label: 'France' }],
+  items: [{ id: 'ottawa', label: 'Ottawa' }, { id: 'paris', label: 'Paris' }, { id: 'sydney', label: 'Sydney' }],
+  correct: { ottawa: 'canada', paris: 'france' },
+},
+```
+
+```tsx
+<DragDrop question={questions.capitals}>
+  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: 28, fontSize: 44 }}>
+    <p>The capital of Canada is <DropZone zone="canada" />.</p>
+    <p>The capital of France is <DropZone zone="france" />.</p>
+    <ItemPool style={{ marginTop: 'auto', height: 150 }} />
+  </div>
+</DragDrop>
+```
+
+- A blank has no label and takes the surrounding text's font size; by default it is `7em` wide and `2em` tall. Override `style.width` / `style.height` to fit your answers.
+- **Make every blank exactly the same size.** Never size a blank to its answer: a wider or taller blank gives the answer away. The default is the same everywhere, so just do not override it per blank (or override all of them identically).
+- Tiles shrink their text to fit the blank, so size blanks for a typical answer. In the editor preview a red outline appears on any blank whose tile has to shrink below 90% (hover it for the figure); enlarge all blanks together until none are outlined.
+- Blanks never grow or shrink when a tile lands in them.
+- Results show only the most common tile in each blank. The host clicks it on the Screen to open a horizontal bar chart of that blank's answers (like multiple choice), with a Back button. The chart leaves out wrong tiles nobody chose; once results are revealed it also lists the correct tile even if nobody chose it.
+
+### Word cloud
+
+Participants type one word or short phrase (up to 60 characters). While the question is open the Screen shows only the answer count; when the host stops it (or everyone has answered) the Screen and Presenter show a word cloud, sized by how often each word was given. Words are matched ignoring case and extra spaces. The host marks words correct or incorrect in the Presenter panel or the results page (or by clicking a word on the Screen).
+
+```tsx
+export const questions = {
+  winter: {
+    id: 'winter',
+    type: 'word_cloud',
+    question: 'In one word, what comes to mind when you think of winter?',
+    startLocked: true,
+    showResults: true,
+  },
+  colour: {
+    id: 'colour',
+    type: 'word_cloud',
+    question: 'Name one primary colour.',
+    correct: ['red', 'blue', 'yellow'], // optional accepted answers
+    scored: true,
+  },
+} satisfies Record<string, InteractiveQuestion>;
+```
+
+Place it like a multiple-choice page (`<h1>` plus `<WordCloud question={questions.winter} />`). Import `WordCloud` and `type InteractiveQuestion` from `@open-slide/core`. `correct` here is stripped from the bundle like multiple-choice keys; run `open-slide live keys` after changing it.
 
 ## Page structure
 
+- Every page is a normal `Page` whose root is a full-size `<div>`; `<Lobby />`, `<MultipleChoice />`, `<WordCloud />`, `<DragDrop />` (with its `<DropZone />` and `<ItemPool />` children) and `<ClassResults />` are components placed inside it. The build tags them with `data-slide-loc` and they forward it and `style` to their root element, so the inspector can select and edit them like any element. Keep it that way: pass `style`/`className` through, never wrap a question component in a custom component that drops those props, and size and position each `<DropZone>` and `<ItemPool>` with `style` so they stay editable.
 - **First page: `<Lobby />`** for decks meant to be run live. It shows the join URL, session code and student count on the Screen, a waiting message on participant devices, and a student list in the Presenter view. Outside a session it renders a harmless placeholder.
-- **Question pages** — `<MultipleChoice question={questions.x} />`. Put an explanatory content page before a question when the audience needs context; do not add a heading above the question.
+- **Question pages** — a full-size column `<div>` containing `<h1>{questions.x.question}</h1>` followed by `<MultipleChoice question={questions.x} />`. `MultipleChoice` renders only the options/controls and fills the remaining space, shrinking its type to fit; it does not render the question. Use `columns={2}` for a multi-column option grid (also editable in the inspector). Give the `<h1>` an explicit font size and keep padding on the page `<div>`.
 - **Last page: `<ClassResults />`** to show the class average (and each participant's own score on their device).
 - Normal content pages work as usual and are shown in full on Screen and participant views.
 
@@ -73,4 +170,4 @@ In a regular "Present" (no session) all of these render inertly: options are vis
 - Every `<MultipleChoice>` receives an object from `questions`, never an inline literal.
 - `questions` keys, `id` fields and option ids are unique and kebab/snake-case slugs.
 - Option labels are short enough to fit one or two lines at the component's 40px size (about 50 characters).
-- Hand-off: tell the user to run a session from the slide's **Present ▾ → Start host-paced / self-paced session** (hosts only), that participants join at `/join` with the session code, and that correct answers left unset can be marked live. If sessions are not set up yet, point them to `LIVE-SESSIONS.md` (`open-slide live init`, then `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`).
+- Hand-off: tell the user to run a session from the slide's **Present ▾ → Start host-paced / self-paced session** (hosts only), that participants join at `/join` with the session code, that `open-slide live keys` must be run after adding or changing `correct`, and that correct answers left unset can be marked live (marking is remembered for the deck). If sessions are not set up yet, point them to `LIVE-SESSIONS.md` (`open-slide live init`, then `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`).

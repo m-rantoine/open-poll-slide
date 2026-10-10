@@ -1,12 +1,13 @@
 import { Plus, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import logo from '@/assets/open-slide.png';
+import logo from '@/assets/open-slide.svg';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { Folder, FolderIcon } from '@/lib/sdk';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
-import { useAuth } from '../../live/auth';
+import { AccountRow } from '../../live/account-row';
+import { useAuth, useCanSeeThemes } from '../../live/auth';
 import { liveConfigured } from '../../live/client';
 import { COMMAND_MENU_SHORTCUT } from '../command/command-menu';
 import { FolderIconChip, FolderItem } from './folder-item';
@@ -80,6 +81,7 @@ export function Sidebar({
   const inputRef = useRef<HTMLInputElement>(null);
   const t = useLocale();
   const { isHost, session: authSession } = useAuth();
+  const canSeeThemes = useCanSeeThemes();
 
   const startCreating = () => {
     const color = PRESET_COLORS[folders.length % PRESET_COLORS.length];
@@ -140,7 +142,7 @@ export function Sidebar({
           alt=""
           aria-hidden
           draggable={false}
-          className="size-6 shrink-0 select-none rounded-[6px] ring-1 ring-foreground/10"
+          className="size-6 shrink-0 select-none"
         />
         <h1 className="font-heading text-[13.5px] font-semibold tracking-tight">
           {t.home.appTitle}
@@ -176,13 +178,15 @@ export function Sidebar({
           onSelect={() => onSelect(ALL_SLIDES_ID)}
           onDropSlide={() => {}}
         />
-        <FolderItem
-          row={{ kind: 'themes' }}
-          count={themesCount}
-          selected={selectedId === THEMES_ID}
-          onSelect={() => onSelect(THEMES_ID)}
-          onDropSlide={() => {}}
-        />
+        {canSeeThemes && (
+          <FolderItem
+            row={{ kind: 'themes' }}
+            count={themesCount}
+            selected={selectedId === THEMES_ID}
+            onSelect={() => onSelect(THEMES_ID)}
+            onDropSlide={() => {}}
+          />
+        )}
         {liveConfigured && (
           <FolderItem
             row={{ kind: 'sessions' }}
@@ -344,6 +348,9 @@ export function Sidebar({
         )}
       </div>
 
+      <div className="px-2 pb-1">
+        <AccountRow />
+      </div>
       <SidebarFooter />
     </aside>
   );

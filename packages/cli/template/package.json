@@ -10,7 +10,7 @@
     "sync:skills": "open-slide sync:skills"
   },
   "dependencies": {
-    "@open-slide/core": "^0.0.6",
+    "@open-slide/core": "npm:@rantoine/open-poll-slide-core@^0.1.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

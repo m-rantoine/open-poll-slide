@@ -8,7 +8,7 @@ create table public.app_settings (
 );
 
 insert into public.app_settings (key, value)
-values ('allowed_email_domains', '["mon-avenir.ca"]');
+values ('allowed_email_domains', '[]');
 
 create table public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,

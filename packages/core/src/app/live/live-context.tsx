@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { useIsActivePage } from '../lib/step-context';
 import type { LiveView } from './types';
 import type { LiveData } from './use-live-session';
 
@@ -92,12 +93,16 @@ export function useQuestionRegistry(): {
   return { ids, Provider };
 }
 
+// Only the page on screen registers: during a transition the outgoing page is still mounted, and
+// overview or thumbnail renders of other pages must not count as questions on the current slide.
 export function useRegisterQuestion(id: string) {
   const registry = useContext(RegistryContext);
+  const active = useIsActivePage();
   useEffect(() => {
+    if (!active) return;
     registry?.add(id);
     return () => registry?.remove(id);
-  }, [registry, id]);
+  }, [registry, id, active]);
 }
 
 export function useQuestionRegistryFlag(flag: 'lobby' | 'results') {

@@ -5,12 +5,14 @@ import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import type { InlineConfig } from 'vite';
+import { answerKeysPlugin } from './answer-keys-plugin.ts';
 import { apiPlugin } from './api-plugin.ts';
 import { currentPlugin } from './current-plugin.ts';
 import { designPlugin } from './design-plugin.ts';
 import { locTagsPlugin } from './loc-tags-plugin.ts';
 import { notesPlugin } from './notes-plugin.ts';
 import { loadUserConfig, type OpenSlideConfig, openSlidePlugin } from './open-slide-plugin.ts';
+import { serverInfoPlugin } from './server-info-plugin.ts';
 import { themesPlugin } from './themes-plugin.ts';
 
 function findPackageRoot(fromFile: string): string {
@@ -75,6 +77,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
     envDir: userCwd,
     plugins: [
       locTagsPlugin({ userCwd, slidesDir }),
+      answerKeysPlugin({ userCwd, slidesDir }),
       react(),
       tailwindcss(),
       openSlidePlugin({ userCwd, config, coreVersion: CORE_VERSION }),
@@ -83,6 +86,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
       apiPlugin({ userCwd, slidesDir, assetsDir, coreVersion: CORE_VERSION }),
       notesPlugin({ userCwd, slidesDir }),
       currentPlugin({ userCwd, slidesDir }),
+      serverInfoPlugin({ userCwd }),
     ],
     resolve: {
       alias: {
@@ -114,6 +118,7 @@ export async function createViteConfig(opts: CreateViteConfigOptions): Promise<I
         'tailwind-merge',
         'class-variance-authority',
         'emoji-picker-react',
+        '@supabase/supabase-js',
       ],
       // The app source ships inside node_modules/@open-slide/core/src/app, so
       // Vite's dep scanner traverses it as if it were a third-party dep and

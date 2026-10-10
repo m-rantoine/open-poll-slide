@@ -17,12 +17,12 @@
     "check:fix": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "pnpm --filter @open-slide/core test:e2e",
-    "core": "pnpm --filter @open-slide/core",
-    "cli": "pnpm --filter @open-slide/cli",
+    "test:e2e": "pnpm --filter @rantoine/open-poll-slide-core test:e2e",
+    "core": "pnpm --filter @rantoine/open-poll-slide-core",
+    "cli": "pnpm --filter @rantoine/open-poll-slide-cli",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build --filter=@open-slide/core --filter=@open-slide/cli && changeset publish"
+    "release": "turbo run build --filter=@rantoine/open-poll-slide-core --filter=@rantoine/open-poll-slide-cli && changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.7",

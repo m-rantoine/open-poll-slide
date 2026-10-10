@@ -8,6 +8,7 @@ import { SlidePageProvider } from '../../lib/page-context';
 import type { SlideModule } from '../../lib/sdk';
 import { loadSlide, slidesByTheme } from '../../lib/slides';
 import { loadThemeDemo, type ThemeDemoModule, themes } from '../../lib/themes';
+import { useVisibleSlideIds } from '../../lib/use-visible-slides';
 import { SlideCanvas } from '../slide-canvas';
 
 export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () => void }) {
@@ -33,7 +34,11 @@ export function ThemeDetail({ themeId, onBack }: { themeId: string; onBack: () =
 
   const pages = demo?.default ?? [];
   const totalPages = pages.length;
-  const usedBySlideIds = useMemo(() => (theme ? slidesByTheme(theme.id) : []), [theme]);
+  const visibleIds = useVisibleSlideIds();
+  const usedBySlideIds = useMemo(
+    () => (theme ? slidesByTheme(theme.id).filter((id) => visibleIds.includes(id)) : []),
+    [theme, visibleIds],
+  );
 
   const promptRef = useRef<HTMLPreElement>(null);
   const [promptExpanded, setPromptExpanded] = useState(false);

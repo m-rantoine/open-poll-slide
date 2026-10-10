@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import {
   type KeyboardEvent as ReactKeyboardEvent,
-  type ReactNode,
   useCallback,
   useEffect,
   useRef,
@@ -29,13 +28,14 @@ import {
   type PresenterState,
   usePresenterChannel,
 } from '../components/present/use-presenter-channel';
+import { PreviewStepHost } from '../components/preview-step-host';
 import { SlideCanvas } from '../components/slide-canvas';
 import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
 import { SlidePageProvider } from '../lib/page-context';
 import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from '../lib/sdk';
-import { loadSlide, slideIds } from '../lib/slides';
-import { type StepController, StepHost } from '../lib/step-context';
+import { loadSlide } from '../lib/slides';
 import { useSlideModule } from '../lib/use-slide-module';
+import { useVisibleSlideIds } from '../lib/use-visible-slides';
 import { LivePresenter } from '../live/presenter-live';
 
 export function Presenter() {
@@ -306,6 +306,7 @@ function PresenterTopBar({
   onSwitchDeck: (slideId: string) => void;
 }) {
   const t = useLocale();
+  const slideIds = useVisibleSlideIds();
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b border-hairline px-6">
       <div className="flex min-w-0 items-center gap-3">
@@ -340,6 +341,7 @@ function PresenterTopBar({
 // That warms the module cache for switches; assets only load on render, so
 // this stays cheap.
 function useDeckModules(): Record<string, SlideModule> {
+  const slideIds = useVisibleSlideIds();
   const [modules, setModules] = useState<Record<string, SlideModule>>({});
   useEffect(() => {
     let cancelled = false;
@@ -354,7 +356,7 @@ function useDeckModules(): Record<string, SlideModule> {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [slideIds]);
   return modules;
 }
 
@@ -368,6 +370,7 @@ function DeckSwitcher({
   onSwitchDeck: (slideId: string) => void;
 }) {
   const t = useLocale();
+  const slideIds = useVisibleSlideIds();
   const modules = useDeckModules();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -658,20 +661,6 @@ function PresenterJumpControl({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <span className="eyebrow">{children}</span>;
-}
-
-function PreviewStepHost({ revealed, children }: { revealed: number; children: ReactNode }) {
-  const noopControllerRef = useRef<StepController | null>(null);
-  return (
-    <StepHost
-      isActivePage={false}
-      entryDirection="jump"
-      controllerRef={noopControllerRef}
-      controlledRevealed={revealed}
-    >
-      {children}
-    </StepHost>
-  );
 }
 
 function Clock() {

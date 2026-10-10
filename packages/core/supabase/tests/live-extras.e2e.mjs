@@ -6,6 +6,7 @@ import { chromium } from '@playwright/test';
 const B = process.env.BASE_URL ?? 'http://localhost:5173';
 const SHOT_DIR = process.env.SHOT_DIR ?? './e2e-shots';
 const PASS = 'E2e-test-pass-1';
+const STUDENT_DOMAIN = process.env.STUDENT_DOMAIN ?? 'school.example.test';
 mkdirSync(SHOT_DIR, { recursive: true });
 const b = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH,
@@ -41,7 +42,7 @@ async function signIn(p, email, url) {
 }
 const shot = (p, n) => p.screenshot({ path: `${SHOT_DIR}/${n}.png` });
 async function startSession(host, mode) {
-  await host.p.goto(B + '/s/live-quiz-demo');
+  await host.p.goto(`${B}/s/live-quiz-demo`);
   await host.p.locator('button[aria-label="Present options"]').click();
   await host.p.getByText(`Start ${mode}-paced session`).click();
   await host.p.waitForURL(mode === 'host' ? /\/screen\?session=/ : /\/results\//, T);
@@ -60,12 +61,12 @@ async function sessionCode(host, id) {
 }
 
 const host = await user('HOST', 'e2e-host@example.test');
-const s1 = await user('S1', 'e2e-s1@mon-avenir.ca');
-const s2 = await user('S2', 'e2e-s2@mon-avenir.ca');
-const phone = await user('PHONE', 'e2e-s2@mon-avenir.ca', { width: 390, height: 844 });
+const s1 = await user('S1', `e2e-s1@${STUDENT_DOMAIN}`);
+const s2 = await user('S2', `e2e-s2@${STUDENT_DOMAIN}`);
+const phone = await user('PHONE', `e2e-s2@${STUDENT_DOMAIN}`, { width: 390, height: 844 });
 
 try {
-  await host.p.goto(B + '/sessions');
+  await host.p.goto(`${B}/sessions`);
   await host.p.locator('input[type=email]').fill(host.email);
   await host.p.locator('input[type=password]').fill(PASS);
   await host.p.getByRole('button', { name: 'Sign in' }).click();
@@ -74,9 +75,9 @@ try {
   // ---- host-paced: timers + inactivity
   const id = await startSession(host, 'host');
   const { pres, code } = await sessionCode(host, id);
-  await signIn(s1.p, s1.email, '/join/' + code);
+  await signIn(s1.p, s1.email, `/join/${code}`);
   await s1.p.getByText("You're in!").waitFor(T);
-  await signIn(s2.p, s2.email, '/join/' + code);
+  await signIn(s2.p, s2.email, `/join/${code}`);
   await s2.p.getByText("You're in!").waitFor(T);
 
   await host.p.bringToFront();
@@ -106,8 +107,8 @@ try {
   await host.p.getByText('Click to let participants answer').click();
   await host.p.getByRole('button', { name: 'Add 15 seconds' }).click();
   await s1.p.getByRole('button', { name: 'Toronto' }).waitFor(T);
-  await s1.p.getByText('Waiting for your host to open this question').waitFor({ timeout: 30000 });
-  ok(true, 'question auto-locks when the timer runs out');
+  await s1.p.getByText('The answer period has ended.').waitFor({ timeout: 30000 });
+  ok(true, 'question ends when the timer runs out');
   // inactivity: hide the student's tab
   await pres.bringToFront();
   await pres.getByText('Students · 2').waitFor(T);
@@ -141,7 +142,7 @@ try {
   // ---- self-paced
   await host.p.getByRole('button', { name: 'End session' }).click();
   await host.p.waitForURL(/\/results\//, T);
-  const sid = await startSession(host, 'self');
+  const _sid = await startSession(host, 'self');
   await host.p.getByRole('button', { name: 'By student' }).waitFor(T);
   const bodyText = await host.p.locator('body').innerText();
   const selfCode =
@@ -151,7 +152,7 @@ try {
       JSON.stringify(bodyText.split('\n').filter((l) => /paced|active|ended/i.test(l))),
     );
   const ph = phone;
-  await signIn(ph.p, ph.email, '/join/' + selfCode);
+  await signIn(ph.p, ph.email, `/join/${selfCode}`);
   await ph.p.getByText("You're in!").waitFor(T);
   await ph.p.getByText('at your own pace').waitFor(T);
   ok(true, 'self-paced participant lands on the lobby with pacing hint');
@@ -179,8 +180,8 @@ try {
   ok(size.w <= size.h, `phone viewport has no horizontal scroll (${size.w}/${size.h})`);
 } catch (e) {
   failures++;
-  console.log('ERROR ' + e.message.split('\n').slice(0, 4).join(' | '));
-  for (const x of [host, s1, s2, phone]) await shot(x.p, 'x-fail-' + x.name).catch(() => {});
+  console.log(`ERROR ${e.message.split('\n').slice(0, 4).join(' | ')}`);
+  for (const x of [host, s1, s2, phone]) await shot(x.p, `x-fail-${x.name}`).catch(() => {});
 }
 await b.close();
 console.log(failures ? `${failures} FAILURE(S)` : 'ALL PASSED');

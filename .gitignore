@@ -14,3 +14,4 @@ test-results
 .env.local
 
 e2e-shots/
+.npmrc

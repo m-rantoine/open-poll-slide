@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
@@ -48,6 +48,17 @@ type Props = {
    * without entering fullscreen. Defaults to true for back-compat.
    */
   fullscreen?: boolean;
+  /** Fill the parent instead of the viewport, so the Player can sit inside a layout. */
+  contained?: boolean;
+  /** `locked` ignores every navigation input (keys, clicks, wheel, swipe). Defaults to `free`. */
+  navigation?: 'free' | 'locked';
+  /** Drive the reveal step from outside, e.g. a live session shared across devices. */
+  controlledRevealed?: number;
+  onStepAggregateChange?: (aggregate: StepAggregate) => void;
+  /** Replaces the default presenter-window opener (button and `P` shortcut). */
+  onPresenter?: () => void;
+  /** Step-aware next/previous for custom buttons. */
+  navRef?: MutableRefObject<{ next: () => void; prev: () => void } | null>;
 };
 
 export function Player({
@@ -62,6 +73,12 @@ export function Player({
   slideId,
   onSwitchSlide,
   fullscreen = true,
+  contained = false,
+  navigation = 'free',
+  controlledRevealed,
+  onStepAggregateChange,
+  onPresenter,
+  navRef,
 }: Props) {
   const isMobile = useIsMobile();
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -83,7 +100,8 @@ export function Player({
   const [mobileChromeVisible, setMobileChromeVisible] = useState(false);
   const [mobileChromeDeadline, setMobileChromeDeadline] = useState(0);
   const [startedAt] = useState(() => Date.now());
-  const [windowed, setWindowed] = useState(!fullscreen);
+  const locked = navigation === 'locked';
+  const [windowed, setWindowed] = useState(!fullscreen || contained);
   // Mirror windowed into a ref so the fullscreenchange listener can read the
   // latest value without re-binding — exits from window mode must not call
   // onExit, but exits initiated by the browser (Esc in fullscreen) must.
@@ -99,31 +117,45 @@ export function Player({
     revealed: 0,
     stepCount: 0,
   });
+  const onStepAggregateChangeRef = useRef(onStepAggregateChange);
+  onStepAggregateChangeRef.current = onStepAggregateChange;
   const handleAggregateChange = useCallback((a: StepAggregate) => {
     setStepAggregate((cur) =>
       cur.revealed === a.revealed && cur.stepCount === a.stepCount ? cur : a,
     );
+    onStepAggregateChangeRef.current?.(a);
   }, []);
 
   // Every navigation funnels through here so entryDirection is settled
   // synchronously, before the incoming page's <Steps> reads it on mount.
   const handleIndexChange = useCallback(
     (next: number) => {
+      if (locked) return;
       const delta = next - index;
       setEntryDirection(delta === 1 ? 'forward' : delta === -1 ? 'backward' : 'jump');
       onIndexChange(next);
     },
-    [index, onIndexChange],
+    [index, onIndexChange, locked],
   );
 
   const goPrev = useCallback(() => {
+    if (locked) return;
     if (stepControllerRef.current?.retreat()) return;
     if (index > 0) handleIndexChange(index - 1);
-  }, [index, handleIndexChange]);
+  }, [index, handleIndexChange, locked]);
   const goNext = useCallback(() => {
+    if (locked) return;
     if (stepControllerRef.current?.advance()) return;
     if (index < pages.length - 1) handleIndexChange(index + 1);
-  }, [index, pages.length, handleIndexChange]);
+  }, [index, pages.length, handleIndexChange, locked]);
+
+  useEffect(() => {
+    if (!navRef) return;
+    navRef.current = { next: goNext, prev: goPrev };
+    return () => {
+      navRef.current = null;
+    };
+  }, [navRef, goNext, goPrev]);
 
   const overlayActive = controls && (overviewOpen || helpOpen);
   const overlayActiveRef = useRef(overlayActive);
@@ -177,7 +209,7 @@ export function Player({
 
   useClickPageNavigation({
     ref: rootRef,
-    enabled: !overlayActive,
+    enabled: !overlayActive && !locked,
     canPrev,
     canNext,
     onPrev: goPrev,
@@ -187,7 +219,7 @@ export function Player({
 
   useWheelPageNavigation({
     ref: rootRef,
-    enabled: !overlayActive,
+    enabled: !overlayActive && !locked,
     canPrev,
     canNext,
     onPrev: goPrev,
@@ -196,7 +228,7 @@ export function Player({
 
   useTouchSwipe({
     ref: rootRef,
-    enabled: controls && !overlayActive,
+    enabled: (controls || contained) && !locked && !overlayActive,
     onPrev: goPrev,
     onNext: goNext,
   });
@@ -273,6 +305,7 @@ export function Player({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isTypingTarget(e.target)) return;
+      if (locked && !controls) return;
 
       // While an overlay is open, only Esc and the toggle that owns it
       // should reach the Player. Overview installs its own capture-phase
@@ -350,9 +383,10 @@ export function Player({
       } else if (e.key === 'h' || e.key === 'H' || e.key === '?') {
         e.preventDefault();
         setHelpOpen((v) => !v);
-      } else if ((e.key === 'p' || e.key === 'P') && slideId) {
+      } else if ((e.key === 'p' || e.key === 'P') && (onPresenter || slideId)) {
         e.preventDefault();
-        openPresenterWindow(slideId);
+        if (onPresenter) onPresenter();
+        else if (slideId) openPresenterWindow(slideId);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -370,6 +404,8 @@ export function Player({
     handleIndexChange,
     pages.length,
     slideId,
+    locked,
+    onPresenter,
   ]);
 
   // The control bar + progress strip only surface when the pointer is in
@@ -398,7 +434,8 @@ export function Player({
     <div
       ref={setRoot}
       className={cn(
-        'fixed inset-0 flex items-center justify-center overflow-hidden bg-black',
+        contained ? 'relative h-full w-full' : 'fixed inset-0',
+        'flex items-center justify-center overflow-hidden bg-black',
         controls && 'select-none',
         controls && (hideCursor ? 'cursor-none' : 'cursor-default'),
       )}
@@ -416,6 +453,7 @@ export function Player({
           disabled={prefersReducedMotion}
           stepControllerRef={stepControllerRef}
           entryDirection={entryDirection}
+          controlledRevealed={controlledRevealed}
           onStepAggregateChange={handleAggregateChange}
         />
       </SlideCanvas>
@@ -442,7 +480,10 @@ export function Player({
             onOverview={() => setOverviewOpen(true)}
             onBlackout={(mode) => setBlackout((c) => (c === mode ? null : mode))}
             onLaser={() => setLaser((v) => !v)}
-            onPresenter={() => slideId && openPresenterWindow(slideId)}
+            onPresenter={() => {
+              if (onPresenter) onPresenter();
+              else if (slideId) openPresenterWindow(slideId);
+            }}
             onToggleFullscreen={toggleFullscreen}
             onHelp={() => setHelpOpen(true)}
             onExit={onExit}

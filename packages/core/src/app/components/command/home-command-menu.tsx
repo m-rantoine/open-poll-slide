@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useLocale } from '@/lib/use-locale';
 import { useSlideTitles } from '@/lib/use-slide-titles';
 import type { Folder } from '../../lib/sdk';
-import { slideIds } from '../../lib/slides';
+import { useVisibleSlideIds } from '../../lib/use-visible-slides';
+import { useCanSeeThemes } from '../../live/auth';
 import { FolderIconChip, SystemViewIcon } from '../sidebar/folder-item';
 import { ALL_SLIDES_ID, ASSETS_ID, DRAFT_ID, THEMES_ID } from '../sidebar/sidebar';
 import { type CommandGroupSpec, CommandMenu, type CommandSpec } from './command-menu';
@@ -23,8 +24,10 @@ export function HomeCommandMenu({
   onSelectView: (id: string) => void;
 }) {
   const t = useLocale();
+  const canSeeThemes = useCanSeeThemes();
   const navigate = useNavigate();
   const loadedTitles = useSlideTitles(open);
+  const slideIds = useVisibleSlideIds();
 
   const groups = useMemo<CommandGroupSpec[]>(() => {
     const slides: CommandSpec[] = slideIds.map((id) => ({
@@ -59,15 +62,17 @@ export function HomeCommandMenu({
       })),
     ];
 
-    const navigation: CommandSpec[] = [
-      {
-        id: `view-${THEMES_ID}`,
-        label: t.home.themes,
-        icon: <SystemViewIcon kind="themes" />,
-        keywords: ['themes', 'design'],
-        run: () => onSelectView(THEMES_ID),
-      },
-    ];
+    const navigation: CommandSpec[] = canSeeThemes
+      ? [
+          {
+            id: `view-${THEMES_ID}`,
+            label: t.home.themes,
+            icon: <SystemViewIcon kind="themes" />,
+            keywords: ['themes', 'design'],
+            run: () => onSelectView(THEMES_ID),
+          },
+        ]
+      : [];
     if (import.meta.env.DEV) {
       navigation.push({
         id: `view-${ASSETS_ID}`,
@@ -83,7 +88,7 @@ export function HomeCommandMenu({
       { id: 'folders', heading: t.commandMenu.groupFolders, items: folderItems },
       { id: 'navigation', heading: t.commandMenu.groupNavigation, items: navigation },
     ];
-  }, [t, folders, titleMap, loadedTitles, navigate, onSelectView]);
+  }, [t, folders, titleMap, loadedTitles, navigate, onSelectView, canSeeThemes, slideIds]);
 
   return (
     <CommandMenu

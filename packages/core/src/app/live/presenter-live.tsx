@@ -4,14 +4,20 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
 import { useDocumentTitle } from '@/lib/use-document-title';
+import { useLocale } from '@/lib/use-locale';
 import { pad2 } from '@/lib/utils';
+import { Player } from '../components/player';
 import { SlideCanvas } from '../components/slide-canvas';
 import { SlidePageProvider } from '../lib/page-context';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireHost } from './auth';
+import { EndSessionButton } from './end-session';
+import { liveErrorMessage } from './errors';
 import { LiveProvider, useQuestionRegistry } from './live-context';
+import { useLockHotkey } from './lock-hotkey';
+import { PauseSessionButton } from './pause-session';
 import { QuestionPanel, ResultsPanel, StudentsPanel } from './presenter-panels';
-import { LiveStage, useHostNavigation } from './stage';
+import { useHostNavigation } from './stage';
 import { useLiveSession } from './use-live-session';
 
 export function LivePresenter({ sessionId }: { sessionId: string }) {
@@ -25,6 +31,7 @@ export function LivePresenter({ sessionId }: { sessionId: string }) {
 function Inner({ sessionId }: { sessionId: string }) {
   const { slideId = '' } = useParams();
   const navigate = useNavigate();
+  const t = useLocale();
   const { slide, error } = useSlideModule(slideId);
   const data = useLiveSession(sessionId, true);
   const { ids, Provider } = useQuestionRegistry();
@@ -32,10 +39,13 @@ function Inner({ sessionId }: { sessionId: string }) {
   const total = slide?.default.length ?? 0;
   const nav = useHostNavigation(data, total);
   const { next, prev } = nav;
+  const paused = data.session?.status === 'paused';
+  const activeQuestionId = ids.find((id) => !id.startsWith('__'));
+  useLockHotkey(data, activeQuestionId, data.session?.status === 'active');
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || isTypingTarget(e.target) || hasModifier(e)) return;
+      if (paused || e.defaultPrevented || isTypingTarget(e.target) || hasModifier(e)) return;
       if (isForwardKey(e)) {
         e.preventDefault();
         next();
@@ -46,12 +56,18 @@ function Inner({ sessionId }: { sessionId: string }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [next, prev]);
+  }, [next, prev, paused]);
 
-  if (error) return <LiveMessage title="Could not load this deck" body={error} />;
+  if (error) return <LiveMessage title={t.live.couldNotLoadDeck} body={error} />;
   if (!slide || data.loading) return <LoadingLine />;
-  if (data.error || !data.session)
-    return <LiveMessage title="Session unavailable" body={data.error ?? ''} />;
+  if (data.error || !data.session) {
+    return (
+      <LiveMessage
+        title={t.live.sessionUnavailable}
+        body={data.error ? liveErrorMessage(t, data.error) : ''}
+      />
+    );
+  }
 
   const session = data.session;
   const questions = {
@@ -65,12 +81,12 @@ function Inner({ sessionId }: { sessionId: string }) {
     <div className="dark flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-hairline px-6">
         <div className="flex items-center gap-3">
-          <span className="eyebrow text-white/45">Live presenter</span>
+          <span className="eyebrow text-white/45">{t.live.livePresenter}</span>
           <span className="font-heading text-[14px] font-semibold">
             {slide.meta?.title ?? slideId}
           </span>
           <span className="rounded-[3px] border border-border px-1.5 py-0.5 font-mono text-[11px]">
-            {session.mode === 'host' ? 'host-paced' : 'self-paced'} · {session.code}
+            {session.mode === 'host' ? t.live.hostPaced : t.live.selfPaced} · {session.code}
           </span>
         </div>
         <div className="flex items-center gap-4">
@@ -78,15 +94,10 @@ function Inner({ sessionId }: { sessionId: string }) {
             {pad2(nav.index + 1)} / {pad2(total)}
           </span>
           <Button variant="outline" onClick={() => navigate(`/results/${session.id}`)}>
-            Results
+            {t.live.results}
           </Button>
-          <Button
-            variant="outline"
-            disabled={session.status === 'ended'}
-            onClick={() => void data.actions.endSession()}
-          >
-            {session.status === 'ended' ? 'Ended' : 'End session'}
-          </Button>
+          <PauseSessionButton data={data} />
+          <EndSessionButton data={data} />
         </div>
       </header>
 
@@ -94,23 +105,36 @@ function Inner({ sessionId }: { sessionId: string }) {
         <section className="flex min-h-0 flex-col gap-3">
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-[8px] bg-black ring-1 ring-border">
             <LiveProvider view="presenter" mirror data={data} deckId={slideId}>
-              <LiveStage
-                slide={slide}
-                index={nav.index}
-                step={nav.step}
-                active={false}
-                controllerRef={nav.controllerRef}
-                onAggregate={nav.onAggregate}
-                wrap={(children) => <Provider>{children}</Provider>}
-              />
+              <Provider>
+                <div className="absolute inset-0">
+                  <Player
+                    pages={slide.default}
+                    design={slide.design}
+                    transition={slide.transition}
+                    index={nav.index}
+                    onIndexChange={() => {}}
+                    onExit={() => {}}
+                    allowExit={false}
+                    fullscreen={false}
+                    contained
+                    navigation="locked"
+                    controlledRevealed={nav.step}
+                    onStepAggregateChange={nav.onAggregate}
+                  />
+                </div>
+              </Provider>
             </LiveProvider>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={prev} disabled={nav.index === 0 && nav.step === 0}>
-              <ChevronLeft /> Previous
+            <Button
+              variant="outline"
+              onClick={prev}
+              disabled={paused || (nav.index === 0 && nav.step === 0)}
+            >
+              <ChevronLeft /> {t.live.previous}
             </Button>
-            <Button variant="outline" onClick={next}>
-              Next <ChevronRight />
+            <Button variant="outline" onClick={next} disabled={paused}>
+              {t.live.next} <ChevronRight />
             </Button>
             {NextPage && (
               <div

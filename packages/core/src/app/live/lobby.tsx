@@ -1,5 +1,10 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, HTMLAttributes } from 'react';
+import { LanguageScope, type PollLanguage } from '../lib/locale-store';
+import { format, plural, useLocale } from '../lib/use-locale';
+import { isParticipantConnected } from './derive';
 import { useLive, useQuestionRegistryFlag } from './live-context';
+
+const u = (px: number) => `${(px / 10.8).toFixed(2)}cqmin`;
 
 const frame: CSSProperties = {
   width: '100%',
@@ -9,8 +14,9 @@ const frame: CSSProperties = {
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: 40,
+  gap: u(40),
   textAlign: 'center',
+  containerType: 'size',
   background: 'var(--osd-bg, #ffffff)',
   color: 'var(--osd-text, #0f172a)',
   fontFamily: 'var(--osd-font-body, system-ui, sans-serif)',
@@ -21,47 +27,55 @@ export function joinUrl(): string {
   return `${window.location.origin}${base}/join`;
 }
 
-export function Lobby({ title = 'Welcome' }: { title?: string }) {
+export type LobbyProps = { title?: string; language?: PollLanguage } & Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'title' | 'children'
+>;
+
+function LobbyInner({ title: titleProp, style, ...rest }: LobbyProps) {
   const live = useLive();
+  const t = useLocale();
   useQuestionRegistryFlag('lobby');
+  const title = titleProp ?? t.live.welcome;
 
   if (!live) {
     return (
-      <div style={frame}>
-        <h1 style={{ margin: 0, fontSize: 120 }}>{title}</h1>
-        <div style={{ fontSize: 44, opacity: 0.6 }}>Lobby — appears during live sessions</div>
+      <div {...rest} style={{ ...frame, ...style }}>
+        <h1 style={{ margin: 0, fontSize: u(120) }}>{title}</h1>
+        <div style={{ fontSize: u(44), opacity: 0.6 }}>{t.live.lobbyPlaceholder}</div>
       </div>
     );
   }
 
-  const { data, view } = live;
+  const { data, view, now } = live;
   const code = data.session?.code ?? '';
+  const present = data.participants.filter((p) => isParticipantConnected(p, now)).length;
 
   if (view === 'participant') {
     return (
-      <div style={frame}>
-        <h1 style={{ margin: 0, fontSize: 96 }}>You're in!</h1>
-        <div style={{ fontSize: 44, opacity: 0.7 }}>
-          {data.session?.mode === 'self'
-            ? 'Use the arrows to move through the slides at your own pace.'
-            : 'Waiting for your host to begin…'}
+      <div {...rest} style={{ ...frame, ...style }}>
+        <h1 style={{ margin: 0, fontSize: u(96) }}>{t.live.youreIn}</h1>
+        <div style={{ fontSize: u(44), opacity: 0.7 }}>
+          {data.session?.mode === 'self' ? t.live.selfPacedHint : t.live.waitingForHostToBegin}
         </div>
-        <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: '0.2em' }}>{code}</div>
+        <div style={{ fontSize: u(56), fontWeight: 700, letterSpacing: '0.2em' }}>{code}</div>
       </div>
     );
   }
 
   return (
-    <div style={frame}>
-      <h1 style={{ margin: 0, fontSize: 120, fontFamily: 'var(--osd-font-display, inherit)' }}>
+    <div {...rest} style={{ ...frame, ...style }}>
+      <h1 style={{ margin: 0, fontSize: u(120), fontFamily: 'var(--osd-font-display, inherit)' }}>
         {title}
       </h1>
-      <div style={{ fontSize: 52 }}>
-        Go to <strong>{joinUrl().replace(/^https?:\/\//, '')}</strong> and enter
+      <div style={{ fontSize: u(52) }}>
+        {t.live.goToPrefix}
+        <strong>{joinUrl().replace(/^https?:\/\//, '')}</strong>
+        {t.live.goToSuffix}
       </div>
       <div
         style={{
-          fontSize: 220,
+          fontSize: u(220),
           fontWeight: 800,
           letterSpacing: '0.18em',
           paddingLeft: '0.18em',
@@ -71,10 +85,17 @@ export function Lobby({ title = 'Welcome' }: { title?: string }) {
       >
         {code}
       </div>
-      <div style={{ fontSize: 56 }}>
-        {data.participants.length} {data.participants.length === 1 ? 'student' : 'students'} in the
-        lobby
+      <div style={{ fontSize: u(56) }}>
+        {format(plural(present, t.live.studentsInLobby), { count: present })}
       </div>
     </div>
+  );
+}
+
+export function Lobby({ language, ...props }: LobbyProps) {
+  return (
+    <LanguageScope language={language}>
+      <LobbyInner {...props} data-poll-language={language ?? 'en'} />
+    </LanguageScope>
   );
 }

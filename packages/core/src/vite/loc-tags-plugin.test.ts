@@ -114,6 +114,26 @@ describe('injectLocTags', () => {
     expect(out).toContain('<ImagePlaceholder data-slide-loc="2:2" hint="hero" />');
   });
 
+  it('tags the live question components so the inspector can edit them', () => {
+    const src = [
+      'export default [() => (',
+      '  <DragDrop question={q}>',
+      '    <DropZone zone="a" />',
+      '    <ItemPool />',
+      '  </DragDrop>',
+      ')];',
+      '',
+    ].join('\n');
+    const out = injectLocTags(src);
+    if (out === null) throw new Error('expected transform');
+    for (const name of ['DragDrop', 'DropZone', 'ItemPool']) {
+      expect(out).toContain(`<${name} data-slide-loc=`);
+    }
+    expect(injectLocTags('export default [() => <WordCloud question={q} />];')).toContain(
+      '<WordCloud data-slide-loc=',
+    );
+  });
+
   it('does not tag other PascalCase components alongside ImagePlaceholder', () => {
     const src = [
       'export default [() => (',

@@ -36,16 +36,19 @@ export type Database = {
       answer_keys: {
         Row: {
           correct_option_ids: string[];
+          incorrect_option_ids: string[];
           question_id: string;
           session_id: string;
         };
         Insert: {
           correct_option_ids?: string[];
+          incorrect_option_ids?: string[];
           question_id: string;
           session_id: string;
         };
         Update: {
           correct_option_ids?: string[];
+          incorrect_option_ids?: string[];
           question_id?: string;
           session_id?: string;
         };
@@ -61,6 +64,7 @@ export type Database = {
       };
       answers: {
         Row: {
+          answer_text: string | null;
           id: string;
           is_correct: boolean | null;
           option_id: string;
@@ -70,6 +74,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          answer_text?: string | null;
           id?: string;
           is_correct?: boolean | null;
           option_id: string;
@@ -79,6 +84,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          answer_text?: string | null;
           id?: string;
           is_correct?: boolean | null;
           option_id?: string;
@@ -112,6 +118,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      deck_answer_keys: {
+        Row: {
+          correct_option_ids: string[];
+          deck_id: string;
+          question_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          correct_option_ids?: string[];
+          deck_id: string;
+          question_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          correct_option_ids?: string[];
+          deck_id?: string;
+          question_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       hosts: {
         Row: {
           email: string;
@@ -123,6 +150,44 @@ export type Database = {
           email?: string;
         };
         Relationships: [];
+      };
+      placements: {
+        Row: {
+          is_correct: boolean | null;
+          item_id: string;
+          placed_at: string;
+          question_id: string;
+          session_id: string;
+          user_id: string;
+          zone_id: string;
+        };
+        Insert: {
+          is_correct?: boolean | null;
+          item_id: string;
+          placed_at?: string;
+          question_id: string;
+          session_id: string;
+          user_id: string;
+          zone_id: string;
+        };
+        Update: {
+          is_correct?: boolean | null;
+          item_id?: string;
+          placed_at?: string;
+          question_id?: string;
+          session_id?: string;
+          user_id?: string;
+          zone_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'placements_session_id_fkey';
+            columns: ['session_id'];
+            isOneToOne: false;
+            referencedRelation: 'sessions';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       presence_events: {
         Row: {
@@ -227,21 +292,30 @@ export type Database = {
       session_question_state: {
         Row: {
           ends_at: string | null;
+          key_version: number;
+          paused_remaining_ms: number | null;
           question_id: string;
+          scored: boolean;
           session_id: string;
           show_results: boolean;
           state: string;
         };
         Insert: {
           ends_at?: string | null;
+          key_version?: number;
+          paused_remaining_ms?: number | null;
           question_id: string;
+          scored?: boolean;
           session_id: string;
           show_results?: boolean;
           state: string;
         };
         Update: {
           ends_at?: string | null;
+          key_version?: number;
+          paused_remaining_ms?: number | null;
           question_id?: string;
+          scored?: boolean;
           session_id?: string;
           show_results?: boolean;
           state?: string;
@@ -269,6 +343,7 @@ export type Database = {
           id: string;
           mode: Database['public']['Enums']['session_mode'];
           page_count: number;
+          paused_at: string | null;
           questions: Json;
           status: Database['public']['Enums']['session_status'];
         };
@@ -284,6 +359,7 @@ export type Database = {
           id?: string;
           mode: Database['public']['Enums']['session_mode'];
           page_count?: number;
+          paused_at?: string | null;
           questions?: Json;
           status?: Database['public']['Enums']['session_status'];
         };
@@ -299,6 +375,7 @@ export type Database = {
           id?: string;
           mode?: Database['public']['Enums']['session_mode'];
           page_count?: number;
+          paused_at?: string | null;
           questions?: Json;
           status?: Database['public']['Enums']['session_status'];
         };
@@ -352,7 +429,10 @@ export type Database = {
         };
         Returns: {
           ends_at: string | null;
+          key_version: number;
+          paused_remaining_ms: number | null;
           question_id: string;
+          scored: boolean;
           session_id: string;
           show_results: boolean;
           state: string;
@@ -399,16 +479,63 @@ export type Database = {
           deck_title: string;
           id: string;
           mode: Database['public']['Enums']['session_mode'];
+          status: Database['public']['Enums']['session_status'];
+        }[];
+      };
+      list_my_sessions: {
+        Args: never;
+        Returns: {
+          code: string;
+          created_at: string;
+          deck_id: string;
+          deck_title: string;
+          id: string;
+          mode: Database['public']['Enums']['session_mode'];
+          status: Database['public']['Enums']['session_status'];
         }[];
       };
       my_answers: {
         Args: { p_session: string };
         Returns: {
+          answer_text: string | null;
           is_correct: boolean;
           option_id: string;
           question_id: string;
           show_results: boolean;
         }[];
+      };
+      my_placements: {
+        Args: { p_session: string };
+        Returns: {
+          is_correct: boolean;
+          item_id: string;
+          question_id: string;
+          show_results: boolean;
+          zone_id: string;
+        }[];
+      };
+      place_tile: {
+        Args: { p_item: string; p_question: string; p_session: string; p_zone: string | null };
+        Returns: undefined;
+      };
+      submit_placements: {
+        Args: { p_question: string; p_session: string };
+        Returns: {
+          answer_text: string | null;
+          id: string;
+          is_correct: boolean | null;
+          option_id: string;
+          question_id: string;
+          session_id: string;
+          submitted_at: string;
+          user_id: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'answers';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       my_score: {
         Args: { p_session: string };
@@ -418,14 +545,32 @@ export type Database = {
           graded: number;
         }[];
       };
+      pause_session: { Args: { p_session: string }; Returns: undefined };
       require_host: { Args: never; Returns: undefined };
+      resume_session: { Args: { p_session: string }; Returns: undefined };
       server_time: { Args: never; Returns: string };
+      session_summaries: {
+        Args: { p_limit?: number };
+        Returns: {
+          class_average: number | null;
+          session_id: string;
+          students: number;
+        }[];
+      };
       set_position: {
         Args: { p_index: number; p_session: string; p_step?: number };
         Returns: undefined;
       };
       set_presence: {
         Args: { p_active: boolean; p_session: string };
+        Returns: undefined;
+      };
+      mark_answer: {
+        Args: { p_key: string; p_mark: string; p_question: string; p_session: string };
+        Returns: undefined;
+      };
+      set_question_scored: {
+        Args: { p_question: string; p_session: string; p_value: boolean };
         Returns: undefined;
       };
       set_show_results: {
@@ -435,6 +580,26 @@ export type Database = {
       submit_answer: {
         Args: { p_option: string; p_question: string; p_session: string };
         Returns: {
+          answer_text: string | null;
+          id: string;
+          is_correct: boolean | null;
+          option_id: string;
+          question_id: string;
+          session_id: string;
+          submitted_at: string;
+          user_id: string;
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'answers';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      submit_text_answer: {
+        Args: { p_question: string; p_session: string; p_text: string };
+        Returns: {
+          answer_text: string | null;
           id: string;
           is_correct: boolean | null;
           option_id: string;
@@ -457,7 +622,7 @@ export type Database = {
     };
     Enums: {
       session_mode: 'self' | 'host';
-      session_status: 'active' | 'ended';
+      session_status: 'active' | 'paused' | 'ended';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -587,7 +752,7 @@ export const Constants = {
   public: {
     Enums: {
       session_mode: ['self', 'host'],
-      session_status: ['active', 'ended'],
+      session_status: ['active', 'paused', 'ended'],
     },
   },
 } as const;

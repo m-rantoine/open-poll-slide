@@ -221,7 +221,13 @@ export function InspectOverlay() {
           Math.abs(frame.y) < 1 &&
           frame.width >= canvas.width - 1 &&
           frame.height >= canvas.height - 1;
-        if (background && !selection.some((target) => target.anchor === hit?.anchor)) hit = null;
+        const isPollComponent = hit.anchor.hasAttribute('data-poll-language');
+        if (
+          background &&
+          !isPollComponent &&
+          !selection.some((target) => target.anchor === hit?.anchor)
+        )
+          hit = null;
       }
       let targets = selection;
       let clickSelection = selection;

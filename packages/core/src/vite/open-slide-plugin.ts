@@ -7,6 +7,7 @@ import type { OpenSlideConfig } from '../config.ts';
 import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
 import { foldersManifestPath, readManifest } from '../files/folders.ts';
 import { hasRecentWrite } from './recent-writes.ts';
+import { defaultPrivateFromEnv, extractPrivacy } from './slide-privacy.ts';
 
 export type { OpenSlideConfig };
 
@@ -45,10 +46,14 @@ function toId(absFile: string, slidesRoot: string): string {
 const META_THEME_RE = /(?:^|[\s,{])theme\s*:\s*['"]([^'"]+)['"]/;
 const META_CREATED_AT_RE = /(?:^|[\s,{])createdAt\s*:\s*['"]([^'"]+)['"]/;
 
-type ExtractedMeta = { theme: string | null; createdAt: string | null };
+type ExtractedMeta = {
+  theme: string | null;
+  createdAt: string | null;
+  isPrivate: boolean | null;
+};
 
 function extractMeta(src: string): ExtractedMeta {
-  const empty: ExtractedMeta = { theme: null, createdAt: null };
+  const empty: ExtractedMeta = { theme: null, createdAt: null, isPrivate: extractPrivacy(src) };
   const metaStart = src.search(/export\s+const\s+meta\b/);
   if (metaStart === -1) return empty;
   const eqIdx = src.indexOf('=', metaStart);
@@ -75,6 +80,7 @@ function extractMeta(src: string): ExtractedMeta {
   return {
     theme: themeMatch ? themeMatch[1] : null,
     createdAt: createdAtMatch ? createdAtMatch[1] : null,
+    isPrivate: empty.isPrivate,
   };
 }
 
@@ -83,7 +89,7 @@ async function readSlideMeta(abs: string): Promise<ExtractedMeta> {
     const src = await fs.readFile(abs, 'utf8');
     return extractMeta(src);
   } catch {
-    return { theme: null, createdAt: null };
+    return { theme: null, createdAt: null, isPrivate: null };
   }
 }
 
@@ -101,13 +107,20 @@ export async function generateSlidesModule(
   files: string[],
   slidesRoot: string,
   isDev: boolean,
+  defaultPrivate = false,
 ): Promise<{ code: string; ignored: string[] }> {
   const scanned = await Promise.all(
     files.map(async (abs) => {
       const id = toId(abs, slidesRoot);
       const importPath = isDev ? `@fs/${normalizePath(abs).replace(/^\/+/, '')}` : abs;
       const meta = await readSlideMeta(abs);
-      return { id, importPath, theme: meta.theme, createdAt: parseCreatedAtMs(meta.createdAt) };
+      return {
+        id,
+        importPath,
+        theme: meta.theme,
+        createdAt: parseCreatedAtMs(meta.createdAt),
+        isPrivate: meta.isPrivate ?? defaultPrivate,
+      };
     }),
   );
 
@@ -125,6 +138,7 @@ export async function generateSlidesModule(
     if (e.theme) themesMap[e.id] = e.theme;
     if (e.createdAt !== null) createdAtMap[e.id] = e.createdAt;
   }
+  const privateMap = Object.fromEntries(entries.map((e) => [e.id, e.isPrivate]));
   const themesJson = JSON.stringify(themesMap);
   const createdAtJson = JSON.stringify(createdAtMap);
   const importTokens = JSON.stringify(Object.fromEntries(entries.map((e) => [e.id, 0])));
@@ -155,6 +169,7 @@ if (import.meta.hot) {
 export const slideIds = ${ids};
 export const slideThemes = ${themesJson};
 export const slideCreatedAt = ${createdAtJson};
+export const slidePrivate = ${JSON.stringify(privateMap)};
 ${devRuntime}
 
 export async function loadSlide(id) {
@@ -215,7 +230,16 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
     async load(id) {
       if (id === resolved(SLIDES_VMOD)) {
         const files = await findSlides(userCwd, slidesDir);
-        const { code, ignored } = await generateSlidesModule(files, slidesRoot, isDev);
+        const slidesEnv = {
+          ...loadEnv(isDev ? 'development' : 'production', userCwd, ''),
+          ...process.env,
+        };
+        const { code, ignored } = await generateSlidesModule(
+          files,
+          slidesRoot,
+          isDev,
+          defaultPrivateFromEnv(slidesEnv.SLIDES_DEFAULT_AS_PRIVATE),
+        );
         for (const slideId of ignored) {
           if (warnedInvalidSlideIds.has(slideId)) continue;
           warnedInvalidSlideIds.add(slideId);
