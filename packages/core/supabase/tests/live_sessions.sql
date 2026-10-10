@@ -22,6 +22,14 @@ declare
   sess2 public.sessions;
   sess3 public.sessions;
   sess4 public.sessions;
+  sess5 public.sessions;
+  qs5 jsonb := '{
+    "rate": {"id":"rate","type":"scale","question":"Rate","min":1,"max":5,"items":[{"id":"s1","label":"A"},{"id":"s2","label":"B"}],"startLocked":false},
+    "rank": {"id":"rank","type":"ranking","question":"Order","items":[{"id":"a","label":"A"},{"id":"b","label":"B"},{"id":"c","label":"C"}],"correct":["b","a","c"],"startLocked":false},
+    "pts": {"id":"pts","type":"points","question":"Split","total":100,"items":[{"id":"x","label":"X"},{"id":"y","label":"Y"}],"startLocked":false},
+    "num": {"id":"num","type":"number","question":"How many?","correct":42,"tolerance":0.5,"startLocked":false},
+    "txt": {"id":"txt","type":"open_text","question":"Why?","startLocked":false}
+  }'::jsonb;
   qs4 jsonb := '{
     "pair": {"id":"pair","type":"association","question":"Match","items":[{"id":"a","label":"A"},{"id":"b","label":"B"},{"id":"c","label":"C"}],"zones":[{"id":"z1","label":"Z1"},{"id":"z2","label":"Z2"}],"correct":{"a":"z1","b":"z2"},"startLocked":false}
   }'::jsonb;
@@ -554,6 +562,69 @@ begin
   if v <> '1/2' then raise exception 'FAIL association score (one of two key pairs placed correctly), got %', v; end if;
   execute 'reset role';
   r := r || 'PASS association: one tile per zone, replacement, per-tile points' || E'\n';
+
+
+  -- Scale, ranking, points, number, open text.
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select * into sess5 from public.create_session('sql-test-deck5', 'Deck5', 'host', 5, qs5);
+  execute 'reset role';
+  select count(*) into n from public.answer_keys where session_id = sess5.id and question_id = 'rank' and correct_option_ids = array['b>1','a>2','c>3'];
+  if n <> 1 then raise exception 'FAIL ranking key should be item>position pairs'; end if;
+  select count(*) into n from public.answer_keys where session_id = sess5.id and question_id = 'num' and correct_option_ids = array['42'];
+  if n <> 1 then raise exception 'FAIL number key not stored'; end if;
+  select count(*) into n from public.session_question_state where session_id = sess5.id and ((question_id in ('rank','num') and scored) or (question_id in ('rate','pts','txt') and not scored));
+  if n <> 5 then raise exception 'FAIL scored defaults for the new types (% of 5)', n; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.join_session(sess5.code);
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s2, 'email', 'sql-test-s2@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.join_session(sess5.code);
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.set_placements(sess5.id, 'rate', '{"s1":"4","s2":"2"}');
+  begin perform public.set_placements(sess5.id, 'rate', '{"s1":"9"}'); raise exception 'FAIL out-of-range rating accepted';
+  exception when invalid_parameter_value then null; end;
+  perform public.set_placements(sess5.id, 'rate', '{"s1":"5","s2":"2"}');
+  perform public.set_placements(sess5.id, 'rank', '{"a":"1","b":"2","c":"3"}');
+  begin perform public.set_placements(sess5.id, 'rank', '{"a":"1","b":"1","c":"3"}'); raise exception 'FAIL duplicate rank accepted';
+  exception when invalid_parameter_value then null; end;
+  begin perform public.set_placements(sess5.id, 'rank', '{"a":"1","b":"2"}'); raise exception 'FAIL incomplete ranking accepted';
+  exception when invalid_parameter_value then null; end;
+  perform public.set_placements(sess5.id, 'pts', '{"x":"70","y":"30"}');
+  begin perform public.set_placements(sess5.id, 'pts', '{"x":"70","y":"40"}'); raise exception 'FAIL points over the total accepted';
+  exception when invalid_parameter_value then null; end;
+  begin perform public.set_placements(sess5.id, 'num', '{"x":"1"}'); raise exception 'FAIL placements on a number question';
+  exception when invalid_parameter_value then null; end;
+  execute 'reset role';
+  select count(*) into n from public.placements where session_id = sess5.id and user_id = s1 and question_id = 'rate' and zone_id = '5' and item_id = 's1';
+  if n <> 1 then raise exception 'FAIL set_placements should replace the previous rating'; end if;
+  select count(*) into n from public.placements where session_id = sess5.id and user_id = s1 and question_id = 'rank' and is_correct;
+  if n <> 1 then raise exception 'FAIL ranking [a,b,c] vs key [b,a,c] should have one tile right (c), got %', n; end if;
+  select count(*) into n from public.placements where session_id = sess5.id and user_id = s1 and question_id in ('rate','pts') and is_correct is not null;
+  if n <> 0 then raise exception 'FAIL scale and points should never be graded'; end if;
+  r := r || 'PASS scale, ranking, points: validated replace, ranking graded per position' || E'\n';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select * into ans from public.submit_text_answer(sess5.id, 'num', ' 42,3 ');
+  if ans.option_id <> '42.3' or ans.is_correct is distinct from true then raise exception 'FAIL 42,3 within 0.5 of 42 should be correct, got %/%', ans.option_id, ans.is_correct; end if;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s2, 'email', 'sql-test-s2@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  begin perform public.submit_text_answer(sess5.id, 'num', 'abc'); raise exception 'FAIL non-number accepted';
+  exception when invalid_parameter_value then null; end;
+  select * into ans from public.submit_text_answer(sess5.id, 'num', '43');
+  if ans.is_correct is distinct from false then raise exception 'FAIL 43 is outside the tolerance'; end if;
+  begin perform public.submit_text_answer(sess5.id, 'txt', repeat('y', 1001)); raise exception 'FAIL over-long text accepted';
+  exception when invalid_parameter_value then null; end;
+  select * into ans from public.submit_text_answer(sess5.id, 'txt', 'Because it is long and has   spaces');
+  if ans.is_correct is not null then raise exception 'FAIL open text graded'; end if;
+  execute 'reset role';
+  r := r || 'PASS number answers (tolerance, comma decimals) and open text' || E'\n';
 
   if public.hook_restrict_signup_domain('{"user":{"email":"sql-test-host@example.test"}}') <> '{}'::jsonb then
     raise exception 'FAIL hook rejected a host';
