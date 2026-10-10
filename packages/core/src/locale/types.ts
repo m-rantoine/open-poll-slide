@@ -574,6 +574,27 @@ export type Locale = {
     collapsePromptAria: string;
   };
 
+  tools: {
+    menu: string;
+    clock: string;
+    timer: string;
+    showClock: string;
+    hideClock: string;
+    showTimer: string;
+    hideTimer: string;
+    timerStart: string;
+    timerPause: string;
+    timerReset: string;
+    timerMinutes: string;
+    timesUp: string;
+    changeStyle: string;
+    close: string;
+    soundOn: string;
+    soundOff: string;
+    shortcutClock: string;
+    shortcutTimer: string;
+  };
+
   live: {
     sessions: string;
     results: string;

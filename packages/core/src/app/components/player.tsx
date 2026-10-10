@@ -26,6 +26,7 @@ import {
 import { useTouchSwipe } from './present/use-touch-swipe';
 import { SlideCanvas } from './slide-canvas';
 import { SlideTransitionLayer } from './slide-transition-layer';
+import { ToolsLayer } from './tools/tools-layer';
 
 const IDLE_HIDE_MS = 2000;
 const BAR_HOTZONE_PX = 160;
@@ -464,6 +465,7 @@ export function Player({
           <PresentBlackoutOverlay mode={blackout} />
           <PresentJumpInput pageCount={pages.length} onJump={handleIndexChange} />
           <PresentLaserPointer enabled={laser} />
+          <ToolsLayer />
           <PresentControlBar
             tooltipContainer={rootEl}
             index={index}

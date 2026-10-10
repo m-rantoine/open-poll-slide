@@ -555,6 +555,27 @@ export const frCA: Locale = {
     collapsePromptAria: 'Réduire l’invite',
   },
 
+  tools: {
+    menu: 'Horloge et minuterie',
+    clock: 'Horloge',
+    timer: 'Minuterie',
+    showClock: 'Afficher l’horloge',
+    hideClock: 'Masquer l’horloge',
+    showTimer: 'Afficher la minuterie',
+    hideTimer: 'Masquer la minuterie',
+    timerStart: 'Démarrer',
+    timerPause: 'Pause',
+    timerReset: 'Réinitialiser',
+    timerMinutes: 'Minutes',
+    timesUp: 'Temps écoulé',
+    changeStyle: 'Changer de style',
+    close: 'Fermer',
+    soundOn: 'Son activé',
+    soundOff: 'Son désactivé',
+    shortcutClock: 'Afficher ou masquer l’horloge',
+    shortcutTimer: 'Afficher ou masquer la minuterie',
+  },
+
   live: {
     sessions: 'Sessions actives',
     results: 'Résultats',

@@ -2,6 +2,12 @@ export type { ImagePlaceholderProps } from './app/components/image-placeholder.t
 export { ImagePlaceholder } from './app/components/image-placeholder.tsx';
 export type { MorphElementProps } from './app/components/morph-element.tsx';
 export { MorphElement } from './app/components/morph-element.tsx';
+export type { ClockSlideProps } from './app/components/tools/clock-slide.tsx';
+export { ClockSlide } from './app/components/tools/clock-slide.tsx';
+export type { CountdownTimerProps } from './app/components/tools/countdown-timer.tsx';
+export { CountdownTimer } from './app/components/tools/countdown-timer.tsx';
+export type { SolveStep, SolveStepsProps } from './app/components/tools/solve-steps.tsx';
+export { SolveSteps } from './app/components/tools/solve-steps.tsx';
 export type {
   DesignFonts,
   DesignPalette,
@@ -26,6 +32,7 @@ export type {
 export { CANVAS_HEIGHT, CANVAS_WIDTH } from './app/lib/sdk.ts';
 export type { StepProps, StepsProps } from './app/lib/step-context.tsx';
 export { Step, Steps, useIsActivePage } from './app/lib/step-context.tsx';
+export type { ClockSkin, TimerSkin } from './app/lib/tools-store.ts';
 export type {
   MorphTransition,
   SlideTransition,

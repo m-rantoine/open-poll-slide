@@ -538,6 +538,27 @@ export const zhCN: Locale = {
     collapsePromptAria: '收起 prompt',
   },
 
+  tools: {
+    menu: '时钟和计时器',
+    clock: '时钟',
+    timer: '计时器',
+    showClock: '显示时钟',
+    hideClock: '隐藏时钟',
+    showTimer: '显示计时器',
+    hideTimer: '隐藏计时器',
+    timerStart: '开始',
+    timerPause: '暂停',
+    timerReset: '重置',
+    timerMinutes: '分钟',
+    timesUp: '时间到',
+    changeStyle: '更改样式',
+    close: '关闭',
+    soundOn: '声音开',
+    soundOff: '声音关',
+    shortcutClock: '显示或隐藏时钟',
+    shortcutTimer: '显示或隐藏计时器',
+  },
+
   live: {
     sessions: '进行中的会话',
     results: '结果',

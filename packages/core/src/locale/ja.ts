@@ -549,6 +549,27 @@ export const ja: Locale = {
     collapsePromptAria: 'プロンプトを折りたたむ',
   },
 
+  tools: {
+    menu: '時計とタイマー',
+    clock: '時計',
+    timer: 'タイマー',
+    showClock: '時計を表示',
+    hideClock: '時計を非表示',
+    showTimer: 'タイマーを表示',
+    hideTimer: 'タイマーを非表示',
+    timerStart: '開始',
+    timerPause: '一時停止',
+    timerReset: 'リセット',
+    timerMinutes: '分',
+    timesUp: '時間です',
+    changeStyle: 'スタイルを変更',
+    close: '閉じる',
+    soundOn: '音あり',
+    soundOff: '音なし',
+    shortcutClock: '時計の表示/非表示',
+    shortcutTimer: 'タイマーの表示/非表示',
+  },
+
   live: {
     sessions: '進行中のセッション',
     results: '結果',

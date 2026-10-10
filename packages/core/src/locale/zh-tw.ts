@@ -538,6 +538,27 @@ export const zhTW: Locale = {
     collapsePromptAria: '收合 prompt',
   },
 
+  tools: {
+    menu: '時鐘與計時器',
+    clock: '時鐘',
+    timer: '計時器',
+    showClock: '顯示時鐘',
+    hideClock: '隱藏時鐘',
+    showTimer: '顯示計時器',
+    hideTimer: '隱藏計時器',
+    timerStart: '開始',
+    timerPause: '暫停',
+    timerReset: '重設',
+    timerMinutes: '分鐘',
+    timesUp: '時間到',
+    changeStyle: '變更樣式',
+    close: '關閉',
+    soundOn: '聲音開',
+    soundOff: '聲音關',
+    shortcutClock: '顯示或隱藏時鐘',
+    shortcutTimer: '顯示或隱藏計時器',
+  },
+
   live: {
     sessions: '進行中的工作階段',
     results: '結果',

@@ -541,6 +541,27 @@ export const en: Locale = {
     collapsePromptAria: 'Collapse prompt',
   },
 
+  tools: {
+    menu: 'Clock and timer',
+    clock: 'Clock',
+    timer: 'Timer',
+    showClock: 'Show clock',
+    hideClock: 'Hide clock',
+    showTimer: 'Show timer',
+    hideTimer: 'Hide timer',
+    timerStart: 'Start',
+    timerPause: 'Pause',
+    timerReset: 'Reset',
+    timerMinutes: 'Minutes',
+    timesUp: "Time's up",
+    changeStyle: 'Change style',
+    close: 'Close',
+    soundOn: 'Sound on',
+    soundOff: 'Sound off',
+    shortcutClock: 'Show or hide the clock',
+    shortcutTimer: 'Show or hide the timer',
+  },
+
   live: {
     sessions: 'Active sessions',
     results: 'Results',
