@@ -103,24 +103,26 @@ function ScaleResults({ question, data }: { question: ScaleQuestion } & ResultsP
             <span
               style={{ display: 'flex', alignItems: 'flex-end', gap: '0.25em', height: '2.6em' }}
             >
-              {s.distribution.map((c, i) => (
-                <span
-                  key={min + i}
-                  title={`${min + i}: ${c}`}
-                  style={{ flex: 1, textAlign: 'center', fontSize: '0.5em' }}
-                >
+              {s.distribution
+                .map((c, i) => ({ rating: min + i, c }))
+                .map(({ rating, c }) => (
                   <span
-                    style={{
-                      display: 'block',
-                      height: `${(c / peak) * 2.2}em`,
-                      minHeight: c ? '0.2em' : 0,
-                      background: ACCENT,
-                      borderRadius: '0.2em 0.2em 0 0',
-                    }}
-                  />
-                  {min + i}
-                </span>
-              ))}
+                    key={rating}
+                    title={`${rating}: ${c}`}
+                    style={{ flex: 1, textAlign: 'center', fontSize: '0.5em' }}
+                  >
+                    <span
+                      style={{
+                        display: 'block',
+                        height: `${(c / peak) * 2.2}em`,
+                        minHeight: c ? '0.2em' : 0,
+                        background: ACCENT,
+                        borderRadius: '0.2em 0.2em 0 0',
+                      }}
+                    />
+                    {rating}
+                  </span>
+                ))}
             </span>
             <span
               style={{ fontWeight: 700, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
