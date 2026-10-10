@@ -22,6 +22,14 @@ const deck = `export const questions = {
     zones: [],
     correct: { cat: 'mammals', eel: 'fish' },
   },
+  pair: {
+    id: 'pair',
+    type: 'association',
+    question: 'Match',
+    items: [],
+    zones: [],
+    correct: { ottawa: 'canada' },
+  },
 };
 const other = { correct: ['not-a-question'] };
 export default [() => <div />];
@@ -36,6 +44,7 @@ describe('findAnswerKeys', () => {
       ['computed', null],
       ['words', ['Gatineau']],
       ['sort', ['cat>mammals', 'eel>fish']],
+      ['pair', ['ottawa>canada']],
     ]);
   });
 });

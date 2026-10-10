@@ -596,6 +596,7 @@ export const en: Locale = {
     placedOf: '{placed} of {total} placed',
     sortingHint: 'Drag a tile to a zone, or tap a tile and then a zone.',
     dropHere: 'Drop here',
+    tileShrinks: 'Tiles shrink to {pct}% here; enlarge the zone',
     correct: '✓ Correct',
     notQuite: '✗ Not quite',
     waitingForHostToOpen: 'Waiting for your host to open this question',

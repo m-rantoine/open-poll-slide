@@ -27,7 +27,13 @@ export type LiveActions = {
   markAnswer: (questionId: string, key: string, mark: AnswerMark) => Promise<void>;
   setScored: (questionId: string, value: boolean) => Promise<void>;
   /** Put a tile in a zone, or back in the pool when `zoneId` is null. */
-  placeTile: (questionId: string, itemId: string, zoneId: string | null) => Promise<void>;
+  placeTile: (
+    questionId: string,
+    itemId: string,
+    zoneId: string | null,
+    /** The zone holds one tile: whatever was there goes back to the pool. */
+    options?: { single?: boolean },
+  ) => Promise<void>;
   submitPlacements: (questionId: string) => Promise<void>;
   endSession: () => Promise<void>;
   pauseSession: () => Promise<void>;
@@ -554,11 +560,13 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
             mark === 'incorrect' ? [...without(cur[questionId]), k] : without(cur[questionId]),
         }));
       },
-      async placeTile(questionId, itemId, zoneId) {
+      async placeTile(questionId, itemId, zoneId, options) {
         if (!sessionId) return;
         placementEdits.current++;
         setMyPlacements((cur) => {
-          const rest = (cur[questionId] ?? []).filter((x) => x.item_id !== itemId);
+          const rest = (cur[questionId] ?? []).filter(
+            (x) => x.item_id !== itemId && !(options?.single && zoneId && x.zone_id === zoneId),
+          );
           return {
             ...cur,
             [questionId]: zoneId

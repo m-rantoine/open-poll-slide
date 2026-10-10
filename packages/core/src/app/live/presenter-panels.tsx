@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import {
-  type DragDropQuestion,
   type InteractiveQuestion,
   isMultipleChoice,
+  isSorting,
   isWordCloud,
   type MultipleChoiceQuestion,
+  type SortingQuestion,
   type WordCloudQuestion,
 } from '../lib/sdk';
 import {
@@ -383,7 +384,7 @@ function WordCloudPanel({ question }: { question: WordCloudQuestion }) {
   );
 }
 
-export function ZoneSummary({ question, data }: { question: DragDropQuestion; data: LiveData }) {
+export function ZoneSummary({ question, data }: { question: SortingQuestion; data: LiveData }) {
   const t = useLocale();
   const zones = zoneTiles(
     data.placements,
@@ -392,7 +393,7 @@ export function ZoneSummary({ question, data }: { question: DragDropQuestion; da
   );
   const key = data.keys[question.id] ?? [];
   const names = new Map(data.participants.map((p) => [p.user_id, p.display_name]));
-  const byStudent = new Map<string, DragDropQuestion['items']>();
+  const byStudent = new Map<string, SortingQuestion['items']>();
   for (const p of data.placements) {
     if (p.question_id !== question.id) continue;
     byStudent.set(p.user_id, [
@@ -452,7 +453,7 @@ export function ZoneSummary({ question, data }: { question: DragDropQuestion; da
   );
 }
 
-function DragDropPanel({ question }: { question: DragDropQuestion }) {
+function DragDropPanel({ question }: { question: SortingQuestion }) {
   const b = useQuestionBasics(question);
   if (!b) return null;
   return (
@@ -473,7 +474,7 @@ function DragDropPanel({ question }: { question: DragDropQuestion }) {
 export function QuestionPanel({ question }: { question: InteractiveQuestion }) {
   if (isMultipleChoice(question)) return <MultipleChoicePanel question={question} />;
   if (isWordCloud(question)) return <WordCloudPanel question={question} />;
-  return <DragDropPanel question={question} />;
+  return isSorting(question) ? <DragDropPanel question={question} /> : null;
 }
 
 export function StudentsPanel() {

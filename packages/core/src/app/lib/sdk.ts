@@ -17,7 +17,7 @@ type QuestionBase = {
   id: string;
   question: string;
   /**
-   * Whether answers count toward the score. Defaults to true for multiple choice and sorting, and
+   * Whether answers count toward the score. Defaults to true for multiple choice, sorting and association, and
    * false for word clouds. Answers without a grade (no correct answer set, or not marked yet) never count.
    */
   scored?: boolean;
@@ -62,7 +62,19 @@ export type DragDropQuestion = QuestionBase & {
   correct?: Record<string, string>;
 };
 
-export type InteractiveQuestion = MultipleChoiceQuestion | WordCloudQuestion | DragDropQuestion;
+/**
+ * Like `DragDropQuestion`, but each zone holds one tile, so participants match tiles to zones. Keep
+ * every zone the same size so the layout does not hint at the answer; tiles shrink to fit.
+ */
+export type AssociationQuestion = Omit<DragDropQuestion, 'type'> & { type: 'association' };
+
+export type SortingQuestion = DragDropQuestion | AssociationQuestion;
+
+export type InteractiveQuestion =
+  | MultipleChoiceQuestion
+  | WordCloudQuestion
+  | DragDropQuestion
+  | AssociationQuestion;
 
 export const isMultipleChoice = (q: InteractiveQuestion): q is MultipleChoiceQuestion =>
   q.type === 'multiple_choice';
@@ -71,6 +83,9 @@ export const isWordCloud = (q: InteractiveQuestion): q is WordCloudQuestion =>
   q.type === 'word_cloud';
 
 export const isDragDrop = (q: InteractiveQuestion): q is DragDropQuestion => q.type === 'drag_drop';
+
+export const isSorting = (q: InteractiveQuestion): q is SortingQuestion =>
+  q.type === 'drag_drop' || q.type === 'association';
 
 export type SlideModule = {
   default: Page[];

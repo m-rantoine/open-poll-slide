@@ -631,6 +631,7 @@ export type Locale = {
     placedOf: string;
     sortingHint: string;
     dropHere: string;
+    tileShrinks: string;
     correct: string;
     notQuite: string;
     waitingForHostToOpen: string;

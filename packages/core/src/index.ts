@@ -12,6 +12,7 @@ export { cssVarsToString, defaultDesign, designToCssVars } from './app/lib/desig
 export type { PollLanguage } from './app/lib/locale-store.tsx';
 export { useSlidePageNumber } from './app/lib/page-context.tsx';
 export type {
+  AssociationQuestion,
   DragDropQuestion,
   InteractiveQuestion,
   MultipleChoiceQuestion,
@@ -19,6 +20,7 @@ export type {
   QuestionOption,
   SlideMeta,
   SlideModule,
+  SortingQuestion,
   WordCloudQuestion,
 } from './app/lib/sdk.ts';
 export { CANVAS_HEIGHT, CANVAS_WIDTH } from './app/lib/sdk.ts';

@@ -14,7 +14,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { LanguageScope, type PollLanguage } from '../lib/locale-store';
-import type { DragDropQuestion } from '../lib/sdk';
+import type { SortingQuestion } from '../lib/sdk';
 import { useIsActivePage } from '../lib/step-context';
 import { format, useLocale } from '../lib/use-locale';
 import { answeredCount, expectedCount, formatClock, zoneTiles } from './derive';
@@ -39,7 +39,7 @@ const MIN_FONT_PX = 8;
 type Placed = Record<string, string>;
 
 type Ctx = {
-  question: DragDropQuestion;
+  question: SortingQuestion;
   /** Participant can move tiles. */
   interactive: boolean;
   /** Read-only participant view (phone portrait, locked, ended, submitted). */
@@ -96,7 +96,7 @@ const tileStyle = (extra?: CSSProperties): CSSProperties => ({
 });
 
 function useDragEngine(
-  question: DragDropQuestion,
+  question: SortingQuestion,
   enabled: boolean,
   onDrop: (itemId: string, zoneId: string | null) => void,
 ): Engine {
@@ -265,7 +265,20 @@ function useFit(ref: RefObject<HTMLElement | null>, mode: 'all' | 'first') {
   });
 }
 
-function usePlaced(data: LiveData | undefined, question: DragDropQuestion) {
+/** The font scale `useFit` settled on, so the editor preview can warn when a zone is too small. */
+function useFitFactor(ref: RefObject<HTMLElement | null>, enabled: boolean): number {
+  const [factor, setFactor] = useState(1);
+  useLayoutEffect(() => {
+    if (!enabled) return;
+    const next = Number.parseFloat(ref.current?.style.getPropertyValue('--osd-fit') || '1');
+    setFactor((cur) => (Math.abs(cur - next) < 0.01 ? cur : next));
+  });
+  return factor;
+}
+
+const enabledWarning = (factor: number) => factor < 0.9;
+
+function usePlaced(data: LiveData | undefined, question: SortingQuestion) {
   const mine = data?.myPlacements[question.id] ?? [];
   const placed: Placed = {};
   const ok: Record<string, boolean | null> = {};
@@ -276,10 +289,8 @@ function usePlaced(data: LiveData | undefined, question: DragDropQuestion) {
   return { placed, ok };
 }
 
-const zoneLabel = (q: DragDropQuestion, id: string) =>
-  q.zones.find((z) => z.id === id)?.label ?? id;
-const itemLabel = (q: DragDropQuestion, id: string) =>
-  q.items.find((i) => i.id === id)?.label ?? id;
+const zoneLabel = (q: SortingQuestion, id: string) => q.zones.find((z) => z.id === id)?.label ?? id;
+const itemLabel = (q: SortingQuestion, id: string) => q.items.find((i) => i.id === id)?.label ?? id;
 
 function Tile({
   label,
@@ -340,6 +351,7 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isResults = Boolean(ctx?.results);
   useFit(ref, isResults ? 'first' : 'all');
+  const shrink = useFitFactor(ref, import.meta.env.DEV && Boolean(ctx?.previewKey));
   if (!ctx) return <div {...rest} style={style} />;
   const { question, interactive, placed, results, engine, correctPairs, showMarks, previewKey } =
     ctx;
@@ -416,6 +428,7 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
         style={{
           fontSize: 'calc(min(40px, 14cqh) * var(--osd-fit, 1))',
           lineHeight: 1.2,
+          textAlign: question.type === 'association' ? 'center' : undefined,
         }}
       >
         {!hideLabel && (
@@ -423,6 +436,7 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
             style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: question.type === 'association' ? 'center' : undefined,
               gap: '0.3em',
               fontWeight: 700,
               fontSize: '0.8em',
@@ -441,6 +455,24 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
         )}
         {tiles}
       </div>
+      {enabledWarning(shrink) && (
+        <div
+          style={{
+            position: 'absolute',
+            right: 6,
+            bottom: 4,
+            fontSize: 13,
+            fontFamily: FONT,
+            color: BAD,
+            background: 'var(--osd-bg, #fff)',
+            border: `1px solid ${BAD}`,
+            borderRadius: 6,
+            padding: '1px 6px',
+          }}
+        >
+          {format(t.live.tileShrinks, { pct: Math.round(shrink * 100) })}
+        </div>
+      )}
     </div>
   );
 }
@@ -502,7 +534,7 @@ export function ItemPool({ style, ...rest }: ItemPoolProps) {
 }
 
 /** The sorting interface for the phone layout, where the slide is too small to drag on. */
-export function useDragDropParticipant(question: DragDropQuestion) {
+export function useDragDropParticipant(question: SortingQuestion) {
   const live = useLive();
   const t = useLocale();
   const [failure, setFailure] = useState<string | null>(null);
@@ -511,11 +543,24 @@ export function useDragDropParticipant(question: DragDropQuestion) {
   const state = data?.states[question.id]?.state ?? 'locked';
   const submitted = Boolean(data?.mine[question.id]);
   const interactive = Boolean(live) && state === 'open' && !submitted;
+  const single = question.type === 'association';
   const engine = useDragEngine(question, interactive, (itemId, zoneId) => {
     setFailure(null);
-    data?.actions
-      .placeTile(question.id, itemId, zoneId)
-      .catch((e: unknown) => setFailure(liveErrorMessage(t, e)));
+    const fail = (e: unknown) => setFailure(liveErrorMessage(t, e));
+    if (!data) return;
+    // Dropping on an occupied zone: a tile coming from another zone swaps places with it, and one
+    // coming from the pool sends the occupant back to the pool.
+    const occupant =
+      single && zoneId
+        ? Object.keys(placed).find((i) => i !== itemId && placed[i] === zoneId)
+        : undefined;
+    const from = placed[itemId];
+    const move = data.actions.placeTile(question.id, itemId, zoneId, { single });
+    if (occupant && from) {
+      move.then(() => data.actions.placeTile(question.id, occupant, from, { single })).catch(fail);
+    } else {
+      move.catch(fail);
+    }
   });
   const submit = () => {
     setFailure(null);
@@ -527,7 +572,7 @@ export function useDragDropParticipant(question: DragDropQuestion) {
 }
 
 export type DragDropProps = {
-  question: DragDropQuestion;
+  question: SortingQuestion;
   /** Lay out `<DropZone zone="…" />` and `<ItemPool />` here. */
   children?: ReactNode;
   /** Interface language for this component. Defaults to the app language. */
@@ -767,7 +812,7 @@ export function DragDrop({ language, ...props }: DragDropProps) {
 }
 
 /** The sorting interface for the phone layout, where the slide itself is too small to drag on. */
-export function DragDropCard({ question }: { question: DragDropQuestion }) {
+export function DragDropCard({ question }: { question: SortingQuestion }) {
   const live = useLive();
   const t = useLocale();
   const me = useDragDropParticipant(question);

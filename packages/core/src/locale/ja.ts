@@ -605,6 +605,7 @@ export const ja: Locale = {
     sortingHint:
       'タイルをゾーンにドラッグするか、タイルをタップしてからゾーンをタップしてください。',
     dropHere: 'ここにドロップ',
+    tileShrinks: 'ここではタイルが{pct}%に縮小されます。ゾーンを大きくしてください',
     correct: '✓ 正解',
     notQuite: '✗ 不正解',
     waitingForHostToOpen: 'ホストが質問を開くのを待っています',

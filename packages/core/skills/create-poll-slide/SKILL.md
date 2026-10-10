@@ -58,8 +58,8 @@ Rules:
 - `correct` is an array of string literal option ids; omit it entirely when unknown. Several correct options are allowed. It never reaches the browser: the build strips it, and `open-slide live keys` uploads it to the database, so tell the user to run that command after adding or changing answer keys.
 - One question per page. The component fills the whole 1920×1080 page itself (it brings its own frame, heading and options), so do not wrap it in a padded container. It uses `--osd-*` design variables when the deck exports `design`, so declare `design` as `create-slide` recommends.
 - Optional: `export const isPrivate = true;` hides the deck from non-hosts (it then only opens through a session). Without it the deck follows `SLIDES_DEFAULT_AS_PRIVATE` (public when unset).
-- Three question types exist: `type: 'multiple_choice'` (`<MultipleChoice>`), `type: 'word_cloud'` (`<WordCloud>`) and `type: 'drag_drop'` (`<DragDrop>` with `<DropZone>` and `<ItemPool>`).
-- `scored` (optional, any type): whether answers count toward the score. Default `true` for multiple choice and sorting, `false` for word clouds. An answer that has no grade (no `correct` set, or a word the host has not marked) never counts, and is never treated as wrong.
+- Four question types exist: `type: 'multiple_choice'` (`<MultipleChoice>`), `type: 'word_cloud'` (`<WordCloud>`), `type: 'drag_drop'` (sorting) and `type: 'association'` (matching); the last two both use `<DragDrop>` with `<DropZone>` and `<ItemPool>`.
+- `scored` (optional, any type): whether answers count toward the score. Default `true` for multiple choice, sorting and association, `false` for word clouds. An answer that has no grade (no `correct` set, or a word the host has not marked) never counts, and is never treated as wrong.
 
 ### Drag-and-drop sorting
 
@@ -98,6 +98,25 @@ export const questions = {
 - Lay the zones and pool out inside `<DragDrop>` however the slide needs; give every `<DropZone>` and the `<ItemPool>` a definite width and height (grid cells, `position: absolute`, or explicit sizes), because tiles shrink to fit the box.
 - In the editor preview the tiles sit in their correct zones (from `correct`) so you can judge how big each zone must be; decoys stay in the pool. `correct` is stripped from production builds, so there the preview shows an empty zone. Run `open-slide live keys` after changing it.
 - On phones the slide is too small to drag on, so participants get a larger list of zones under the slide (drag, or tap a tile and then a zone).
+
+### Association (matching)
+
+Same components and same `items` / `zones` / `correct` shape as sorting, with `type: 'association'`, but **each zone holds exactly one tile**: dropping a tile on an occupied zone sends the old tile back to the pool, or swaps the two when the dragged tile came from another zone. Scoring is one point per correct pair.
+
+```tsx
+capitals: {
+  id: 'capitals',
+  type: 'association',
+  question: 'Match each country to its capital.',
+  zones: [{ id: 'canada', label: 'Canada' }, { id: 'france', label: 'France' }],
+  items: [{ id: 'ottawa', label: 'Ottawa' }, { id: 'paris', label: 'Paris' }, { id: 'sydney', label: 'Sydney' }],
+  correct: { ottawa: 'canada', paris: 'france' },
+},
+```
+
+- **Make every zone exactly the same size** (equal grid cells or one shared `style`). Never size a zone to its answer: a zone that is bigger or smaller than its neighbours gives the answer away.
+- Tiles shrink their text to fit the zone, so size the zones for the longest tile. In the editor preview a red note appears on any zone whose tile has to shrink below 90%; enlarge all the zones together until the notes disappear.
+- Zones stay a fixed size when a tile lands in them; nothing grows or shrinks.
 
 ### Word cloud
 

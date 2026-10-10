@@ -213,6 +213,27 @@ export const questions = {
     startLocked: true,
     showResults: true,
   },
+  capitals: {
+    id: 'capitals',
+    type: 'association',
+    question: 'Match each country to its capital.',
+    zones: [
+      { id: 'canada', label: 'Canada' },
+      { id: 'france', label: 'France' },
+      { id: 'japan', label: 'Japan' },
+      { id: 'egypt', label: 'Egypt' },
+    ],
+    items: [
+      { id: 'ottawa', label: 'Ottawa' },
+      { id: 'paris', label: 'Paris' },
+      { id: 'tokyo', label: 'Tokyo' },
+      { id: 'cairo', label: 'Cairo' },
+      { id: 'sydney', label: 'Sydney' },
+    ],
+    correct: { ottawa: 'canada', paris: 'france', tokyo: 'japan', cairo: 'egypt' },
+    startLocked: true,
+    showResults: true,
+  },
 } satisfies Record<string, InteractiveQuestion>;
 
 const Intro: Page = () => (
@@ -690,6 +711,53 @@ export default [
           <DropZone zone="mammals" />
           <DropZone zone="birds" />
           <DropZone zone="fish" />
+          <ItemPool style={{ gridColumn: '1 / -1' }} />
+        </div>
+      </DragDrop>
+    </div>
+  ),
+  () => (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        boxSizing: 'border-box',
+        padding: '80px 128px',
+        gap: 48,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--osd-bg)',
+        color: 'var(--osd-text)',
+        fontFamily: 'var(--osd-font-body)',
+      }}
+    >
+      <h1
+        style={{
+          margin: 0,
+          fontFamily: 'var(--osd-font-display)',
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {questions.capitals.question}
+      </h1>
+      <DragDrop question={questions.capitals}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateRows: '1fr 0.5fr',
+            gap: 32,
+          }}
+        >
+          <DropZone zone="canada" />
+          <DropZone zone="france" />
+          <DropZone zone="japan" />
+          <DropZone zone="egypt" />
           <ItemPool style={{ gridColumn: '1 / -1' }} />
         </div>
       </DragDrop>

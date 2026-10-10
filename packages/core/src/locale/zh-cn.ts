@@ -593,6 +593,7 @@ export const zhCN: Locale = {
     placedOf: '已放置 {placed} / {total}',
     sortingHint: '将方块拖到区域中，或先点按方块再点按区域。',
     dropHere: '拖放到这里',
+    tileShrinks: '此处方块缩小至 {pct}%，请放大区域',
     correct: '✓ 正确',
     notQuite: '✗ 不正确',
     waitingForHostToOpen: '等待主持人开放此问题',

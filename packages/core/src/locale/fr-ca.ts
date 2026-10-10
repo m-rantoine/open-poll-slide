@@ -610,6 +610,7 @@ export const frCA: Locale = {
     placedOf: '{placed} sur {total} placés',
     sortingHint: 'Glissez une tuile dans une zone, ou touchez une tuile puis une zone.',
     dropHere: 'Déposez ici',
+    tileShrinks: 'Les tuiles rétrécissent à {pct} % ici; agrandissez la zone',
     correct: '✓ Bonne réponse',
     notQuite: '✗ Pas tout à fait',
     waitingForHostToOpen: 'En attente de l’ouverture de la question par l’animateur',

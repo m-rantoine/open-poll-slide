@@ -61,7 +61,7 @@ export function findAnswerKeys(code: string): FoundAnswerKey[] {
     const correct = props.get('correct');
     const type = props.get('type')?.value;
     const kind = type && t.isStringLiteral(type) ? type.value : null;
-    const isDragDrop = kind === 'drag_drop';
+    const isDragDrop = kind === 'drag_drop' || kind === 'association';
     const isWordCloud = kind === 'word_cloud';
     if (
       !correct ||

@@ -21,6 +21,10 @@ declare
   saved_domains jsonb;
   sess2 public.sessions;
   sess3 public.sessions;
+  sess4 public.sessions;
+  qs4 jsonb := '{
+    "pair": {"id":"pair","type":"association","question":"Match","items":[{"id":"a","label":"A"},{"id":"b","label":"B"},{"id":"c","label":"C"}],"zones":[{"id":"z1","label":"Z1"},{"id":"z2","label":"Z2"}],"correct":{"a":"z1","b":"z2"},"startLocked":false}
+  }'::jsonb;
   qs3 jsonb := '{
     "sort": {"id":"sort","type":"drag_drop","question":"Sort","items":[{"id":"a","label":"A"},{"id":"b","label":"B"},{"id":"c","label":"C"}],"zones":[{"id":"z1","label":"Z1"},{"id":"z2","label":"Z2"}],"correct":{"a":"z1","b":"z2"},"startLocked":false}
   }'::jsonb;
@@ -507,6 +511,49 @@ begin
   if v <> '0/0' then raise exception 'FAIL unscored sort should not count, got %', v; end if;
   execute 'reset role';
   r := r || 'PASS drag-drop: one point per key tile, unscored excluded' || E'\n';
+
+
+  -- Association: one tile per zone.
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select * into sess4 from public.create_session('sql-test-deck4', 'Deck4', 'host', 2, qs4);
+  execute 'reset role';
+  select count(*) into n from public.session_question_state where session_id = sess4.id and scored;
+  if n <> 1 then raise exception 'FAIL association should be scored by default'; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.join_session(sess4.code);
+  perform public.place_tile(sess4.id, 'pair', 'a', 'z1');
+  perform public.place_tile(sess4.id, 'pair', 'c', 'z1');
+  execute 'reset role';
+  select count(*) into n from public.placements where session_id = sess4.id and user_id = s1;
+  if n <> 1 then raise exception 'FAIL a zone should hold one tile, found % placements', n; end if;
+  select item_id into v from public.placements where session_id = sess4.id and user_id = s1;
+  if v <> 'c' then raise exception 'FAIL the newest tile should take the zone, got %', v; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.place_tile(sess4.id, 'pair', 'a', 'z2');
+  perform public.place_tile(sess4.id, 'pair', 'c', 'z1');
+  perform public.place_tile(sess4.id, 'pair', 'b', 'z2');
+  execute 'reset role';
+  select count(*) into n from public.placements where session_id = sess4.id and user_id = s1 and zone_id = 'z2' and item_id = 'b' and is_correct;
+  if n <> 1 then raise exception 'FAIL b should replace a in z2 and be graded correct'; end if;
+  select count(*) into n from public.placements where session_id = sess4.id and user_id = s1;
+  if n <> 2 then raise exception 'FAIL replaced tile should leave the zone (% placements)', n; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.submit_placements(sess4.id, 'pair');
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.set_show_results(sess4.id, 'pair', true);
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select format('%s/%s', correct, graded) into v from public.my_score(sess4.id);
+  if v <> '1/2' then raise exception 'FAIL association score (one of two key pairs placed correctly), got %', v; end if;
+  execute 'reset role';
+  r := r || 'PASS association: one tile per zone, replacement, per-tile points' || E'\n';
 
   if public.hook_restrict_signup_domain('{"user":{"email":"sql-test-host@example.test"}}') <> '{}'::jsonb then
     raise exception 'FAIL hook rejected a host';
