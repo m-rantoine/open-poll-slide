@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import type { SlideModule } from '../lib/sdk';
 import { useLocale } from '../lib/use-locale';
 import { useAuth } from './auth';
-import { getClient, liveConfigured } from './client';
+import { getClient, liveConfigured, siteLabel } from './client';
 import { liveErrorMessage } from './errors';
 
 export function useStartSession(slideId: string, slide: SlideModule | null) {
@@ -16,13 +16,16 @@ export function useStartSession(slideId: string, slide: SlideModule | null) {
   const start = useCallback(
     async (mode: 'self' | 'host') => {
       if (!slide) return;
-      const { data, error } = await getClient().rpc('create_session', {
+      const args = {
         p_deck_id: slideId,
         p_deck_title: slide.meta?.title ?? slideId,
         p_mode: mode,
         p_page_count: slide.default.length,
         p_questions: slide.questions ?? {},
-      });
+      };
+      const { data, error } = siteLabel
+        ? await getClient().rpc('create_site_session', { ...args, p_site: siteLabel })
+        : await getClient().rpc('create_session', args);
       if (error || !data) {
         toast.error(error ? liveErrorMessage(t, error) : t.live.couldNotStart);
         return;

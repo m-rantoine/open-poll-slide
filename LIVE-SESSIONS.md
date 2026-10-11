@@ -32,11 +32,19 @@ SUPABASE_URL=https://<ref>.supabase.co
 SUPABASE_PUBLISHABLE_KEY=<Project Settings → API Keys → publishable key>
 # optional, display only; the database enforces the real list
 OPEN_SLIDE_ALLOWED_EMAIL_DOMAINS=school.example
+# optional, when several sites (one per course) share this database; see below
+OPEN_SLIDE_SITE_LABEL=bio-11
 ```
 
 Only the publishable key is read; it is meant for browsers. Never put the service-role or secret key here. (You can alternatively set `live: { supabaseUrl, supabaseKey }` in `open-slide.config.ts`.) Without these variables the live features stay hidden and everything else works as before.
 
 **3. Run it.** `pnpm dev`, open the `live-quiz-demo` deck, and choose Present ▾ → *Start host-paced session*.
+
+## Several sites, one database
+
+You can point several sites (for example one per course) at the same Supabase project. Give each its own label with `OPEN_SLIDE_SITE_LABEL` (or `live: { siteLabel }` in `open-slide.config.ts`): 1 to 40 lowercase letters, digits, dots, dashes or underscores, such as `bio-11`. Sessions a site starts carry its label. The Active sessions, Results and Join lists, the host Screen and joining by code then stay within that site, even when two sites have a deck with the same name. Students and hosts can use one account across all of them.
+
+Sessions without a label (started before labels existed, or by a site that sets none) show on every site that has their deck. A site without a label sees only unlabeled sessions. Existing sites keep working with no change. The labels are not secret and are not a security boundary: any signed-in user can still read any session in the database through its code.
 
 ## Using it
 

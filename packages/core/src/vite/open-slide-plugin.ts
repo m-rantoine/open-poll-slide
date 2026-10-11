@@ -6,6 +6,7 @@ import { loadConfigFromFile, loadEnv, normalizePath, type Plugin, type ViteDevSe
 import type { OpenSlideConfig } from '../config.ts';
 import { SLIDE_ID_RE } from '../editing/slide-ops.ts';
 import { foldersManifestPath, readManifest } from '../files/folders.ts';
+import { normalizeSiteLabel } from '../live-site.ts';
 import { hasRecentWrite } from './recent-writes.ts';
 import { defaultPrivateFromEnv, extractPrivacy } from './slide-privacy.ts';
 
@@ -264,7 +265,13 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
         };
         const envUrl = env.SUPABASE_URL;
         const envKey = env.SUPABASE_PUBLISHABLE_KEY ?? env.SUPABASE_ANON_KEY;
-        const live =
+        const envSite = normalizeSiteLabel(env.OPEN_SLIDE_SITE_LABEL);
+        if (env.OPEN_SLIDE_SITE_LABEL?.trim() && !envSite) {
+          console.warn(
+            '[open-slide] OPEN_SLIDE_SITE_LABEL must be 1 to 40 letters, digits, dots, dashes or underscores. Ignoring it.',
+          );
+        }
+        const base =
           config.live ??
           (envUrl && envKey
             ? {
@@ -275,6 +282,8 @@ export function openSlidePlugin(opts: OpenSlidePluginOptions): Plugin {
                   .filter(Boolean),
               }
             : undefined);
+        const siteLabel = normalizeSiteLabel(base?.siteLabel) ?? envSite ?? undefined;
+        const live = base ? { ...base, siteLabel } : undefined;
         const resolvedConfig = { ...config, live, build: buildResolved, version: coreVersion };
         return `export default ${JSON.stringify(resolvedConfig)};\n`;
       }
