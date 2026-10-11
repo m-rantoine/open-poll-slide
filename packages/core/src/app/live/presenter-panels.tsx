@@ -30,6 +30,7 @@ import {
 } from './derive';
 import { liveErrorMessage } from './errors';
 import { useLive } from './live-context';
+import { QuestionResultsBox } from './question-results';
 import type { AnswerRow } from './types';
 import type { LiveData } from './use-live-session';
 
@@ -471,10 +472,35 @@ function DragDropPanel({ question }: { question: SortingQuestion }) {
   );
 }
 
+function ExtraPanel({ question }: { question: InteractiveQuestion }) {
+  const b = useQuestionBasics(question);
+  if (!b) return null;
+  return (
+    <Section
+      title={question.question}
+      aside={
+        <span className="font-mono text-[11px] text-muted-foreground uppercase">
+          {b.stateLabel}
+        </span>
+      }
+    >
+      <PanelControls question={question} />
+      <QuestionResultsBox question={question} data={b.data} />
+      {(question.type === 'number' || question.type === 'open_text') && (
+        <AnswersTable question={question} label={(a) => a.answer_text ?? a.option_id} />
+      )}
+    </Section>
+  );
+}
+
 export function QuestionPanel({ question }: { question: InteractiveQuestion }) {
   if (isMultipleChoice(question)) return <MultipleChoicePanel question={question} />;
   if (isWordCloud(question)) return <WordCloudPanel question={question} />;
-  return isSorting(question) ? <DragDropPanel question={question} /> : null;
+  return isSorting(question) ? (
+    <DragDropPanel question={question} />
+  ) : (
+    <ExtraPanel question={question} />
+  );
 }
 
 export function StudentsPanel() {

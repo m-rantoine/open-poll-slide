@@ -6,7 +6,7 @@ import { useDocumentTitle } from '@/lib/use-document-title';
 import { format, plural, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import type { Locale } from '../../locale/types';
-import { type InteractiveQuestion, isMultipleChoice, isWordCloud } from '../lib/sdk';
+import { type InteractiveQuestion, isMultipleChoice, isSorting, isWordCloud } from '../lib/sdk';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireHost } from './auth';
 import { getClient } from './client';
@@ -24,6 +24,7 @@ import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
 import { PauseSessionButton } from './pause-session';
 import { WordList, ZoneSummary } from './presenter-panels';
+import { QuestionResultsBox } from './question-results';
 import { SlideThumb } from './slide-thumb';
 import type { AnswerRow, SessionRow } from './types';
 import { useLiveSession } from './use-live-session';
@@ -176,7 +177,7 @@ function ResultsDetail() {
   const label = (q: InteractiveQuestion, a: AnswerRow) =>
     isMultipleChoice(q)
       ? (q.options.find((o) => o.id === a.option_id)?.label ?? a.option_id)
-      : isWordCloud(q)
+      : isWordCloud(q) || q.type === 'number' || q.type === 'open_text'
         ? (a.answer_text ?? a.option_id)
         : t.live.submittedSorting;
   const toggle = (questionId: string, optionId: string) =>
@@ -324,8 +325,10 @@ function ResultsDetail() {
                   </div>
                 ) : isWordCloud(q) ? (
                   <WordList question={q} data={data} />
-                ) : (
+                ) : isSorting(q) ? (
                   <ZoneSummary question={q} data={data} />
+                ) : (
+                  <QuestionResultsBox question={q} data={data} />
                 )}
                 <details className="mt-3 text-[12px]">
                   <summary className="cursor-pointer text-muted-foreground">

@@ -18,6 +18,14 @@ const FORWARDING_COMPONENTS = new Set([
   'DragDrop',
   'DropZone',
   'ItemPool',
+  'CountdownTimer',
+  'ClockSlide',
+  'SolveSteps',
+  'Scale',
+  'Ranking',
+  'Points',
+  'NumberAnswer',
+  'OpenText',
 ]);
 
 function isTaggableJsxName(name: t.JSXOpeningElement['name']): name is t.JSXIdentifier {

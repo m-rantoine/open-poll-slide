@@ -132,7 +132,7 @@ function Screen() {
       </LiveProvider>
       <div className="pointer-events-none absolute inset-x-4 top-4 z-50 flex items-start justify-between gap-2">
         <div className="pointer-events-auto flex gap-2 opacity-0 transition-opacity group-hover/screen:opacity-100 [@media(hover:none)]:opacity-100">
-          <PauseSessionButton data={data} />
+          {session.status !== 'paused' && <PauseSessionButton data={data} />}
           <EndSessionButton data={data} onEnded={() => navigate(`/results/${session.id}`)} />
         </div>
         {session.status !== 'ended' && (

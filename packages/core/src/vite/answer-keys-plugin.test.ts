@@ -22,6 +22,8 @@ const deck = `export const questions = {
     zones: [],
     correct: { cat: 'mammals', eel: 'fish' },
   },
+  order: { id: 'order', type: 'ranking', question: 'Order', items: [], correct: ['b', 'a', 'c'] },
+  howmany: { id: 'howmany', type: 'number', question: 'How many?', correct: 42, tolerance: 1 },
   pair: {
     id: 'pair',
     type: 'association',
@@ -44,6 +46,8 @@ describe('findAnswerKeys', () => {
       ['computed', null],
       ['words', ['Gatineau']],
       ['sort', ['cat>mammals', 'eel>fish']],
+      ['order', ['b>1', 'a>2', 'c>3']],
+      ['howmany', ['42']],
       ['pair', ['ottawa>canada']],
     ]);
   });

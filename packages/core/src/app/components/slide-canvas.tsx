@@ -79,6 +79,8 @@ export function SlideCanvas({
         <div
           data-osd-canvas
           data-osd-freeze-motion={freezeMotion ? '' : undefined}
+          // A frozen copy is a picture: its buttons must not take focus or announce themselves.
+          inert={freezeMotion}
           style={
             {
               width: CANVAS_WIDTH,

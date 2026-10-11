@@ -34,6 +34,8 @@ export type LiveActions = {
     /** The zone holds one tile: whatever was there goes back to the pool. */
     options?: { single?: boolean },
   ) => Promise<void>;
+  /** Replace this participant's whole set of item-to-value placements (scale, ranking, points). */
+  setPlacements: (questionId: string, values: Record<string, string>) => Promise<void>;
   submitPlacements: (questionId: string) => Promise<void>;
   endSession: () => Promise<void>;
   pauseSession: () => Promise<void>;
@@ -579,6 +581,28 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
           p_question: questionId,
           p_item: itemId,
           p_zone: zoneId,
+        });
+        if (err) {
+          placementEdits.current++;
+          void loadMineRef.current();
+          throw err;
+        }
+      },
+      async setPlacements(questionId, values) {
+        if (!sessionId) return;
+        placementEdits.current++;
+        setMyPlacements((cur) => ({
+          ...cur,
+          [questionId]: Object.entries(values).map(([item_id, zone_id]) => ({
+            item_id,
+            zone_id,
+            is_correct: null,
+          })),
+        }));
+        const { error: err } = await getClient().rpc('set_placements', {
+          p_session: sessionId,
+          p_question: questionId,
+          p_values: values,
         });
         if (err) {
           placementEdits.current++;

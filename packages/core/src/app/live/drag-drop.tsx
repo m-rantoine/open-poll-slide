@@ -13,6 +13,7 @@ import {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { fieldsAttr } from '../lib/inspector/component-fields';
 import { LanguageScope, type PollLanguage } from '../lib/locale-store';
 import type { SortingQuestion } from '../lib/sdk';
 import { useIsActivePage } from '../lib/step-context';
@@ -427,10 +428,11 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
       .map((i) => <Tile key={i.id} itemId={i.id} label={i.label} inline={inline} />);
   }
 
+  const Box = (inline ? 'span' : 'div') as 'div';
   const over = engine.hover === zone;
   const tooSmall = enabledWarning(shrink);
   return (
-    <div
+    <Box
       {...rest}
       {...(interactive ? engine.targetProps(zone) : {})}
       title={
@@ -471,7 +473,7 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
         ...style,
       }}
     >
-      <div
+      <Box
         ref={ref}
         style={{
           fontSize: inline
@@ -503,7 +505,7 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
           </div>
         )}
         {tiles}
-      </div>
+      </Box>
       {!inline && tooSmall && (
         <div
           style={{
@@ -522,7 +524,7 @@ export function DropZone({ zone, hideLabel, style, ...rest }: DropZoneProps) {
           {format(t.live.tileShrinks, { pct: Math.round(shrink * 100) })}
         </div>
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -828,7 +830,7 @@ function DragDropInner({ question, children, style, ...rest }: DragDropProps) {
           justifyContent: 'center',
           gap: '4cqh',
           zIndex: 5,
-          background: 'color-mix(in srgb, var(--osd-bg, #fff) 92%, transparent)',
+          background: 'var(--osd-bg, #fff)',
         }}
       >
         <Padlock
@@ -988,7 +990,11 @@ function DragDropInner({ question, children, style, ...rest }: DragDropProps) {
 export function DragDrop({ language, ...props }: DragDropProps) {
   return (
     <LanguageScope language={language}>
-      <DragDropInner {...props} data-poll-language={language ?? 'en'} />
+      <DragDropInner
+        {...props}
+        {...fieldsAttr(props.question.type, props.question)}
+        data-poll-language={language ?? 'en'}
+      />
     </LanguageScope>
   );
 }

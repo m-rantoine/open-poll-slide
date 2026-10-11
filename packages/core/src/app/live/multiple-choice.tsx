@@ -1,4 +1,5 @@
 import { type CSSProperties, type HTMLAttributes, type ReactNode, useRef, useState } from 'react';
+import { fieldsAttr } from '../lib/inspector/component-fields';
 import { LanguageScope, type PollLanguage } from '../lib/locale-store';
 import type { MultipleChoiceQuestion } from '../lib/sdk';
 import { useIsActivePage } from '../lib/step-context';
@@ -427,7 +428,11 @@ function MultipleChoiceInner({ question, columns, style, ...rest }: MultipleChoi
 export function MultipleChoice({ language, ...props }: MultipleChoiceProps) {
   return (
     <LanguageScope language={language}>
-      <MultipleChoiceInner {...props} data-poll-language={language ?? 'en'} />
+      <MultipleChoiceInner
+        {...props}
+        {...fieldsAttr('multiple_choice', props.question)}
+        data-poll-language={language ?? 'en'}
+      />
     </LanguageScope>
   );
 }

@@ -8,6 +8,7 @@ import { useLocale } from '@/lib/use-locale';
 import { pad2 } from '@/lib/utils';
 import { Player } from '../components/player';
 import { SlideCanvas } from '../components/slide-canvas';
+import { ToolsLayer, ToolsMenu } from '../components/tools/tools-layer';
 import { SlidePageProvider } from '../lib/page-context';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireHost } from './auth';
@@ -79,6 +80,7 @@ function Inner({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="dark flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
+      <ToolsLayer />
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-hairline px-6">
         <div className="flex items-center gap-3">
           <span className="eyebrow text-white/45">{t.live.livePresenter}</span>
@@ -90,6 +92,7 @@ function Inner({ sessionId }: { sessionId: string }) {
           </span>
         </div>
         <div className="flex items-center gap-4">
+          <ToolsMenu direction="down" />
           <span className="font-mono text-[18px] tabular-nums">
             {pad2(nav.index + 1)} / {pad2(total)}
           </span>

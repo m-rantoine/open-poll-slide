@@ -48,8 +48,10 @@ import { useAgentSocketConnected } from '@/lib/use-agent-socket';
 import { format, useLocale } from '@/lib/use-locale';
 import { cn, round2 } from '@/lib/utils';
 import type { Locale } from '../../../locale/types';
+import { readFieldsAttr } from '../../lib/inspector/component-fields';
 import { ArrangePanel } from './arrange-panel';
 import { AssetPickerDialog } from './asset-picker-dialog';
+import { ComponentFieldsSection, type ComponentFieldsTarget } from './component-fields-section';
 import { type SelectedTarget, useInspector } from './inspector-provider';
 
 type ElementSnapshot = {
@@ -65,6 +67,7 @@ type ElementSnapshot = {
   imageSrc: string | null;
   placeholder: { hint: string; width?: number; height?: number } | null;
   poll: { language: string; columns: number | null; line: number; column: number } | null;
+  fields: ComponentFieldsTarget | null;
 };
 
 type ContentSelection = { start: number; end: number };
@@ -401,6 +404,9 @@ export function InspectorPanel({
                     />
                   )}
                 </Section>
+              )}
+              {snapshot.fields && (
+                <ComponentFieldsSection target={snapshot.fields} applyEdit={applyEdit} />
               )}
               {snapshot.placeholder && (
                 <Section title={t.inspector.imagePlaceholderSection}>
@@ -1100,6 +1106,7 @@ function readSnapshot(el: HTMLElement): ElementSnapshot {
     imageSrc,
     placeholder,
     poll: readPollComponent(el),
+    fields: readComponentFields(el),
   };
 }
 
@@ -1113,6 +1120,14 @@ function readPollComponent(el: HTMLElement): ElementSnapshot['poll'] {
     line: Number(loc[0]),
     column: Number(loc[1]),
   };
+}
+
+function readComponentFields(el: HTMLElement): ComponentFieldsTarget | null {
+  const host = el.closest<HTMLElement>('[data-osd-fields]');
+  const loc = host?.dataset.slideLoc?.split(':');
+  const parsed = readFieldsAttr(host?.dataset.osdFields);
+  if (!parsed || !loc || loc.length !== 2) return null;
+  return { ...parsed, line: Number(loc[0]), column: Number(loc[1]) };
 }
 
 function readTypography(el: HTMLElement) {

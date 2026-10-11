@@ -20,6 +20,8 @@ export function PresentHelpOverlay({ open, onOpenChange, container }: Props) {
     { keys: ['B'], label: t.present.shortcutBlack },
     { keys: ['W'], label: t.present.shortcutWhite },
     { keys: ['L'], label: t.present.shortcutLaser },
+    { keys: ['C'], label: t.tools.shortcutClock },
+    { keys: ['T'], label: t.tools.shortcutTimer },
     { keys: ['P'], label: t.present.shortcutPresenter },
     { keys: ['?', 'H'], label: t.present.shortcutToggleHelp },
     { keys: ['Esc'], label: t.present.shortcutCloseExit },

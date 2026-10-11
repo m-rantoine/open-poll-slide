@@ -41,7 +41,7 @@ export function OverviewGrid({
 }: Props) {
   const [focused, setFocused] = useState(current);
   const gridRef = useRef<HTMLDivElement>(null);
-  const focusedRef = useRef<HTMLButtonElement | null>(null);
+  const focusedRef = useRef<HTMLDivElement | null>(null);
   const t = useLocale();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: only re-sync on open transition
@@ -201,7 +201,7 @@ function OverviewThumb({
   tooltipContainer?: HTMLElement | null;
   onFocus: () => void;
   onSelect: () => void;
-  buttonRef?: Ref<HTMLButtonElement>;
+  buttonRef?: Ref<HTMLDivElement>;
 }) {
   const t = useLocale();
   const boxRef = useRef<HTMLDivElement | null>(null);
@@ -214,10 +214,19 @@ function OverviewThumb({
   }, [PageComp]);
 
   return (
-    <button
+    // biome-ignore lint/a11y/useSemanticElements: a slide preview holds buttons, which cannot nest in a <button>
+    <div
       ref={buttonRef}
-      type="button"
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          event.currentTarget.click();
+        }
+      }}
       onMouseEnter={onFocus}
       onFocus={onFocus}
       aria-label={format(t.present.overviewGoToAria, { n: index + 1 })}
@@ -286,7 +295,7 @@ function OverviewThumb({
           </span>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 

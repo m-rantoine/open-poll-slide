@@ -1,4 +1,5 @@
 import { type FormEvent, type HTMLAttributes, type ReactNode, useRef, useState } from 'react';
+import { fieldsAttr } from '../lib/inspector/component-fields';
 import { LanguageScope, type PollLanguage } from '../lib/locale-store';
 import type { WordCloudQuestion } from '../lib/sdk';
 import { useIsActivePage } from '../lib/step-context';
@@ -400,7 +401,11 @@ function WordCloudInner({ question, style, ...rest }: WordCloudProps) {
 export function WordCloud({ language, ...props }: WordCloudProps) {
   return (
     <LanguageScope language={language}>
-      <WordCloudInner {...props} data-poll-language={language ?? 'en'} />
+      <WordCloudInner
+        {...props}
+        {...fieldsAttr('word_cloud', props.question)}
+        data-poll-language={language ?? 'en'}
+      />
     </LanguageScope>
   );
 }

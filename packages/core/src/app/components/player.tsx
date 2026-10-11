@@ -1,6 +1,6 @@
 import { type MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { hasModifier, isBackwardKey, isForwardKey, isTypingTarget } from '@/lib/keys';
-import { useClickPageNavigation } from '@/lib/use-click-page-navigation';
+import { type NavZone, useClickPageNavigation } from '@/lib/use-click-page-navigation';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
@@ -15,6 +15,7 @@ import { PresentControlBar } from './present/control-bar';
 import { PresentHelpOverlay } from './present/help-overlay';
 import { PresentJumpInput } from './present/jump-input';
 import { PresentLaserPointer } from './present/laser-pointer';
+import { NavCue } from './present/nav-cue';
 import { PresentProgressBar } from './present/progress-bar';
 import { useIdle } from './present/use-idle';
 import { usePointerNearBottom } from './present/use-pointer-near-bottom';
@@ -26,6 +27,7 @@ import {
 import { useTouchSwipe } from './present/use-touch-swipe';
 import { SlideCanvas } from './slide-canvas';
 import { SlideTransitionLayer } from './slide-transition-layer';
+import { ToolsLayer } from './tools/tools-layer';
 
 const IDLE_HIDE_MS = 2000;
 const BAR_HOTZONE_PX = 160;
@@ -207,14 +209,17 @@ export function Player({
     return () => window.clearTimeout(id);
   }, [controls, isMobile, mobileChromeDeadline, mobileChromeVisible, overlayActive]);
 
+  const [navZone, setNavZone] = useState<NavZone>(null);
+  // Drawing with the laser must not turn the mouse-up into a slide change.
   useClickPageNavigation({
     ref: rootRef,
-    enabled: !overlayActive && !locked,
+    enabled: !overlayActive && !locked && !laser,
     canPrev,
     canNext,
     onPrev: goPrev,
     onNext: goNext,
     onViewportClick: controls && isMobile ? handleMobileViewportClick : undefined,
+    onZoneChange: controls && !isMobile ? setNavZone : undefined,
   });
 
   useWheelPageNavigation({
@@ -228,7 +233,7 @@ export function Player({
 
   useTouchSwipe({
     ref: rootRef,
-    enabled: (controls || contained) && !locked && !overlayActive,
+    enabled: (controls || contained) && !locked && !overlayActive && !laser,
     onPrev: goPrev,
     onNext: goNext,
   });
@@ -437,6 +442,7 @@ export function Player({
         contained ? 'relative h-full w-full' : 'fixed inset-0',
         'flex items-center justify-center overflow-hidden bg-black',
         controls && 'select-none',
+        laser && 'touch-none',
         controls && (hideCursor ? 'cursor-none' : 'cursor-default'),
       )}
       style={design ? { background: design.palette.bg } : undefined}
@@ -458,12 +464,14 @@ export function Player({
         />
       </SlideCanvas>
 
+      {controls && !isMobile && <NavCue zone={navZone} edgeRatio={0.3} />}
       {controls && (
         <div data-osd-chrome style={{ display: 'contents' }}>
           <PresentProgressBar index={index} total={pages.length} visible={chromeVisible} />
           <PresentBlackoutOverlay mode={blackout} />
           <PresentJumpInput pageCount={pages.length} onJump={handleIndexChange} />
           <PresentLaserPointer enabled={laser} />
+          <ToolsLayer />
           <PresentControlBar
             tooltipContainer={rootEl}
             index={index}

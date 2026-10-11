@@ -8,9 +8,13 @@ import {
   inactiveSeconds,
   isParticipantActive,
   normalizeAnswer,
+  numberSummary,
   optionCounts,
   pct,
   placementScores,
+  pointsStats,
+  rankStats,
+  scaleStats,
   studentResults,
   wordCounts,
   zoneTiles,
@@ -204,6 +208,66 @@ describe('sorting questions', () => {
     const extra = new Map([['u1', { graded: 2, correct: 1 }]]);
     const [r] = studentResults([participant({ user_id: 'u1' })], [], extra);
     expect([r.correct, r.graded]).toEqual([1, 2]);
+  });
+});
+
+describe('rating questions', () => {
+  const pl = (user: string, item: string, value: string, question = 'q'): PlacementRow => ({
+    session_id: 's',
+    question_id: question,
+    user_id: user,
+    item_id: item,
+    zone_id: value,
+    is_correct: null,
+    placed_at: ago(1),
+  });
+
+  it('averages a scale and counts each rating', () => {
+    const rows = [pl('u1', 'a', '4'), pl('u2', 'a', '5'), pl('u3', 'a', '5'), pl('u1', 'b', '1')];
+    const [a, b, none] = scaleStats(rows, 'q', ['a', 'b', 'c'], 1, 5);
+    expect(a.average).toBeCloseTo(14 / 3);
+    expect(a.distribution).toEqual([0, 0, 0, 1, 2]);
+    expect(b.average).toBe(1);
+    expect(none.average).toBeNull();
+  });
+
+  it('orders a ranking by average position', () => {
+    const rows = [
+      pl('u1', 'a', '1'),
+      pl('u1', 'b', '2'),
+      pl('u2', 'a', '2'),
+      pl('u2', 'b', '1'),
+      pl('u1', 'c', '3'),
+    ];
+    expect(rankStats(rows, 'q', ['a', 'b', 'c']).map((r) => [r.itemId, r.average])).toEqual([
+      ['a', 1.5],
+      ['b', 1.5],
+      ['c', 3],
+    ]);
+  });
+
+  it('averages points over everyone who answered', () => {
+    const rows = [
+      pl('u1', 'x', '70'),
+      pl('u1', 'y', '30'),
+      pl('u2', 'x', '50'),
+      pl('u2', 'y', '50'),
+    ];
+    expect(pointsStats(rows, 'q', ['x', 'y']).map((r) => [r.itemId, r.average])).toEqual([
+      ['x', 60],
+      ['y', 40],
+    ]);
+  });
+
+  it('summarises number answers', () => {
+    const answers = ['1', '2', '2', '9'].map((v) =>
+      answer({ question_id: 'n', option_id: v, user_id: `u${v}${Math.random()}` }),
+    );
+    const s = numberSummary(answers, 'n', 4);
+    expect([s.count, s.min, s.max, s.median]).toEqual([4, 1, 9, 2]);
+    expect(s.mean).toBe(3.5);
+    expect(s.bins.reduce((n, b) => n + b.count, 0)).toBe(4);
+    expect(numberSummary([], 'n').count).toBe(0);
   });
 });
 

@@ -15,6 +15,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLocale } from '@/lib/use-locale';
 import { cn, pad2 } from '@/lib/utils';
+import { ToolsMenu } from '../tools/tools-layer';
 
 const TooltipContainerCtx = createContext<HTMLElement | null>(null);
 
@@ -138,6 +139,7 @@ export function PresentControlBar({
             <BarButton label={t.present.laserAria} onClick={onLaser} active={laser}>
               <Crosshair className="size-4" />
             </BarButton>
+            <ToolsMenu />
             <BarButton label={t.present.presenterAria} onClick={onPresenter}>
               <MonitorSpeaker className="size-4" />
             </BarButton>

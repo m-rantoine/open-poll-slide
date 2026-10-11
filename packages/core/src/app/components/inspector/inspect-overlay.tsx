@@ -221,7 +221,9 @@ export function InspectOverlay() {
           Math.abs(frame.y) < 1 &&
           frame.width >= canvas.width - 1 &&
           frame.height >= canvas.height - 1;
-        const isPollComponent = hit.anchor.hasAttribute('data-poll-language');
+        const isPollComponent =
+          hit.anchor.hasAttribute('data-poll-language') ||
+          hit.anchor.hasAttribute('data-osd-fields');
         if (
           background &&
           !isPollComponent &&

@@ -161,6 +161,123 @@ export function zoneTiles(
   return out;
 }
 
+const numeric = (v: string) => Number(v);
+
+function respondents(placements: PlacementRow[], questionId: string): Set<string> {
+  return new Set(placements.filter((p) => p.question_id === questionId).map((p) => p.user_id));
+}
+
+export type ScaleStat = {
+  itemId: string;
+  count: number;
+  average: number | null;
+  /** How many gave each rating, from `min` to `max`. */
+  distribution: number[];
+};
+
+export function scaleStats(
+  placements: PlacementRow[],
+  questionId: string,
+  itemIds: string[],
+  min: number,
+  max: number,
+): ScaleStat[] {
+  return itemIds.map((itemId) => {
+    const distribution = new Array<number>(Math.max(1, max - min + 1)).fill(0);
+    let sum = 0;
+    let count = 0;
+    for (const p of placements) {
+      if (p.question_id !== questionId || p.item_id !== itemId) continue;
+      const v = numeric(p.zone_id);
+      if (Number.isNaN(v) || v < min || v > max) continue;
+      distribution[v - min]++;
+      sum += v;
+      count++;
+    }
+    return { itemId, count, average: count ? sum / count : null, distribution };
+  });
+}
+
+export type RankStat = { itemId: string; average: number | null; count: number };
+
+/** Items with their average position (1 is first), best first; unranked items go last. */
+export function rankStats(
+  placements: PlacementRow[],
+  questionId: string,
+  itemIds: string[],
+): RankStat[] {
+  const stats = itemIds.map((itemId) => {
+    const rows = placements.filter((p) => p.question_id === questionId && p.item_id === itemId);
+    const sum = rows.reduce((n, p) => n + numeric(p.zone_id), 0);
+    return { itemId, count: rows.length, average: rows.length ? sum / rows.length : null };
+  });
+  return stats.sort(
+    (a, b) =>
+      (a.average ?? Number.POSITIVE_INFINITY) - (b.average ?? Number.POSITIVE_INFINITY) ||
+      itemIds.indexOf(a.itemId) - itemIds.indexOf(b.itemId),
+  );
+}
+
+export type PointsStat = { itemId: string; average: number; total: number };
+
+/** Average points per option over everyone who answered, most points first. */
+export function pointsStats(
+  placements: PlacementRow[],
+  questionId: string,
+  itemIds: string[],
+): PointsStat[] {
+  const people = respondents(placements, questionId).size;
+  return itemIds
+    .map((itemId) => {
+      const total = placements
+        .filter((p) => p.question_id === questionId && p.item_id === itemId)
+        .reduce((n, p) => n + numeric(p.zone_id), 0);
+      return { itemId, total, average: people ? total / people : 0 };
+    })
+    .sort((a, b) => b.average - a.average || itemIds.indexOf(a.itemId) - itemIds.indexOf(b.itemId));
+}
+
+export type NumberSummary = {
+  count: number;
+  mean: number | null;
+  median: number | null;
+  min: number | null;
+  max: number | null;
+  bins: { from: number; to: number; count: number }[];
+};
+
+export function numberSummary(
+  answers: AnswerRow[],
+  questionId: string,
+  binCount = 8,
+): NumberSummary {
+  const values = answers
+    .filter((a) => a.question_id === questionId)
+    .map((a) => numeric(a.option_id))
+    .filter((v) => !Number.isNaN(v))
+    .sort((a, b) => a - b);
+  if (values.length === 0) {
+    return { count: 0, mean: null, median: null, min: null, max: null, bins: [] };
+  }
+  const min = values[0];
+  const max = values[values.length - 1];
+  const mid = Math.floor(values.length / 2);
+  const median = values.length % 2 ? values[mid] : (values[mid - 1] + values[mid]) / 2;
+  const mean = values.reduce((n, v) => n + v, 0) / values.length;
+  const n = max === min ? 1 : binCount;
+  const width = max === min ? 1 : (max - min) / n;
+  const bins = Array.from({ length: n }, (_, i) => ({
+    from: min + i * width,
+    to: min + (i + 1) * width,
+    count: 0,
+  }));
+  for (const v of values) {
+    const i = max === min ? 0 : Math.min(n - 1, Math.floor((v - min) / width));
+    bins[i].count++;
+  }
+  return { count: values.length, mean, median, min, max, bins };
+}
+
 export function studentResults(
   participants: ParticipantRow[],
   answers: AnswerRow[],

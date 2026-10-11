@@ -1,4 +1,5 @@
 import type { CSSProperties, HTMLAttributes } from 'react';
+import { fieldsAttr } from '../lib/inspector/component-fields';
 import { LanguageScope, type PollLanguage } from '../lib/locale-store';
 import { useLocale } from '../lib/use-locale';
 import { classAverage, pct, placementScores, studentResults } from './derive';
@@ -84,7 +85,11 @@ function ClassResultsInner({ title: titleProp, style, ...rest }: ClassResultsPro
 export function ClassResults({ language, ...props }: ClassResultsProps) {
   return (
     <LanguageScope language={language}>
-      <ClassResultsInner {...props} data-poll-language={language ?? 'en'} />
+      <ClassResultsInner
+        {...props}
+        {...fieldsAttr('class_results', props)}
+        data-poll-language={language ?? 'en'}
+      />
     </LanguageScope>
   );
 }

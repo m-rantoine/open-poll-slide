@@ -31,6 +31,7 @@ import {
 import { PreviewStepHost } from '../components/preview-step-host';
 import { SlideCanvas } from '../components/slide-canvas';
 import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
+import { ToolsLayer, ToolsMenu } from '../components/tools/tools-layer';
 import { SlidePageProvider } from '../lib/page-context';
 import { CANVAS_HEIGHT, CANVAS_WIDTH, type SlideModule } from '../lib/sdk';
 import { loadSlide } from '../lib/slides';
@@ -208,6 +209,7 @@ function ClassicPresenter() {
 
   return (
     <div className="dark flex h-dvh w-screen flex-col overflow-hidden bg-background text-foreground">
+      <ToolsLayer />
       <PresenterTopBar
         index={index}
         total={total}
@@ -325,6 +327,7 @@ function PresenterTopBar({
         )}
       </div>
       <div className="flex items-center gap-6">
+        <ToolsMenu direction="down" />
         <Clock />
         <ElapsedClock startedAt={startedAt} />
         <div className="font-mono text-[18px] tabular-nums">

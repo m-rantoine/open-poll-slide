@@ -16,6 +16,8 @@ export type EditOp =
   | { kind: 'set-attr-asset'; attr: string; assetPath: string }
   | { kind: 'set-attr-number'; attr: string; value: number | null }
   | { kind: 'set-attr-string'; attr: string; value: string | null }
+  | { kind: 'set-attr-bool'; attr: string; value: boolean | null }
+  | { kind: 'set-question-field'; field: string; value: string | number | boolean | null }
   | { kind: 'replace-placeholder-with-image'; assetPath: string };
 
 export type ApplyEditResult =
@@ -1128,6 +1130,123 @@ function planReplacePlaceholder(
   return { importSplice, elementSplice: spliceRange(element, replacement) };
 }
 
+function unwrapExpression(node: t.Node): t.Node {
+  let cur = node;
+  while (
+    t.isTSAsExpression(cur) ||
+    t.isTSSatisfiesExpression(cur) ||
+    t.isParenthesizedExpression(cur)
+  ) {
+    cur = cur.expression;
+  }
+  return cur;
+}
+
+function findTopLevelConst(ast: t.File, name: string): t.Node | null {
+  for (const stmt of ast.program.body) {
+    const decl = t.isExportNamedDeclaration(stmt) ? stmt.declaration : stmt;
+    if (!decl || !t.isVariableDeclaration(decl)) continue;
+    for (const d of decl.declarations) {
+      if (t.isIdentifier(d.id) && d.id.name === name && d.init) return d.init;
+    }
+  }
+  return null;
+}
+
+function propertyKeyName(prop: t.ObjectProperty): string | null {
+  if (prop.computed) return null;
+  if (t.isIdentifier(prop.key)) return prop.key.name;
+  if (t.isStringLiteral(prop.key)) return prop.key.value;
+  return null;
+}
+
+/**
+ * The object literal behind a `question={...}` attribute: an inline object, a top-level const, or
+ * a member of one (the usual `question={questions.capital}`).
+ */
+function resolveQuestionObject(ast: t.File, element: t.JSXElement): t.ObjectExpression | null {
+  const attr = findJsxAttr(element.openingElement, 'question');
+  const value = attr?.value;
+  if (!value || !t.isJSXExpressionContainer(value)) return null;
+  const resolve = (node: t.Node, depth: number): t.ObjectExpression | null => {
+    if (depth > 4) return null;
+    const expr = unwrapExpression(node);
+    if (t.isObjectExpression(expr)) return expr;
+    if (t.isIdentifier(expr)) {
+      const init = findTopLevelConst(ast, expr.name);
+      return init ? resolve(init, depth + 1) : null;
+    }
+    if (t.isMemberExpression(expr)) {
+      const parent = resolve(expr.object, depth + 1);
+      if (!parent) return null;
+      let key: string | null = null;
+      if (!expr.computed && t.isIdentifier(expr.property)) key = expr.property.name;
+      else if (t.isStringLiteral(expr.property)) key = expr.property.value;
+      if (key === null) return null;
+      for (const prop of parent.properties) {
+        if (t.isObjectProperty(prop) && propertyKeyName(prop) === key) {
+          return resolve(prop.value, depth + 1);
+        }
+      }
+    }
+    return null;
+  };
+  return resolve(value.expression, 0);
+}
+
+function literalText(value: string | number | boolean): string {
+  return typeof value === 'string' ? jsString(value) : String(value);
+}
+
+function buildQuestionFieldSplice(
+  source: string,
+  object: t.ObjectExpression,
+  field: string,
+  value: string | number | boolean | null,
+): Splice | { error: string } | null {
+  if (!/^[A-Za-z_$][\w$]*$/.test(field)) return { error: 'invalid field name' };
+  if (typeof value === 'number' && !Number.isFinite(value)) {
+    return { error: 'field value must be a finite number' };
+  }
+  let existing: t.ObjectProperty | null = null;
+  for (const prop of object.properties) {
+    if (t.isObjectProperty(prop) && propertyKeyName(prop) === field) existing = prop;
+  }
+  if (existing) {
+    const from = existing.start ?? 0;
+    const to = existing.end ?? 0;
+    if (value === null) {
+      // Take the trailing comma and the whitespace before the property with it.
+      let end = to;
+      if (source[end] === ',') end += 1;
+      let start = from;
+      while (start > 0 && /[ \t]/.test(source[start - 1])) start -= 1;
+      if (source[start - 1] === '\n') start -= 1;
+      return { from: start, to: end, text: '' };
+    }
+    if (!t.isObjectProperty(existing) || existing.shorthand) {
+      return { error: 'field has an unsupported form' };
+    }
+    const valueNode = existing.value;
+    return spliceRange(valueNode, literalText(value));
+  }
+  if (value === null) return null;
+  const last = object.properties[object.properties.length - 1];
+  if (!last) {
+    const at = (object.start ?? 0) + 1;
+    return { from: at, to: at, text: ` ${field}: ${literalText(value)} ` };
+  }
+  const lastEnd = last.end ?? 0;
+  const lineStart = source.lastIndexOf('\n', (last.start ?? 0) - 1) + 1;
+  const indent = /^[ \t]*/.exec(source.slice(lineStart, last.start ?? 0))?.[0] ?? '';
+  const sameLine = source.slice(lineStart, last.start ?? 0).trim() !== '';
+  if (sameLine) return { from: lastEnd, to: lastEnd, text: `, ${field}: ${literalText(value)}` };
+  const hasComma = source[lastEnd] === ',';
+  const at = hasComma ? lastEnd + 1 : lastEnd;
+  const text = `${hasComma ? '' : ','}\n${indent}${field}: ${literalText(value)}${hasComma ? ',' : ''}`;
+  return { from: at, to: at, text };
+}
+
 export function applyEdit(
   source: string,
   line: number,
@@ -1250,6 +1369,44 @@ export function planEdit(
       const at = opening.name.end ?? 0;
       splices.push({ from: at, to: at, text: ` ${op.attr}={${op.value}}` });
     }
+  }
+
+  for (const op of ops) {
+    if (op.kind !== 'set-attr-bool') continue;
+    if (!/^[A-Za-z][\w-]*$/.test(op.attr)) {
+      return { ok: false, status: 422, error: 'invalid attribute name' };
+    }
+    const opening = element.openingElement;
+    const existing = findJsxAttr(opening, op.attr);
+    if (existing) {
+      const from = existing.start ?? 0;
+      const to = existing.end ?? 0;
+      if (op.value === null) {
+        let start = from;
+        while (start > 0 && /\s/.test(source[start - 1])) start--;
+        splices.push({ from: start, to, text: '' });
+      } else {
+        splices.push({ from, to, text: `${op.attr}={${op.value}}` });
+      }
+    } else if (op.value !== null) {
+      const at = opening.name.end ?? 0;
+      splices.push({ from: at, to: at, text: ` ${op.attr}={${op.value}}` });
+    }
+  }
+
+  for (const op of ops) {
+    if (op.kind !== 'set-question-field') continue;
+    const object = resolveQuestionObject(ast, element);
+    if (!object) {
+      return {
+        ok: false,
+        status: 422,
+        error: 'could not find the question object; edit it in the code',
+      };
+    }
+    const result = buildQuestionFieldSplice(source, object, op.field, op.value);
+    if (result && 'error' in result) return { ok: false, status: 422, error: result.error };
+    if (result) splices.push(result);
   }
 
   const assetOps = ops.flatMap((op) => (op.kind === 'set-attr-asset' ? [op] : []));
