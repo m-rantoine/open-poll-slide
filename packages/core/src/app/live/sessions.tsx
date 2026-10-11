@@ -4,9 +4,11 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { useLocale } from '@/lib/use-locale';
+import { slideIds } from '../lib/slides';
 import { LiveMessage, RequireAuth, useAuth } from './auth';
 import { getClient } from './client';
 import { liveErrorMessage } from './errors';
+import { onThisSite } from './site-sessions';
 import { SlideThumb } from './slide-thumb';
 
 type ActiveSession = {
@@ -38,7 +40,7 @@ function Sessions() {
 
   const load = useCallback(async () => {
     const { data } = await getClient().rpc('list_active_sessions');
-    setRows(data ?? []);
+    setRows(onThisSite(data ?? [], slideIds));
   }, []);
 
   useEffect(() => {
