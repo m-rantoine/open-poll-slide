@@ -16,7 +16,11 @@ type UseClickPageNavigationOptions<T extends HTMLElement> = {
   onPrev: () => void;
   onNext: () => void;
   onViewportClick?: (point: { x: number; y: number }) => void;
+  /** Which edge a click at the pointer would navigate toward, or null. Mouse pointers only. */
+  onZoneChange?: (zone: NavZone) => void;
 };
+
+export type NavZone = 'prev' | 'next' | null;
 
 export function useClickPageNavigation<T extends HTMLElement>({
   ref,
@@ -27,6 +31,7 @@ export function useClickPageNavigation<T extends HTMLElement>({
   onPrev,
   onNext,
   onViewportClick,
+  onZoneChange,
 }: UseClickPageNavigationOptions<T>) {
   useEffect(() => {
     const el = ref.current;
@@ -51,6 +56,36 @@ export function useClickPageNavigation<T extends HTMLElement>({
     };
 
     el.addEventListener('click', onClick);
-    return () => el.removeEventListener('click', onClick);
-  }, [ref, enabled, edgeRatio, canPrev, canNext, onPrev, onNext, onViewportClick]);
+
+    // The cue uses the same rules as the click, so it never promises a slide change that will not
+    // happen.
+    let zone: NavZone = null;
+    const setZone = (next: NavZone) => {
+      if (next === zone) return;
+      zone = next;
+      onZoneChange?.(next);
+    };
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse') return setZone(null);
+      const target = event.target;
+      if (target instanceof Element && target.closest(NAV_PASSTHROUGH)) return setZone(null);
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0) return setZone(null);
+      const x = (event.clientX - rect.left) / rect.width;
+      if (x < edgeRatio) setZone(canPrev ? 'prev' : null);
+      else if (x > 1 - edgeRatio) setZone(canNext ? 'next' : null);
+      else setZone(null);
+    };
+    const onLeave = () => setZone(null);
+    if (onZoneChange) {
+      el.addEventListener('pointermove', onMove);
+      el.addEventListener('pointerleave', onLeave);
+    }
+    return () => {
+      el.removeEventListener('click', onClick);
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerleave', onLeave);
+      if (zone !== null) onZoneChange?.(null);
+    };
+  }, [ref, enabled, edgeRatio, canPrev, canNext, onPrev, onNext, onViewportClick, onZoneChange]);
 }

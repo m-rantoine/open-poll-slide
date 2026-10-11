@@ -1,4 +1,5 @@
 import type { CSSProperties, HTMLAttributes } from 'react';
+import { fieldsAttr } from '../lib/inspector/component-fields';
 import { LanguageScope, type PollLanguage } from '../lib/locale-store';
 import { format, plural, useLocale } from '../lib/use-locale';
 import { isParticipantConnected } from './derive';
@@ -95,7 +96,11 @@ function LobbyInner({ title: titleProp, style, ...rest }: LobbyProps) {
 export function Lobby({ language, ...props }: LobbyProps) {
   return (
     <LanguageScope language={language}>
-      <LobbyInner {...props} data-poll-language={language ?? 'en'} />
+      <LobbyInner
+        {...props}
+        {...fieldsAttr('lobby', props)}
+        data-poll-language={language ?? 'en'}
+      />
     </LanguageScope>
   );
 }

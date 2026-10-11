@@ -1,5 +1,18 @@
-import { Clock, Palette, Pause, Play, RotateCcw, Timer, Volume2, VolumeX, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import {
+  Clock,
+  GripVertical,
+  Maximize2,
+  Minimize2,
+  Palette,
+  Pause,
+  Play,
+  RotateCcw,
+  Timer,
+  Volume2,
+  VolumeX,
+  X,
+} from 'lucide-react';
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react';
 import { hasModifier, isTypingTarget } from '@/lib/keys';
 import { useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
@@ -32,29 +45,110 @@ const panelVars = {
   '--osd-accent': '#60a5fa',
 } as React.CSSProperties;
 
+type Point = { x: number; y: number };
+
 function Card({
   title,
   onStyle,
   onClose,
+  position,
+  onPosition,
+  expanded,
+  onExpanded,
   children,
 }: {
   title: string;
   onStyle: () => void;
   onClose: () => void;
+  /** Where the card was dragged to; null keeps it in the stack at the top right. */
+  position: Point | null;
+  onPosition: (position: Point | null) => void;
+  expanded: boolean;
+  onExpanded: (expanded: boolean) => void;
   children: React.ReactNode;
 }) {
   const t = useLocale();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const grab = useRef<Point | null>(null);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onExpanded(false);
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [expanded, onExpanded]);
+
+  const onDown = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const rect = rootRef.current?.getBoundingClientRect();
+    if (!rect || e.button !== 0) return;
+    grab.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onMove = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const offset = grab.current;
+    const el = rootRef.current;
+    if (!offset || !el) return;
+    onPosition({
+      x: Math.min(
+        Math.max(0, e.clientX - offset.x),
+        Math.max(0, window.innerWidth - el.offsetWidth),
+      ),
+      y: Math.min(
+        Math.max(0, e.clientY - offset.y),
+        Math.max(0, window.innerHeight - el.offsetHeight),
+      ),
+    });
+  };
+  const onUp = () => {
+    grab.current = null;
+  };
+
   const iconButton =
     'flex size-7 items-center justify-center rounded-[6px] text-white/70 outline-none hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/40';
   return (
     <div
+      ref={rootRef}
       data-osd-chrome
-      style={panelVars}
-      className="pointer-events-auto w-[300px] rounded-[14px] border border-white/10 bg-black/70 p-3 text-white shadow-[0_12px_40px_-10px_oklch(0_0_0/0.7)] backdrop-blur-md"
+      style={{
+        ...panelVars,
+        ...(expanded
+          ? { position: 'fixed', inset: 0, zIndex: 75 }
+          : position
+            ? { position: 'fixed', left: position.x, top: position.y }
+            : {}),
+      }}
+      className={cn(
+        'pointer-events-auto flex flex-col border border-white/10 text-white backdrop-blur-md',
+        expanded
+          ? 'bg-[#0f172a] p-6'
+          : 'w-[300px] rounded-[14px] bg-black/70 p-3 shadow-[0_12px_40px_-10px_oklch(0_0_0/0.7)]',
+      )}
     >
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-[11px] font-medium tracking-[0.12em] text-white/60 uppercase">
-          {title}
+        <span className="flex items-center gap-1">
+          {!expanded && (
+            <button
+              type="button"
+              className={cn(iconButton, 'cursor-grab touch-none active:cursor-grabbing')}
+              onPointerDown={onDown}
+              onPointerMove={onMove}
+              onPointerUp={onUp}
+              onPointerCancel={onUp}
+              onDoubleClick={() => onPosition(null)}
+              aria-label={t.tools.dragHandle}
+              title={t.tools.dragHandle}
+            >
+              <GripVertical className="size-4" />
+            </button>
+          )}
+          <span className="text-[11px] font-medium tracking-[0.12em] text-white/60 uppercase">
+            {title}
+          </span>
         </span>
         <span className="flex items-center gap-0.5">
           <button
@@ -65,6 +159,15 @@ function Card({
             title={t.tools.changeStyle}
           >
             <Palette className="size-4" />
+          </button>
+          <button
+            type="button"
+            className={iconButton}
+            onClick={() => onExpanded(!expanded)}
+            aria-label={expanded ? t.tools.exitFullscreen : t.tools.fullscreen}
+            title={expanded ? t.tools.exitFullscreen : t.tools.fullscreen}
+          >
+            {expanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
           </button>
           <button
             type="button"
@@ -82,26 +185,42 @@ function Card({
   );
 }
 
-function ClockCard() {
+type CardPlacement = {
+  position: Point | null;
+  onPosition: (position: Point | null) => void;
+};
+
+function ClockCard({ position, onPosition }: CardPlacement) {
   const t = useLocale();
   const { clockSkin } = useTools();
   const now = useNow(1000);
+  const [expanded, setExpanded] = useState(false);
   return (
-    <Card title={t.tools.clock} onStyle={toolsStore.cycleClockSkin} onClose={toolsStore.closeClock}>
-      <div style={{ width: '100%', height: 190 }}>
+    <Card
+      title={t.tools.clock}
+      onStyle={toolsStore.cycleClockSkin}
+      onClose={toolsStore.closeClock}
+      position={position}
+      onPosition={onPosition}
+      expanded={expanded}
+      onExpanded={setExpanded}
+    >
+      <div style={expanded ? { flex: '1 1 0', minHeight: 0 } : { width: '100%', height: 190 }}>
         <ClockFace skin={clockSkin} now={now} showDate />
       </div>
     </Card>
   );
 }
 
-function TimerCard() {
+function TimerCard({ position, onPosition }: CardPlacement) {
   const t = useLocale();
   const { timer, timerSkin, sound } = useTools();
   const now = useNow(250);
-  const remaining = timerRemaining(timer, now);
-  const running = timerRunning(timer, now);
+  const clock = Math.max(now, Date.now());
+  const remaining = timerRemaining(timer, clock);
+  const running = timerRunning(timer, clock);
   const [minutes, setMinutes] = useState(String(Math.round(timer.durationMs / 60_000)));
+  const [expanded, setExpanded] = useState(false);
   const chimed = useRef(false);
 
   useEffect(() => {
@@ -125,8 +244,16 @@ function TimerCard() {
     'rounded-[6px] border border-white/15 px-2 py-1 text-[12px] text-white/80 outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40';
 
   return (
-    <Card title={t.tools.timer} onStyle={toolsStore.cycleTimerSkin} onClose={toolsStore.closeTimer}>
-      <div style={{ width: '100%', height: 170 }}>
+    <Card
+      title={t.tools.timer}
+      onStyle={toolsStore.cycleTimerSkin}
+      onClose={toolsStore.closeTimer}
+      position={position}
+      onPosition={onPosition}
+      expanded={expanded}
+      onExpanded={setExpanded}
+    >
+      <div style={expanded ? { flex: '1 1 0', minHeight: 0 } : { width: '100%', height: 170 }}>
         <TimerFace
           skin={timerSkin}
           remainingMs={remaining}
@@ -188,11 +315,25 @@ function TimerCard() {
 export function ToolsLayer() {
   useToolsHotkeys();
   const { clockOpen, timerOpen } = useTools();
+  const [positions, setPositions] = useState<{ clock: Point | null; timer: Point | null }>({
+    clock: null,
+    timer: null,
+  });
   if (!clockOpen && !timerOpen) return null;
   return (
     <div className="pointer-events-none fixed top-4 right-4 z-[70] flex flex-col items-end gap-3">
-      {clockOpen && <ClockCard />}
-      {timerOpen && <TimerCard />}
+      {clockOpen && (
+        <ClockCard
+          position={positions.clock}
+          onPosition={(clock) => setPositions((p) => ({ ...p, clock }))}
+        />
+      )}
+      {timerOpen && (
+        <TimerCard
+          position={positions.timer}
+          onPosition={(timer) => setPositions((p) => ({ ...p, timer }))}
+        />
+      )}
     </div>
   );
 }

@@ -14,6 +14,8 @@ export type EditOp =
   | { kind: 'set-attr-asset'; attr: string; assetPath: string; previewUrl: string }
   | { kind: 'set-attr-number'; attr: string; value: number | null }
   | { kind: 'set-attr-string'; attr: string; value: string | null }
+  | { kind: 'set-attr-bool'; attr: string; value: boolean | null }
+  | { kind: 'set-question-field'; field: string; value: string | number | boolean | null }
   | { kind: 'replace-placeholder-with-image'; assetPath: string };
 
 export type Edit = { line: number; column: number; ops: EditOp[]; dependsOn?: number };

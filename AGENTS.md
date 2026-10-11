@@ -37,6 +37,7 @@ Filter to one package: `pnpm core <script>` / `pnpm cli <script>`.
 - **Changeset descriptions: short and direct.** One line, present-tense, what changed from a user's perspective. Match the tone of `.changeset/*.md` already in the repo. No paragraphs, no rationale, no "this PR…".
   - Good: `Replace spinner with a hairline + sliding bar for slide and presenter loading states.`
   - Bad: `This change introduces a new loading indicator because the previous spinner felt heavy and we wanted something more subtle for presentation contexts…`
+- **Every setting a poll or tool component accepts needs an inspector hook.** A new prop on a question or tool component, or a new field on a question object, goes in `packages/core/src/app/lib/inspector/component-fields.ts` (with its labels in all locales) and the component must pass its values through `fieldsAttr`. Lists such as options and steps stay in the code.
 - Don't bump versions or edit `CHANGELOG.md` by hand — `changeset version` owns that.
 - Don't add dependencies casually. The `core` runtime ships to users; every dep inflates install size.
 - `packages/core/src/app/components/ui` is shadcn-generated and biome-ignored — leave it alone unless regenerating.

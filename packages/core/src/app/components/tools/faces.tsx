@@ -284,6 +284,8 @@ export type ClockFaceProps = {
   now: number;
   timeZone?: string;
   showDate?: boolean;
+  /** Analog: the second hand. Digital: the seconds. Default true. */
+  showSeconds?: boolean;
   style?: CSSProperties;
 };
 
@@ -299,7 +301,14 @@ function zoned(now: number, timeZone?: string) {
   return { h: get('hour'), m: get('minute'), s: get('second') };
 }
 
-export function ClockFace({ skin, now, timeZone, showDate, style }: ClockFaceProps) {
+export function ClockFace({
+  skin,
+  now,
+  timeZone,
+  showDate,
+  showSeconds = true,
+  style,
+}: ClockFaceProps) {
   const { h, m, s } = zoned(now, timeZone);
   const two = (n: number) => String(n).padStart(2, '0');
   const date = showDate
@@ -323,7 +332,7 @@ export function ClockFace({ skin, now, timeZone, showDate, style }: ClockFacePro
       <div style={{ ...fill, flexDirection: 'column', ...style }}>
         <div style={{ height: date ? '82%' : '100%', aspectRatio: '1', maxWidth: '100%' }}>
           <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }} role="img">
-            <title>{`${two(h)}:${two(m)}:${two(s)}`}</title>
+            <title>{showSeconds ? `${two(h)}:${two(m)}:${two(s)}` : `${two(h)}:${two(m)}`}</title>
             <circle
               cx="50"
               cy="50"
@@ -384,16 +393,18 @@ export function ClockFace({ skin, now, timeZone, showDate, style }: ClockFacePro
               strokeLinecap="round"
               transform={`rotate(${minuteAngle} 50 50)`}
             />
-            <line
-              x1="50"
-              y1="58"
-              x2="50"
-              y2="12"
-              stroke={ACCENT}
-              strokeWidth="1"
-              strokeLinecap="round"
-              transform={`rotate(${secondAngle} 50 50)`}
-            />
+            {showSeconds && (
+              <line
+                x1="50"
+                y1="58"
+                x2="50"
+                y2="12"
+                stroke={ACCENT}
+                strokeWidth="1"
+                strokeLinecap="round"
+                transform={`rotate(${secondAngle} 50 50)`}
+              />
+            )}
             <circle cx="50" cy="50" r="2.4" fill={ACCENT} />
           </svg>
         </div>
@@ -447,7 +458,7 @@ export function ClockFace({ skin, now, timeZone, showDate, style }: ClockFacePro
         }}
       >
         {two(h)}:{two(m)}
-        <span style={{ fontSize: '0.5em', opacity: 0.6 }}>:{two(s)}</span>
+        {showSeconds && <span style={{ fontSize: '0.5em', opacity: 0.6 }}>:{two(s)}</span>}
       </div>
       {dateEl}
     </div>

@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, Minus, Plus } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { type CSSProperties, Fragment, useLayoutEffect, useRef } from 'react';
 import type { PointsQuestion, RankingQuestion, ScaleQuestion } from '../lib/sdk';
 import { format, useLocale } from '../lib/use-locale';
 import { ACCENT, FONT, INK } from './question-style';
@@ -26,6 +26,9 @@ const round = (extra?: CSSProperties): CSSProperties => ({
   ...extra,
 });
 
+const SLIDE_MS = 380;
+const ROW_BORDER = `color-mix(in srgb, ${INK} 22%, transparent)`;
+
 const rowStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
@@ -51,32 +54,36 @@ export function ScalePane({
   return (
     <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.9em',
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) auto',
+        columnGap: '0.8em',
+        rowGap: '0.9em',
+        alignItems: 'center',
         fontFamily: FONT,
         color: INK,
       }}
     >
       {(question.minLabel || question.maxLabel) && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontSize: '0.7em',
-            opacity: 0.65,
-          }}
-        >
-          <span>{question.minLabel}</span>
-          <span>{question.maxLabel}</span>
-        </div>
+        <>
+          <span />
+          <span
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: '1em',
+              fontSize: '0.7em',
+              opacity: 0.65,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span>{question.minLabel}</span>
+            <span>{question.maxLabel}</span>
+          </span>
+        </>
       )}
       {question.items.map((item) => (
-        <div
-          key={item.id}
-          style={{ ...rowStyle, flexWrap: 'wrap', justifyContent: 'space-between' }}
-        >
-          <span style={{ flex: '1 1 8em', minWidth: 0 }}>{item.label}</span>
+        <Fragment key={item.id}>
+          <span style={{ minWidth: 0 }}>{item.label}</span>
           <span style={{ display: 'inline-flex', gap: '0.35em' }}>
             {steps.map((n) => {
               const on = values[item.id] === String(n);
@@ -100,7 +107,7 @@ export function ScalePane({
               );
             })}
           </span>
-        </div>
+        </Fragment>
       ))}
     </div>
   );
@@ -119,15 +126,60 @@ export function RankingPane({
   disabled?: boolean;
 }) {
   const t = useLocale();
+  const listRef = useRef<HTMLOListElement>(null);
+  const tops = useRef(new Map<string, number>());
+  const moved = useRef<string | null>(null);
   const move = (from: number, to: number) => {
     if (to < 0 || to >= order.length) return;
     const next = order.slice();
     const [item] = next.splice(from, 1);
     next.splice(to, 0, item);
+    moved.current = item;
     onChange(next);
   };
+
+  // Rows slide from where they were. Layout offsets (not screen pixels) are used because the slide
+  // canvas is scaled, and a transform is scaled with it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs after each reorder
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const next = new Map<string, number>();
+    for (const el of Array.from(list.children) as HTMLElement[]) {
+      const id = el.dataset.rankId;
+      if (!id) continue;
+      next.set(id, el.offsetTop);
+      const before = tops.current.get(id);
+      if (before === undefined || reduce || typeof el.animate !== 'function') continue;
+      const dy = before - el.offsetTop;
+      if (dy !== 0) {
+        el.animate([{ transform: `translateY(${dy}px)` }, { transform: 'translateY(0)' }], {
+          duration: SLIDE_MS,
+          easing: 'cubic-bezier(0.2, 0, 0, 1)',
+        });
+      }
+      if (id === moved.current) {
+        el.animate(
+          [
+            {
+              zIndex: 1,
+              backgroundColor: `color-mix(in srgb, ${ACCENT} 32%, transparent)`,
+              borderColor: ACCENT,
+            },
+            { zIndex: 1, backgroundColor: 'transparent', borderColor: ROW_BORDER },
+          ],
+          { duration: SLIDE_MS, easing: 'ease-out' },
+        );
+      }
+    }
+    tops.current = next;
+    moved.current = null;
+  }, [order]);
+
   return (
     <ol
+      ref={listRef}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -142,10 +194,12 @@ export function RankingPane({
       {order.map((id, i) => (
         <li
           key={id}
+          data-rank-id={id}
           style={{
             ...rowStyle,
+            position: 'relative',
             padding: '0.4em 0.7em',
-            border: `0.1em solid color-mix(in srgb, ${INK} 22%, transparent)`,
+            border: `0.1em solid ${ROW_BORDER}`,
             borderRadius: 'var(--osd-radius, 0.6em)',
           }}
         >

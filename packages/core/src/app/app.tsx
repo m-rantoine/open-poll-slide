@@ -1,5 +1,5 @@
 import config from 'virtual:open-slide/config';
-import type { ReactNode } from 'react';
+import { lazy, type ReactNode, Suspense } from 'react';
 import { BrowserRouter, Route, Routes, useParams } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { TooltipProvider } from './components/ui/tooltip';
@@ -13,19 +13,34 @@ import {
   useCanSeePrivateSlides,
 } from './live/auth';
 import { liveConfigured } from './live/client';
-import { JoinPage } from './live/join';
-import { LoginPage } from './live/login';
-import { PlayPage } from './live/play';
-import { ResultsDetailPage, ResultsListPage } from './live/results';
-import { ScreenPage } from './live/screen';
-import { SessionsPage } from './live/sessions';
-import { AssetsPage } from './routes/assets';
-import { Home } from './routes/home';
 import { HomeShell } from './routes/home-shell';
-import { Presenter } from './routes/presenter';
-import { Preview } from './routes/preview';
-import { Slide } from './routes/slide';
-import { ThemeDetailPage, ThemesGalleryPage } from './routes/themes';
+
+// Each page is its own chunk, so a student opening /join does not download the editor or the
+// presenter.
+const JoinPage = lazy(() => import('./live/join').then((m) => ({ default: m.JoinPage })));
+const LoginPage = lazy(() => import('./live/login').then((m) => ({ default: m.LoginPage })));
+const PlayPage = lazy(() => import('./live/play').then((m) => ({ default: m.PlayPage })));
+const ScreenPage = lazy(() => import('./live/screen').then((m) => ({ default: m.ScreenPage })));
+const SessionsPage = lazy(() =>
+  import('./live/sessions').then((m) => ({ default: m.SessionsPage })),
+);
+const ResultsListPage = lazy(() =>
+  import('./live/results').then((m) => ({ default: m.ResultsListPage })),
+);
+const ResultsDetailPage = lazy(() =>
+  import('./live/results').then((m) => ({ default: m.ResultsDetailPage })),
+);
+const AssetsPage = lazy(() => import('./routes/assets').then((m) => ({ default: m.AssetsPage })));
+const Home = lazy(() => import('./routes/home').then((m) => ({ default: m.Home })));
+const Presenter = lazy(() => import('./routes/presenter').then((m) => ({ default: m.Presenter })));
+const Preview = lazy(() => import('./routes/preview').then((m) => ({ default: m.Preview })));
+const Slide = lazy(() => import('./routes/slide').then((m) => ({ default: m.Slide })));
+const ThemeDetailPage = lazy(() =>
+  import('./routes/themes').then((m) => ({ default: m.ThemeDetailPage })),
+);
+const ThemesGalleryPage = lazy(() =>
+  import('./routes/themes').then((m) => ({ default: m.ThemesGalleryPage })),
+);
 
 export function App() {
   return (
@@ -34,49 +49,51 @@ export function App() {
           opens, moving along a toolbar shows the rest instantly. */}
       <AuthProvider>
         <TooltipProvider delay={200}>
-          <Routes>
-            {config.build.showSlideBrowser && (
-              <Route element={<HomeShell />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/themes" element={<ThemesGalleryPage />} />
-                <Route path="/themes/:themeId" element={<ThemeDetailPage />} />
-                <Route path="/assets" element={<AssetsPage />} />
-                <Route path="/sessions" element={<SessionsPage />} />
-                <Route path="/results" element={<ResultsListPage />} />
-                <Route path="/results/:sessionId" element={<ResultsDetailPage />} />
-              </Route>
-            )}
-            {!config.build.showSlideBrowser && (
-              <Route element={<LivePageFrame />}>
-                <Route path="/sessions" element={<SessionsPage />} />
-                <Route path="/results" element={<ResultsListPage />} />
-                <Route path="/results/:sessionId" element={<ResultsDetailPage />} />
-              </Route>
-            )}
-            <Route
-              path="/s/:slideId"
-              element={
-                <PrivateSlideGate>
-                  <Slide />
-                </PrivateSlideGate>
-              }
-            />
-            <Route
-              path="/s/:slideId/presenter"
-              element={
-                <PrivateSlideGate>
-                  <Presenter />
-                </PrivateSlideGate>
-              }
-            />
-            {import.meta.env.DEV && <Route path="/s/:slideId/preview" element={<Preview />} />}
-            <Route path="/s/:slideId/screen" element={<ScreenPage />} />
-            <Route path="/s/:slideId/play/:sessionId" element={<PlayPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/join" element={<JoinPage />} />
-            <Route path="/join/:code" element={<JoinPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<LoadingLine />}>
+            <Routes>
+              {config.build.showSlideBrowser && (
+                <Route element={<HomeShell />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/themes" element={<ThemesGalleryPage />} />
+                  <Route path="/themes/:themeId" element={<ThemeDetailPage />} />
+                  <Route path="/assets" element={<AssetsPage />} />
+                  <Route path="/sessions" element={<SessionsPage />} />
+                  <Route path="/results" element={<ResultsListPage />} />
+                  <Route path="/results/:sessionId" element={<ResultsDetailPage />} />
+                </Route>
+              )}
+              {!config.build.showSlideBrowser && (
+                <Route element={<LivePageFrame />}>
+                  <Route path="/sessions" element={<SessionsPage />} />
+                  <Route path="/results" element={<ResultsListPage />} />
+                  <Route path="/results/:sessionId" element={<ResultsDetailPage />} />
+                </Route>
+              )}
+              <Route
+                path="/s/:slideId"
+                element={
+                  <PrivateSlideGate>
+                    <Slide />
+                  </PrivateSlideGate>
+                }
+              />
+              <Route
+                path="/s/:slideId/presenter"
+                element={
+                  <PrivateSlideGate>
+                    <Presenter />
+                  </PrivateSlideGate>
+                }
+              />
+              {import.meta.env.DEV && <Route path="/s/:slideId/preview" element={<Preview />} />}
+              <Route path="/s/:slideId/screen" element={<ScreenPage />} />
+              <Route path="/s/:slideId/play/:sessionId" element={<PlayPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/join" element={<JoinPage />} />
+              <Route path="/join/:code" element={<JoinPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </TooltipProvider>
       </AuthProvider>
       <Toaster />

@@ -1193,3 +1193,105 @@ describe('applyEdit / set-attr-string', () => {
     expect(removed).toEqual({ ok: true, source: src });
   });
 });
+
+describe('set-question-field and set-attr-bool', () => {
+  const deck = `import { MultipleChoice } from '@open-slide/core';
+
+export const questions = {
+  capital: {
+    id: 'capital',
+    type: 'multiple_choice',
+    question: 'Capital?',
+    startLocked: true,
+    options: [{ id: 'a', label: 'A' }],
+  },
+  other: {
+    id: 'other',
+    type: 'word_cloud',
+    question: 'Word?'
+  },
+} satisfies Record<string, unknown>;
+
+export default [
+  () => <MultipleChoice question={questions.capital} />,
+  () => <MultipleChoice question={questions.other} sound />,
+];
+`;
+  const at = (needle: string) => {
+    const i = deck.indexOf(needle);
+    const before = deck.slice(0, i).split('\n');
+    return { line: before.length, column: before[before.length - 1].length };
+  };
+
+  it('replaces an existing field in the question object', () => {
+    const { line, column } = at('<MultipleChoice question={questions.capital}');
+    const r = applyEdit(deck, line, column, [
+      { kind: 'set-question-field', field: 'startLocked', value: false },
+    ]);
+    expect(r.ok && r.source).toContain('startLocked: false,');
+    expect(r.ok && r.source).not.toContain('startLocked: true');
+  });
+
+  it('adds a missing field after the last property, keeping the trailing comma', () => {
+    const { line, column } = at('<MultipleChoice question={questions.capital}');
+    const r = applyEdit(deck, line, column, [
+      { kind: 'set-question-field', field: 'showResults', value: true },
+    ]);
+    expect(r.ok && r.source).toMatch(
+      /options: \[\{ id: 'a', label: 'A' \}\],\n {4}showResults: true,\n {2}\},/,
+    );
+  });
+
+  it('adds a field when the last property has no trailing comma', () => {
+    const { line, column } = at('<MultipleChoice question={questions.other}');
+    const r = applyEdit(deck, line, column, [
+      { kind: 'set-question-field', field: 'scored', value: true },
+    ]);
+    expect(r.ok && r.source).toContain("question: 'Word?',\n    scored: true\n  },");
+  });
+
+  it('removes a field', () => {
+    const { line, column } = at('<MultipleChoice question={questions.capital}');
+    const r = applyEdit(deck, line, column, [
+      { kind: 'set-question-field', field: 'startLocked', value: null },
+    ]);
+    expect(r.ok && r.source).not.toContain('startLocked');
+    expect(r.ok && r.source).toContain("question: 'Capital?',\n    options");
+  });
+
+  it('writes strings and numbers', () => {
+    const { line, column } = at('<MultipleChoice question={questions.other}');
+    const s = applyEdit(deck, line, column, [
+      { kind: 'set-question-field', field: 'minLabel', value: "Don't know" },
+    ]);
+    expect(s.ok && s.source).toContain("minLabel: 'Don\\'t know'");
+    const n = applyEdit(deck, line, column, [
+      { kind: 'set-question-field', field: 'maxLength', value: 20 },
+    ]);
+    expect(n.ok && n.source).toContain('maxLength: 20');
+  });
+
+  it('refuses when the question object cannot be found', () => {
+    const src = `export default [() => <MultipleChoice question={make()} />];\n`;
+    const r = applyEdit(src, 1, src.indexOf('<MultipleChoice'), [
+      { kind: 'set-question-field', field: 'scored', value: true },
+    ]);
+    expect(r.ok).toBe(false);
+  });
+
+  it('sets, replaces and removes a boolean JSX attribute', () => {
+    const { line, column } = at('<MultipleChoice question={questions.other}');
+    const off = applyEdit(deck, line, column, [
+      { kind: 'set-attr-bool', attr: 'sound', value: false },
+    ]);
+    expect(off.ok && off.source).toContain('sound={false}');
+    const gone = applyEdit(deck, line, column, [
+      { kind: 'set-attr-bool', attr: 'sound', value: null },
+    ]);
+    expect(gone.ok && gone.source).not.toContain(' sound');
+    const added = applyEdit(deck, line, column, [
+      { kind: 'set-attr-bool', attr: 'autoStart', value: false },
+    ]);
+    expect(added.ok && added.source).toContain('autoStart={false}');
+  });
+});

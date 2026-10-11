@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
+import { fieldsAttr } from '../../lib/inspector/component-fields';
 import type { ClockSkin } from '../../lib/tools-store';
 import { ClockFace, useNow } from './faces';
 
@@ -11,6 +12,8 @@ export type ClockSlideProps = {
   timeZone?: string;
   /** Show today's date under the clock. */
   showDate?: boolean;
+  /** Show the second hand or the seconds. Default true. */
+  showSeconds?: boolean;
 } & Omit<HTMLAttributes<HTMLDivElement>, 'title'>;
 
 export function ClockSlide({
@@ -18,6 +21,7 @@ export function ClockSlide({
   title,
   timeZone,
   showDate,
+  showSeconds = true,
   style,
   ...rest
 }: ClockSlideProps) {
@@ -25,6 +29,7 @@ export function ClockSlide({
   return (
     <div
       {...rest}
+      {...fieldsAttr('clock', { skin, title, timeZone, showDate, showSeconds })}
       style={{
         width: '100%',
         height: '100%',
@@ -55,7 +60,13 @@ export function ClockSlide({
         </h1>
       )}
       <div style={{ flex: '1 1 0', minHeight: 0, width: '100%' }}>
-        <ClockFace skin={skin} now={now} timeZone={timeZone} showDate={showDate} />
+        <ClockFace
+          skin={skin}
+          now={now}
+          timeZone={timeZone}
+          showDate={showDate}
+          showSeconds={showSeconds}
+        />
       </div>
     </div>
   );

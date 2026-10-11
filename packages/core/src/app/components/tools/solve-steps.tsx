@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import temml from 'temml';
+import { fieldsAttr } from '../../lib/inspector/component-fields';
 import { splitAtEquals } from '../../lib/split-equation';
 import { Step, Steps } from '../../lib/step-context';
 
@@ -69,6 +70,7 @@ export function SolveSteps({ steps, title, size = 76, style, ...rest }: SolveSte
   return (
     <div
       {...rest}
+      {...fieldsAttr('solve_steps', { title, size })}
       style={{
         width: '100%',
         height: '100%',

@@ -4,7 +4,7 @@ import { AuthForm, LiveMessage, LoadingLine, useAuth } from './auth';
 import { liveConfigured } from './client';
 
 export function safeNext(next: string | null): string {
-  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
+  return next?.startsWith('/') && !next.startsWith('//') ? next : '/';
 }
 
 export function LoginPage() {

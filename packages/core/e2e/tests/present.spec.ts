@@ -93,6 +93,73 @@ test.describe('present mode', () => {
     await expect(dot).toHaveCount(0);
   });
 
+  test('drawing with the laser near the edge does not change slides', async ({ page }) => {
+    await openSlide(page, 'alpha');
+    await enterPlayMode(page);
+    await expect(page).not.toHaveURL(/[?&]p=[2-9]/);
+
+    await page.keyboard.press('l');
+    await expect(page.getByRole('toolbar', { name: 'Laser tools' })).toBeVisible();
+    const { width, height } = page.viewportSize() ?? { width: 1280, height: 720 };
+    await page.mouse.move(width - 60, height * 0.3);
+    await page.mouse.down();
+    await page.mouse.move(width - 40, height * 0.5, { steps: 6 });
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+    await expect(page).not.toHaveURL(/[?&]p=[2-9]/);
+
+    await page.keyboard.press('l');
+    await page.mouse.click(width - 60, height * 0.4);
+    await expect(page).toHaveURL(/[?&]p=2/);
+  });
+
+  test('laser toolbar draws and erases glowing rectangles', async ({ page }) => {
+    await openSlide(page, 'alpha');
+    await enterPlayMode(page);
+    await page.keyboard.press('l');
+
+    const toolbar = page.getByRole('toolbar', { name: 'Laser tools' });
+    await expect(toolbar).toBeVisible();
+    await toolbar
+      .getByRole('button', { name: 'Keep trails until laser mode is turned off' })
+      .click();
+    await expect(
+      toolbar.getByRole('button', { name: 'Keep trails until laser mode is turned off' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    await toolbar.getByRole('button', { name: 'Rectangle' }).click();
+    await page.mouse.move(220, 180);
+    await page.mouse.down();
+    await page.mouse.move(420, 320, { steps: 8 });
+    await page.mouse.up();
+
+    const canvas = page.locator('[data-laser-canvas]');
+    await expect
+      .poll(() =>
+        canvas.evaluate((element) => {
+          const canvasElement = element as HTMLCanvasElement;
+          const ctx = canvasElement.getContext('2d');
+          if (!ctx) return 0;
+          const dpr = window.devicePixelRatio || 1;
+          return ctx.getImageData(Math.round(320 * dpr), Math.round(180 * dpr), 1, 1).data[3];
+        }),
+      )
+      .toBeGreaterThan(0);
+
+    await toolbar.getByRole('button', { name: 'Eraser' }).click();
+    await page.mouse.click(320, 180);
+    await expect
+      .poll(() =>
+        canvas.evaluate((element) => {
+          const canvasElement = element as HTMLCanvasElement;
+          const ctx = canvasElement.getContext('2d');
+          if (!ctx) return 0;
+          const dpr = window.devicePixelRatio || 1;
+          return ctx.getImageData(Math.round(320 * dpr), Math.round(180 * dpr), 1, 1).data[3];
+        }),
+      )
+      .toBe(0);
+  });
+
   test('help overlay lists the keyboard shortcuts', async ({ page }) => {
     await openSlide(page, 'alpha');
     await enterPlayMode(page);

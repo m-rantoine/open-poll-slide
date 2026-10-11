@@ -99,7 +99,7 @@ export function ThumbnailRail({
   moduleTransition,
   onOverview,
 }: Props) {
-  const activeRef = useRef<HTMLButtonElement | null>(null);
+  const activeRef = useRef<HTMLDivElement | null>(null);
   const virtualListRef = useRef<HTMLDivElement | null>(null);
   const verticalViewportRef = useRef<HTMLElement | null>(null);
   const focusCurrentAfterScrollRef = useRef(false);
@@ -180,7 +180,7 @@ export function ThumbnailRail({
   });
 
   const onThumbnailArrowKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    (event: React.KeyboardEvent<HTMLDivElement>, index: number) => {
       if (event.altKey || event.ctrlKey || event.metaKey || event.nativeEvent.isComposing) return;
       const direction =
         event.key === 'ArrowRight' || event.key === 'ArrowDown'
@@ -228,8 +228,7 @@ export function ThumbnailRail({
           {inner}
         </SortableThumb>
       ) : (
-        <button
-          type="button"
+        <ThumbButton
           ref={active ? activeRef : undefined}
           onClick={() => onSelect(i)}
           onKeyDown={(event) => onThumbnailArrowKeyDown(event, i)}
@@ -238,7 +237,7 @@ export function ThumbnailRail({
           className={thumbButtonClass(active)}
         >
           {inner}
-        </button>
+        </ThumbButton>
       );
 
       if (!actions) {
@@ -426,6 +425,29 @@ function CurrentThumbnailButton({
   );
 }
 
+// A slide preview can hold buttons of its own, so the thumbnail cannot be a <button>.
+function ThumbButton({
+  onKeyDown,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) {
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: a slide preview holds buttons, which cannot nest in a <button>
+    <div
+      role="button"
+      tabIndex={0}
+      {...props}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        if (event.defaultPrevented || event.target !== event.currentTarget) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          event.currentTarget.click();
+        }
+      }}
+    />
+  );
+}
+
 function thumbButtonClass(active: boolean): string {
   return cn(
     'group/thumb flex w-full items-start gap-2.5 rounded-[6px] p-1.5 text-left outline-none motion-safe:transition-[background-color,scale] motion-safe:duration-100',
@@ -450,9 +472,9 @@ function HorizontalVirtualThumbList({
   design?: DesignSystem;
   current: number;
   actions?: ThumbnailActions;
-  activeRef: React.MutableRefObject<HTMLButtonElement | null>;
+  activeRef: React.MutableRefObject<HTMLDivElement | null>;
   onSelect: (index: number) => void;
-  onArrowKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => void;
+  onArrowKeyDown: (event: React.KeyboardEvent<HTMLDivElement>, index: number) => void;
   scale: number;
   thumbWidth: number;
 }) {
@@ -527,8 +549,7 @@ function HorizontalVirtualThumbList({
     const PageComp = pages[i];
     const active = i === current;
     const button = (
-      <button
-        type="button"
+      <ThumbButton
         ref={active ? activeRef : undefined}
         onClick={() => onSelect(i)}
         onKeyDown={(event) => onArrowKeyDown(event, i)}
@@ -562,7 +583,7 @@ function HorizontalVirtualThumbList({
             </SlidePageProvider>
           </SlideCanvas>
         </div>
-      </button>
+      </ThumbButton>
     );
 
     visible.push(
@@ -614,7 +635,7 @@ function VirtualThumbList({
   pages: Page[];
   current: number;
   rowHeight: number;
-  activeRef: React.MutableRefObject<HTMLButtonElement | null>;
+  activeRef: React.MutableRefObject<HTMLDivElement | null>;
   onScrollElementsChange: (viewport: HTMLElement | null, root: HTMLDivElement | null) => void;
   onScrollInteraction: () => void;
   onCurrentPositionChange: (position: ThumbnailOffscreenDirection) => void;
@@ -962,13 +983,13 @@ function SortableThumb({
 }: {
   index: number;
   active: boolean;
-  activeRef: React.MutableRefObject<HTMLButtonElement | null> | undefined;
+  activeRef: React.MutableRefObject<HTMLDivElement | null> | undefined;
   onSelect: () => void;
-  onArrowKeyDown: React.KeyboardEventHandler<HTMLButtonElement>;
+  onArrowKeyDown: React.KeyboardEventHandler<HTMLDivElement>;
   ariaLabel: string;
   children: React.ReactNode;
 } & Omit<
-  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  React.HTMLAttributes<HTMLDivElement>,
   'onClick' | 'aria-label' | 'aria-current' | 'type' | 'style' | 'className' | 'ref' | 'children'
 >) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -976,7 +997,7 @@ function SortableThumb({
     transition: { duration: 180, easing: 'var(--ease-swift)' },
   });
 
-  const setRef = (node: HTMLButtonElement | null) => {
+  const setRef = (node: HTMLDivElement | null) => {
     setNodeRef(node);
     if (activeRef) activeRef.current = node;
   };
@@ -984,10 +1005,9 @@ function SortableThumb({
   const yOnlyTransform = transform ? { ...transform, x: 0 } : transform;
 
   return (
-    <button
+    <ThumbButton
       {...rest}
       ref={setRef}
-      type="button"
       onClick={onSelect}
       onKeyDownCapture={isDragging ? undefined : onArrowKeyDown}
       aria-label={ariaLabel}
@@ -1005,6 +1025,6 @@ function SortableThumb({
       {...listeners}
     >
       {children}
-    </button>
+    </ThumbButton>
   );
 }

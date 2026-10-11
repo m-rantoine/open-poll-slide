@@ -197,6 +197,16 @@ export type Locale = {
     /** template: "Go to slide {n}" */
     overviewGoToAria: string;
     nowBadge: string;
+    laserToolbar: string;
+    laserColor: string;
+    laserCustomColor: string;
+    laserFreehand: string;
+    laserLine: string;
+    laserRectangle: string;
+    laserEraser: string;
+    laserClear: string;
+    laserPersist: string;
+    laserWidth: string;
   };
 
   inspector: {
@@ -260,6 +270,32 @@ export type Locale = {
     quizSection: string;
     pollLanguage: string;
     quizColumns: string;
+    fields: {
+      questionSettings: string;
+      settings: string;
+      startLocked: string;
+      showResults: string;
+      scored: string;
+      maxLength: string;
+      min: string;
+      max: string;
+      minLabel: string;
+      maxLabel: string;
+      total: string;
+      tolerance: string;
+      unit: string;
+      duration: string;
+      skin: string;
+      title: string;
+      subtitle: string;
+      autoStart: string;
+      sound: string;
+      timeZone: string;
+      showDate: string;
+      showSeconds: string;
+      size: string;
+      skins: Record<string, string>;
+    };
     imagePlaceholderSection: string;
     elementTextPlaceholder: string;
     sizeLabel: string;
@@ -593,6 +629,9 @@ export type Locale = {
     soundOff: string;
     shortcutClock: string;
     shortcutTimer: string;
+    dragHandle: string;
+    fullscreen: string;
+    exitFullscreen: string;
   };
 
   live: {

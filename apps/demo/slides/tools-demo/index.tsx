@@ -62,7 +62,9 @@ export default [
   () => <CountdownTimer title="Activity time" duration="1:30" skin="bar" />,
   () => <CountdownTimer title="Back at the top of the hour" duration="2:00" skin="flip" />,
   () => <ClockSlide title="It is now" skin="analog" showDate />,
+  () => <ClockSlide skin="analog" title="No seconds" showSeconds={false} />,
   () => <ClockSlide skin="digital" showDate />,
+  () => <ClockSlide skin="digital" showSeconds={false} />,
   () => <ClockSlide skin="flip" />,
   () => <ClockSlide skin="minimal" showDate />,
 ] satisfies Page[];

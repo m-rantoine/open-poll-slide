@@ -1,4 +1,5 @@
 import { type HTMLAttributes, type ReactNode, useState } from 'react';
+import { fieldsAttr } from '../lib/inspector/component-fields';
 import { LanguageScope, type PollLanguage } from '../lib/locale-store';
 import type { InteractiveQuestion } from '../lib/sdk';
 import { useIsActivePage } from '../lib/step-context';
@@ -151,7 +152,7 @@ function FrameInner({
           justifyContent: 'center',
           gap: '4cqh',
           zIndex: 5,
-          background: 'color-mix(in srgb, var(--osd-bg, #fff) 92%, transparent)',
+          background: 'var(--osd-bg, #fff)',
         }}
       >
         <Padlock
@@ -270,7 +271,11 @@ function FrameInner({
 export function QuestionFrame({ language, ...props }: QuestionFrameProps) {
   return (
     <LanguageScope language={language}>
-      <FrameInner {...props} data-poll-language={language ?? 'en'} />
+      <FrameInner
+        {...props}
+        {...fieldsAttr(props.question.type, props.question)}
+        data-poll-language={language ?? 'en'}
+      />
     </LanguageScope>
   );
 }

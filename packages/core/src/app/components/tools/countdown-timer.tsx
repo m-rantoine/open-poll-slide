@@ -1,6 +1,7 @@
 import { type HTMLAttributes, type ReactNode, useEffect, useRef, useState } from 'react';
 import { playChime } from '../../lib/chime';
 import { parseDuration } from '../../lib/duration';
+import { fieldsAttr } from '../../lib/inspector/component-fields';
 import { useIsActivePage } from '../../lib/step-context';
 import type { TimerSkin } from '../../lib/tools-store';
 import { useLocale } from '../../lib/use-locale';
@@ -51,7 +52,9 @@ export function CountdownTimer({
     }
   }, [active, autoStart, total]);
 
-  const remaining = endsAt !== null ? Math.max(0, endsAt - now) : (pausedMs ?? total);
+  // The tick state can lag the moment the timer started, which would show one second too many.
+  const remaining =
+    endsAt !== null ? Math.max(0, endsAt - Math.max(now, Date.now())) : (pausedMs ?? total);
   const running = endsAt !== null && remaining > 0;
 
   useEffect(() => {
@@ -78,6 +81,7 @@ export function CountdownTimer({
   return (
     <div
       {...rest}
+      {...fieldsAttr('countdown_timer', { duration, skin, title, subtitle, autoStart, sound })}
       style={{
         width: '100%',
         height: '100%',
