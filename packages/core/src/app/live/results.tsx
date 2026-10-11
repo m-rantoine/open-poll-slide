@@ -23,6 +23,7 @@ import {
 } from './derive';
 import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
+import { PacingToggle } from './pacing-toggle';
 import { PauseSessionButton } from './pause-session';
 import { WordList, ZoneSummary } from './presenter-panels';
 import { QuestionResultsBox } from './question-results';
@@ -221,6 +222,7 @@ function ResultsDetail() {
             {t.live.openScreen}
           </Button>
         )}
+        <PacingToggle data={data} />
         <PauseSessionButton data={data} />
         {session.status !== 'ended' && <EndSessionButton data={data} />}
       </header>

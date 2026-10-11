@@ -799,6 +799,10 @@ export type Locale = {
     inactiveTime: string;
     startHostPaced: string;
     startSelfPaced: string;
+    switchToSelfPaced: string;
+    switchToHostPaced: string;
+    switchedToSelfPaced: string;
+    switchedToHostPaced: string;
     signInToStart: string;
     couldNotStart: string;
     errors: {

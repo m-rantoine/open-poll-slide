@@ -12,6 +12,7 @@ import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
 import { LiveProvider } from './live-context';
 import { joinUrl } from './lobby';
+import { PacingToggle } from './pacing-toggle';
 import { PauseSessionButton } from './pause-session';
 import { siteFilter } from './site-sessions';
 import { clampIndex } from './stage';
@@ -135,6 +136,7 @@ function Screen() {
       <div className="pointer-events-none absolute inset-x-4 top-4 z-50 flex items-start justify-between gap-2">
         <div className="pointer-events-auto flex gap-2 opacity-0 transition-opacity group-hover/screen:opacity-100 [@media(hover:none)]:opacity-100">
           {session.status !== 'paused' && <PauseSessionButton data={data} />}
+          <PacingToggle data={data} />
           <EndSessionButton data={data} onEnded={() => navigate(`/results/${session.id}`)} />
         </div>
         {session.status !== 'ended' && (

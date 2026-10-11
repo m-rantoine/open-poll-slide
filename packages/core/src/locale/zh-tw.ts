@@ -762,6 +762,10 @@ export const zhTW: Locale = {
     inactiveTime: '不活躍時長',
     startHostPaced: '開始主持人控制工作階段',
     startSelfPaced: '開始自主節奏工作階段',
+    switchToSelfPaced: '切換為自主節奏',
+    switchToHostPaced: '切換為主持人節奏',
+    switchedToSelfPaced: '參與者現在可以依自己的節奏進行。',
+    switchedToHostPaced: '由您重新主導，參與者將跟隨您的投影片。',
     signInToStart: '登入後展示投票',
     couldNotStart: '無法開始工作階段',
     errors: {
