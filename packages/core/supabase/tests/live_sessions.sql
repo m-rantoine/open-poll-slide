@@ -23,6 +23,10 @@ declare
   sess3 public.sessions;
   sess4 public.sessions;
   sess5 public.sessions;
+  site_a public.sessions;
+  site_b public.sessions;
+  site_old public.sessions;
+  jr public.sessions;
   qs5 jsonb := '{
     "rate": {"id":"rate","type":"scale","question":"Rate","min":1,"max":5,"items":[{"id":"s1","label":"A"},{"id":"s2","label":"B"}],"startLocked":false},
     "rank": {"id":"rank","type":"ranking","question":"Order","items":[{"id":"a","label":"A"},{"id":"b","label":"B"},{"id":"c","label":"C"}],"correct":["b","a","c"],"startLocked":false},
@@ -625,6 +629,39 @@ begin
   if ans.is_correct is not null then raise exception 'FAIL open text graded'; end if;
   execute 'reset role';
   r := r || 'PASS number answers (tolerance, comma decimals) and open text' || E'\n';
+
+  -- Site labels: sites that share a database see only their own sessions.
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select * into site_a from public.create_site_session('sql-test-site-a', 'A', 'host', 1, '{}'::jsonb, ' Bio-11 ');
+  select * into site_b from public.create_site_session('sql-test-site-b', 'B', 'host', 1, '{}'::jsonb, 'chem-12');
+  select * into site_old from public.create_session('sql-test-site-old', 'Old', 'host', 1, '{}'::jsonb);
+  begin perform public.create_site_session('x', 'X', 'host', 1, '{}'::jsonb, 'Bad Label!'); raise exception 'FAIL invalid site label accepted';
+  exception when invalid_parameter_value then null; end;
+  if site_a.site is distinct from 'bio-11' or site_b.site is distinct from 'chem-12' or site_old.site is not null then
+    raise exception 'FAIL labels should be trimmed and lower-cased and unlabeled sessions stay null, got %/%/%', site_a.site, site_b.site, site_old.site;
+  end if;
+  select count(*) into n from public.list_active_sessions('bio-11') where deck_id like 'sql-test-site-%';
+  if n <> 2 then raise exception 'FAIL bio-11 should list its own and the unlabeled session, got %', n; end if;
+  select count(*) into n from public.list_active_sessions('bio-11') where code = site_b.code;
+  if n <> 0 then raise exception 'FAIL bio-11 listed a chem-12 session'; end if;
+  select count(*) into n from public.list_active_sessions() where deck_id like 'sql-test-site-%';
+  if n <> 1 then raise exception 'FAIL a site without a label should list only unlabeled sessions, got %', n; end if;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  begin perform public.join_site_session(site_b.code, 'bio-11'); raise exception 'FAIL joined another site session';
+  exception when no_data_found then null; end;
+  begin perform public.join_site_session(site_b.code, null); raise exception 'FAIL unlabeled site joined a labeled session';
+  exception when no_data_found then null; end;
+  select * into jr from public.join_site_session(site_a.code, 'BIO-11');
+  if jr.id <> site_a.id then raise exception 'FAIL could not join own site session'; end if;
+  select * into jr from public.join_site_session(site_old.code, 'bio-11');
+  if jr.id <> site_old.id then raise exception 'FAIL labeled site could not join an unlabeled session'; end if;
+  select count(*) into n from public.list_my_sessions('chem-12') where deck_id like 'sql-test-site-%';
+  if n <> 1 then raise exception 'FAIL chem-12 should only see the unlabeled session it joined, got %', n; end if;
+  execute 'reset role';
+  r := r || 'PASS site labels: creating, listing and joining stay within a site' || E'\n';
 
   if public.hook_restrict_signup_domain('{"user":{"email":"sql-test-host@example.test"}}') <> '{}'::jsonb then
     raise exception 'FAIL hook rejected a host';

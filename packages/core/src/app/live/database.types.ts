@@ -345,6 +345,7 @@ export type Database = {
           page_count: number;
           paused_at: string | null;
           questions: Json;
+          site: string | null;
           status: Database['public']['Enums']['session_status'];
         };
         Insert: {
@@ -361,6 +362,7 @@ export type Database = {
           page_count?: number;
           paused_at?: string | null;
           questions?: Json;
+          site?: string | null;
           status?: Database['public']['Enums']['session_status'];
         };
         Update: {
@@ -377,6 +379,7 @@ export type Database = {
           page_count?: number;
           paused_at?: string | null;
           questions?: Json;
+          site?: string | null;
           status?: Database['public']['Enums']['session_status'];
         };
         Relationships: [];
@@ -407,6 +410,39 @@ export type Database = {
           mode: Database['public']['Enums']['session_mode'];
           page_count: number;
           questions: Json;
+          site: string | null;
+          status: Database['public']['Enums']['session_status'];
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'sessions';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      create_site_session: {
+        Args: {
+          p_deck_id: string;
+          p_deck_title: string;
+          p_mode: Database['public']['Enums']['session_mode'];
+          p_page_count: number;
+          p_questions: Json;
+          p_site: string;
+        };
+        Returns: {
+          code: string;
+          created_at: string;
+          current_index: number;
+          current_step: number;
+          deck_id: string;
+          deck_title: string | null;
+          ended_at: string | null;
+          host_id: string;
+          id: string;
+          mode: Database['public']['Enums']['session_mode'];
+          page_count: number;
+          questions: Json;
+          site: string | null;
           status: Database['public']['Enums']['session_status'];
         };
         SetofOptions: {
@@ -470,8 +506,32 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      join_site_session: {
+        Args: { p_code: string; p_site: string | null };
+        Returns: {
+          code: string;
+          created_at: string;
+          current_index: number;
+          current_step: number;
+          deck_id: string;
+          deck_title: string | null;
+          ended_at: string | null;
+          host_id: string;
+          id: string;
+          mode: Database['public']['Enums']['session_mode'];
+          page_count: number;
+          questions: Json;
+          status: Database['public']['Enums']['session_status'];
+        };
+        SetofOptions: {
+          from: '*';
+          to: 'sessions';
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       list_active_sessions: {
-        Args: never;
+        Args: { p_site?: string };
         Returns: {
           code: string;
           created_at: string;
@@ -479,11 +539,12 @@ export type Database = {
           deck_title: string;
           id: string;
           mode: Database['public']['Enums']['session_mode'];
+          site: string | null;
           status: Database['public']['Enums']['session_status'];
         }[];
       };
       list_my_sessions: {
-        Args: never;
+        Args: { p_site?: string };
         Returns: {
           code: string;
           created_at: string;
@@ -491,6 +552,7 @@ export type Database = {
           deck_title: string;
           id: string;
           mode: Database['public']['Enums']['session_mode'];
+          site: string | null;
           status: Database['public']['Enums']['session_status'];
         }[];
       };

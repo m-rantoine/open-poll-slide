@@ -7,9 +7,10 @@ import { format, plural, useLocale } from '@/lib/use-locale';
 import { cn } from '@/lib/utils';
 import type { Locale } from '../../locale/types';
 import { type InteractiveQuestion, isMultipleChoice, isSorting, isWordCloud } from '../lib/sdk';
+import { slideIds } from '../lib/slides';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireHost } from './auth';
-import { getClient } from './client';
+import { getClient, siteLabel } from './client';
 import {
   answeredCount,
   classAverage,
@@ -25,6 +26,7 @@ import { liveErrorMessage } from './errors';
 import { PauseSessionButton } from './pause-session';
 import { WordList, ZoneSummary } from './presenter-panels';
 import { QuestionResultsBox } from './question-results';
+import { onThisSite, siteFilter } from './site-sessions';
 import { SlideThumb } from './slide-thumb';
 import type { AnswerRow, SessionRow } from './types';
 import { useLiveSession } from './use-live-session';
@@ -56,12 +58,17 @@ function ResultsList() {
     let cancelled = false;
     (async () => {
       const [list, sums] = await Promise.all([
-        supabase.from('sessions').select('*').order('created_at', { ascending: false }).limit(100),
+        supabase
+          .from('sessions')
+          .select('*')
+          .or(siteFilter(siteLabel))
+          .order('created_at', { ascending: false })
+          .limit(100),
         supabase.rpc('session_summaries', { p_limit: 100 }),
       ]);
       if (cancelled) return;
       if (list.error) toast.error(liveErrorMessage(t, list.error));
-      setSessions(list.data ?? []);
+      setSessions(onThisSite(list.data ?? [], slideIds, siteLabel));
       setSummaries(
         Object.fromEntries(
           (sums.data ?? []).map((r) => [

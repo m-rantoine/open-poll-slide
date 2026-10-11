@@ -1,5 +1,6 @@
 import config from 'virtual:open-slide/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { normalizeSiteLabel } from '../../live-site';
 import type { Database } from './database.types';
 
 export type Client = SupabaseClient<Database>;
@@ -18,3 +19,6 @@ export function getClient(): Client {
 }
 
 export const allowedEmailDomains = config.live?.allowedEmailDomains ?? [];
+
+/** Set when several sites share one database; null otherwise. */
+export const siteLabel = normalizeSiteLabel(config.live?.siteLabel);

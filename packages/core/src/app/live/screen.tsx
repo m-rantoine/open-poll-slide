@@ -7,12 +7,13 @@ import { Player } from '../components/player';
 import type { StepAggregate } from '../lib/step-context';
 import { useSlideModule } from '../lib/use-slide-module';
 import { LiveMessage, LoadingLine, RequireHost } from './auth';
-import { getClient } from './client';
+import { getClient, siteLabel } from './client';
 import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
 import { LiveProvider } from './live-context';
 import { joinUrl } from './lobby';
 import { PauseSessionButton } from './pause-session';
+import { siteFilter } from './site-sessions';
 import { clampIndex } from './stage';
 import { useLiveSession } from './use-live-session';
 
@@ -33,6 +34,7 @@ export function useResolvedSessionId(slideId: string): string | null | undefined
       .eq('deck_id', slideId)
       .in('status', ['active', 'paused'])
       .eq('mode', 'host')
+      .or(siteFilter(siteLabel))
       .order('created_at', { ascending: false })
       .limit(1)
       .then(({ data }) => {

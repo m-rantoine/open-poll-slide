@@ -12,6 +12,12 @@ export type OpenSlideLiveConfig = {
   supabaseKey: string;
   /** Shown on the sign-up form; enforcement lives in the database hook. */
   allowedEmailDomains?: string[];
+  /**
+   * Tells sites that share one database apart, for example one per course. Sessions started here
+   * carry it, and this site lists and joins only its own. Letters, digits, dots, dashes and
+   * underscores, up to 40 characters. Can also be set with `OPEN_SLIDE_SITE_LABEL`.
+   */
+  siteLabel?: string;
 };
 
 export type OpenSlideConfig = {

@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useDocumentTitle } from '@/lib/use-document-title';
 import { format, useLocale } from '@/lib/use-locale';
+import { slideIds } from '../lib/slides';
 import { LiveMessage, LiveShell, RequireAuth, useAuth } from './auth';
-import { getClient } from './client';
+import { getClient, siteLabel } from './client';
 import { liveErrorMessage } from './errors';
+import { onThisSite } from './site-sessions';
 
 type MySession = {
   id: string;
@@ -14,6 +16,7 @@ type MySession = {
   deck_id: string;
   deck_title: string | null;
   status: 'active' | 'paused' | 'ended';
+  site: string | null;
 };
 
 export function JoinPage() {
@@ -40,9 +43,9 @@ function JoinForm() {
   useEffect(() => {
     let cancelled = false;
     void getClient()
-      .rpc('list_my_sessions')
+      .rpc('list_my_sessions', { p_site: siteLabel ?? undefined })
       .then(({ data }) => {
-        if (!cancelled) setMine(data ?? []);
+        if (!cancelled) setMine(onThisSite(data ?? [], slideIds, siteLabel));
       });
     return () => {
       cancelled = true;
@@ -52,7 +55,10 @@ function JoinForm() {
   const join = async (value: string) => {
     setBusy(true);
     setError(null);
-    const { data, error: err } = await getClient().rpc('join_session', { p_code: value });
+    const { data, error: err } = await getClient().rpc('join_site_session', {
+      p_code: value,
+      p_site: siteLabel,
+    });
     setBusy(false);
     if (err || !data) {
       setError(liveErrorMessage(t, err ?? 'session_not_found'));
