@@ -1,6 +1,6 @@
 {
   "name": "@rantoine/open-poll-slide-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Scaffold an open-poll-slide workspace (a fork of open-slide with live polling sessions) with agent skills preconfigured.",
   "type": "module",
   "bin": {
