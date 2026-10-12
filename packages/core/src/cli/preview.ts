@@ -16,6 +16,8 @@ export interface PreviewOptions {
 }
 
 export async function preview(opts: PreviewOptions = {}): Promise<void> {
+  const { syncAnswerKeys } = await import('./live-init.ts');
+  await syncAnswerKeys();
   const base = await createViteConfig({ userCwd: process.cwd() });
   const config = mergeConfig(base, {
     customLogger: createCliLogger(),

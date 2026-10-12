@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import fg from 'fast-glob';
+import { loadEnv } from 'vite';
 import { findAnswerKeys } from '../vite/answer-keys-plugin.ts';
 import { loadUserConfig } from '../vite/open-slide-plugin.ts';
 import { glyph } from './ui.ts';
@@ -166,6 +167,56 @@ on conflict (deck_id, question_id) do update
   );
   const decks = new Set(keys.map((k) => k.deck));
   say(`Uploaded ${keys.length} answer key(s) from ${decks.size} deck(s)`);
+}
+
+/** The project ref in a hosted Supabase URL such as https://abcd1234.supabase.co, or null. */
+export function projectRefFromUrl(url: string): string | null {
+  return /^https:\/\/([a-z0-9]+)\.supabase\.co\/?$/.exec(url.trim())?.[1] ?? null;
+}
+
+/**
+ * Keeps the database's answer keys in step with the slides. Runs after `build` and before
+ * `preview`, so nothing goes live without its keys. It never fails the build: when it cannot
+ * upload (no Supabase CLI, as on a hosting provider's build machine, or a different project
+ * linked) it says so and how to do it by hand. Set OPEN_SLIDE_SKIP_KEY_UPLOAD=1 to skip it.
+ */
+export async function syncAnswerKeys(): Promise<void> {
+  try {
+    if (process.env.OPEN_SLIDE_SKIP_KEY_UPLOAD) return;
+    const cwd = process.cwd();
+    const config = await loadUserConfig(cwd);
+    const env = { ...loadEnv('production', cwd, ''), ...process.env };
+    const url = config.live?.supabaseUrl ?? env.SUPABASE_URL;
+    if (!url) return;
+    const keys = await collectAnswerKeys();
+    if (keys.length === 0) return;
+
+    const ref = projectRefFromUrl(url);
+    const byHand = `open-slide live keys${ref ? ` --project-ref ${ref}` : ''}`;
+    if (!ref) {
+      warn(
+        `Answer keys were not uploaded: ${url} is not a hosted Supabase URL. Run \`${byHand}\`.`,
+      );
+      return;
+    }
+    if (spawnSync('supabase', ['--version'], { stdio: 'ignore' }).error) {
+      warn(
+        `Answer keys were not uploaded: the Supabase CLI is not available here. Run \`${byHand}\` where it is, or the questions will not be graded.`,
+      );
+      return;
+    }
+    const linked = linkedRef();
+    if (linked !== ref) {
+      warn(
+        `Answer keys were not uploaded: the Supabase project linked here is ${linked ?? 'none'}, not ${ref}. Run \`${byHand}\`.`,
+      );
+      return;
+    }
+    await uploadAnswerKeys();
+  } catch (e) {
+    const reason = e instanceof Error ? e.message.split('\n')[0] : String(e);
+    warn(`Answer keys were not uploaded: ${reason}. Run \`open-slide live keys\`.`);
+  }
 }
 
 export async function liveKeys(flags: LiveKeysFlags): Promise<void> {

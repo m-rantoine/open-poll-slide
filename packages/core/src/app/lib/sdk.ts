@@ -25,6 +25,8 @@ type QuestionBase = {
   startLocked?: boolean;
   /** Reveal correctness to participants once the answer period ends. Default false. */
   showResults?: boolean;
+  /** Set by the build where an answer key was removed from the bundle. Do not set it yourself. */
+  hasKey?: boolean;
 };
 
 export type MultipleChoiceQuestion = QuestionBase & {

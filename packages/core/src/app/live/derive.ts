@@ -320,3 +320,20 @@ export function formatClock(ms: number): string {
 export function pct(value: number | null): string {
   return value === null ? '—' : `${Math.round(value * 100)}%`;
 }
+
+/**
+ * Questions that have an answer key in the slide (it is removed from the bundle, leaving `hasKey`)
+ * but none stored for the session, so their answers will not be graded.
+ */
+export function questionsMissingKeys(
+  questions: Record<string, unknown> | null | undefined,
+  keys: Record<string, string[]>,
+): string[] {
+  return Object.entries(questions ?? {})
+    .filter(([id, q]) => {
+      const question = q as { hasKey?: unknown; correct?: unknown } | null;
+      const expectsKey = question?.hasKey === true || question?.correct != null;
+      return expectsKey && (keys[id]?.length ?? 0) === 0;
+    })
+    .map(([id]) => id);
+}

@@ -803,6 +803,8 @@ export type Locale = {
     switchToHostPaced: string;
     switchedToSelfPaced: string;
     switchedToHostPaced: string;
+    missingKeysTitle: string;
+    missingKeysBody: Plural;
     signInToStart: string;
     couldNotStart: string;
     errors: {

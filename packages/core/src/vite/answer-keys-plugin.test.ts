@@ -98,3 +98,55 @@ describe('answerKeysPlugin', () => {
     expect(run('/repo/src/app.tsx')).toBeNull();
   });
 });
+
+describe('hasKey marker', () => {
+  const mc = `const q = {
+  id: 'capital',
+  question: 'Capital?',
+  options: [{ id: 'ottawa', label: 'Ottawa' }],
+  correct: ['ottawa'],
+  startLocked: true,
+};
+`;
+
+  it('leaves a marker where the key was, without the answer', () => {
+    const out = stripAnswerKeys(mc) ?? '';
+    expect(out).toContain('hasKey:!0');
+    expect(out).not.toMatch(/correct/);
+    expect(out.replace(/\s+/g, '')).not.toContain("['ottawa']");
+  });
+
+  it('keeps the file length and every line break in place', () => {
+    const out = stripAnswerKeys(mc) ?? '';
+    expect(out.length).toBe(mc.length);
+    expect(out.split('\n').length).toBe(mc.split('\n').length);
+  });
+
+  it('keeps the marker valid when the key is last, has no comma, or spans lines', () => {
+    const last = `const q = { id: 'a', question: 'Q', options: [], correct: ['a'] };`;
+    expect(stripAnswerKeys(last)).toContain('hasKey:!0');
+    const multi = `const q = {
+  id: 'sort',
+  type: 'drag_drop',
+  question: 'Sort',
+  zones: [],
+  items: [],
+  correct: {
+    a: 'z1',
+    b: 'z2',
+  },
+};
+`;
+    const out = stripAnswerKeys(multi) ?? '';
+    expect(out).toContain('hasKey:!0');
+    expect(out.length).toBe(multi.length);
+    expect(out.split('\n').length).toBe(multi.split('\n').length);
+    expect(out).not.toContain('z1');
+  });
+
+  it('parses as JavaScript after the key is replaced', () => {
+    const out = stripAnswerKeys(mc) ?? '';
+    expect(() => new Function(`${out}; return q;`)()).not.toThrow();
+    expect(new Function(`${out}; return q;`)().hasKey).toBe(true);
+  });
+});

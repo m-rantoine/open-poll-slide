@@ -23,6 +23,7 @@ import {
 } from './derive';
 import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
+import { MissingKeysNotice } from './missing-keys-notice';
 import { PacingToggle } from './pacing-toggle';
 import { PauseSessionButton } from './pause-session';
 import { WordList, ZoneSummary } from './presenter-panels';
@@ -226,6 +227,7 @@ function ResultsDetail() {
         <PauseSessionButton data={data} />
         {session.status !== 'ended' && <EndSessionButton data={data} />}
       </header>
+      <MissingKeysNotice data={data} className="mb-5" />
 
       <nav className="mb-5 flex gap-1 border-b border-hairline">
         {(['summary', 'question', 'student'] as const).map((key) => (

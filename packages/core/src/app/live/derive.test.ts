@@ -13,6 +13,7 @@ import {
   pct,
   placementScores,
   pointsStats,
+  questionsMissingKeys,
   rankStats,
   scaleStats,
   studentResults,
@@ -279,5 +280,28 @@ describe('formatting', () => {
     expect(formatDuration(9)).toBe('9s');
     expect(pct(0.756)).toBe('76%');
     expect(pct(null)).toBe('—');
+  });
+});
+
+describe('questionsMissingKeys', () => {
+  const questions = {
+    mc: { id: 'mc', hasKey: true },
+    cloud: { id: 'cloud' },
+    num: { id: 'num', hasKey: true },
+    sort: { id: 'sort', correct: { a: 'z1' } },
+  };
+
+  it('lists questions that expect a key but have none stored', () => {
+    expect(questionsMissingKeys(questions, { mc: ['ottawa'] })).toEqual(['num', 'sort']);
+  });
+
+  it('is empty when every keyed question has its key, or the deck has no keys', () => {
+    expect(questionsMissingKeys(questions, { mc: ['a'], num: ['13'], sort: ['a>z1'] })).toEqual([]);
+    expect(questionsMissingKeys({ a: { id: 'a' } }, {})).toEqual([]);
+    expect(questionsMissingKeys(null, {})).toEqual([]);
+  });
+
+  it('treats an empty stored key as missing', () => {
+    expect(questionsMissingKeys({ mc: { hasKey: true } }, { mc: [] })).toEqual(['mc']);
   });
 });
