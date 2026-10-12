@@ -45,6 +45,14 @@ function Play() {
     restored.current = true;
     setLocalIndex(data.selfIndex);
   }, [data.selfIndex]);
+  // When the host hands over the pace, everyone starts from the slide the host was on.
+  const previousMode = useRef(session?.mode);
+  const hostIndex = session?.current_index ?? 0;
+  useEffect(() => {
+    const mode = session?.mode;
+    if (previousMode.current === 'host' && mode === 'self') setLocalIndex(hostIndex);
+    previousMode.current = mode;
+  }, [session?.mode, hostIndex]);
   const navRef = useRef<{ next: () => void; prev: () => void } | null>(null);
   const portrait = usePortrait();
   const { ids, Provider } = useQuestionRegistry();

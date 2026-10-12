@@ -16,6 +16,7 @@ import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
 import { LiveProvider, useQuestionRegistry } from './live-context';
 import { useLockHotkey } from './lock-hotkey';
+import { PacingToggle } from './pacing-toggle';
 import { PauseSessionButton } from './pause-session';
 import { QuestionPanel, ResultsPanel, StudentsPanel } from './presenter-panels';
 import { useHostNavigation } from './stage';
@@ -99,6 +100,7 @@ function Inner({ sessionId }: { sessionId: string }) {
           <Button variant="outline" onClick={() => navigate(`/results/${session.id}`)}>
             {t.live.results}
           </Button>
+          <PacingToggle data={data} />
           <PauseSessionButton data={data} />
           <EndSessionButton data={data} />
         </div>

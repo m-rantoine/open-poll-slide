@@ -785,6 +785,10 @@ export const frCA: Locale = {
     inactiveTime: 'Temps inactif',
     startHostPaced: 'Lancer une session au rythme de l’animateur',
     startSelfPaced: 'Lancer une session à rythme libre',
+    switchToSelfPaced: 'Passer au rythme libre',
+    switchToHostPaced: 'Passer au rythme de l’animateur',
+    switchedToSelfPaced: 'Les participants avancent maintenant à leur rythme.',
+    switchedToHostPaced: 'Vous menez de nouveau. Les participants suivent votre diapositive.',
     signInToStart: 'Connectez-vous pour présenter des sondages',
     couldNotStart: 'Impossible de lancer la session',
     errors: {

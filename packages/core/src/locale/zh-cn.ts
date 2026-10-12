@@ -762,6 +762,10 @@ export const zhCN: Locale = {
     inactiveTime: '不活跃时长',
     startHostPaced: '开始主持人控制会话',
     startSelfPaced: '开始自主节奏会话',
+    switchToSelfPaced: '切换为自主节奏',
+    switchToHostPaced: '切换为主持人节奏',
+    switchedToSelfPaced: '参与者现在可以按自己的节奏进行。',
+    switchedToHostPaced: '由您重新主导，参与者将跟随您的幻灯片。',
     signInToStart: '登录后演示投票',
     couldNotStart: '无法开始会话',
     errors: {

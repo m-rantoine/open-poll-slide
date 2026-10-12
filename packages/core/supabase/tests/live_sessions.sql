@@ -26,6 +26,7 @@ declare
   site_a public.sessions;
   site_b public.sessions;
   site_old public.sessions;
+  pace public.sessions;
   jr public.sessions;
   qs5 jsonb := '{
     "rate": {"id":"rate","type":"scale","question":"Rate","min":1,"max":5,"items":[{"id":"s1","label":"A"},{"id":"s2","label":"B"}],"startLocked":false},
@@ -662,6 +663,58 @@ begin
   if n <> 1 then raise exception 'FAIL chem-12 should only see the unlabeled session it joined, got %', n; end if;
   execute 'reset role';
   r := r || 'PASS site labels: creating, listing and joining stay within a site' || E'\n';
+
+  -- Switching a running session between host-paced and self-paced.
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select * into pace from public.create_session('sql-test-pace', 'Pace', 'host', 3, '{
+    "locked_q": {"id":"locked_q","question":"Q1","options":[{"id":"a","label":"A"},{"id":"b","label":"B"}],"startLocked":true},
+    "free_q": {"id":"free_q","question":"Q2","options":[{"id":"a","label":"A"},{"id":"b","label":"B"}],"startLocked":false},
+    "done_q": {"id":"done_q","question":"Q3","options":[{"id":"a","label":"A"},{"id":"b","label":"B"}],"startLocked":true}
+  }'::jsonb);
+  perform public.host_question_action(pace.id, 'done_q', 'unlock');
+  perform public.host_question_action(pace.id, 'done_q', 'end');
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  begin perform public.set_session_mode(pace.id, 'self'); raise exception 'FAIL a student switched the pacing';
+  exception when insufficient_privilege then null; end;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select * into pace from public.set_session_mode(pace.id, 'self');
+  execute 'reset role';
+  if pace.mode <> 'self' then raise exception 'FAIL mode should be self'; end if;
+  select state into v from public.session_question_state where session_id = pace.id and question_id = 'locked_q';
+  if v <> 'open' then raise exception 'FAIL a locked question should open in self-paced mode, got %', v; end if;
+  select state into v from public.session_question_state where session_id = pace.id and question_id = 'done_q';
+  if v <> 'ended' then raise exception 'FAIL a stopped question should stay stopped, got %', v; end if;
+  -- A participant answers while self-paced; going back to host-paced keeps that question open.
+  perform set_config('request.jwt.claims', json_build_object('sub', s1, 'email', 'sql-test-s1@school.example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  perform public.join_session(pace.code);
+  perform public.submit_answer(pace.id, 'locked_q', 'a');
+  execute 'reset role';
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select * into pace from public.set_session_mode(pace.id, 'host');
+  execute 'reset role';
+  if pace.mode <> 'host' then raise exception 'FAIL mode should be host'; end if;
+  select state into v from public.session_question_state where session_id = pace.id and question_id = 'locked_q';
+  if v <> 'open' then raise exception 'FAIL an answered question should stay open, got %', v; end if;
+  select state into v from public.session_question_state where session_id = pace.id and question_id = 'free_q';
+  if v <> 'open' then raise exception 'FAIL a question that does not start locked should stay open, got %', v; end if;
+  select state into v from public.session_question_state where session_id = pace.id and question_id = 'done_q';
+  if v <> 'ended' then raise exception 'FAIL a stopped question should stay stopped, got %', v; end if;
+  -- Switching to the same mode changes nothing, and an ended session cannot be switched.
+  perform set_config('request.jwt.claims', json_build_object('sub', host_id, 'email', 'sql-test-host@example.test', 'role', 'authenticated')::text, true);
+  execute 'set local role authenticated';
+  select * into pace from public.set_session_mode(pace.id, 'host');
+  perform public.end_session(pace.id);
+  begin perform public.set_session_mode(pace.id, 'self'); raise exception 'FAIL switched an ended session';
+  exception when sqlstate 'P0001' then null; end;
+  execute 'reset role';
+  r := r || 'PASS switching pacing: questions open or lock sensibly, hosts only, not once ended' || E'\n';
 
   if public.hook_restrict_signup_domain('{"user":{"email":"sql-test-host@example.test"}}') <> '{}'::jsonb then
     raise exception 'FAIL hook rejected a host';

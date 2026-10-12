@@ -770,6 +770,10 @@ export const en: Locale = {
     inactiveTime: 'Inactive time',
     startHostPaced: 'Start host-paced session',
     startSelfPaced: 'Start self-paced session',
+    switchToSelfPaced: 'Switch to self-paced',
+    switchToHostPaced: 'Switch to host-paced',
+    switchedToSelfPaced: 'Participants can now go at their own pace.',
+    switchedToHostPaced: 'You are leading again. Participants follow your slide.',
     signInToStart: 'Sign in to present polls',
     couldNotStart: 'Could not start the session',
     errors: {

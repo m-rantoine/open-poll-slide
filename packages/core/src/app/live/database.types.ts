@@ -615,6 +615,10 @@ export type Database = {
       require_host: { Args: never; Returns: undefined };
       resume_session: { Args: { p_session: string }; Returns: undefined };
       server_time: { Args: never; Returns: string };
+      set_session_mode: {
+        Args: { p_session: string; p_mode: Database['public']['Enums']['session_mode'] };
+        Returns: Database['public']['Tables']['sessions']['Row'];
+      };
       session_summaries: {
         Args: { p_limit?: number };
         Returns: {

@@ -776,6 +776,10 @@ export const ja: Locale = {
     inactiveTime: '非アクティブ時間',
     startHostPaced: 'ホスト主導のセッションを開始',
     startSelfPaced: '自分のペースのセッションを開始',
+    switchToSelfPaced: '自分のペースに切り替え',
+    switchToHostPaced: 'ホスト主導に切り替え',
+    switchedToSelfPaced: '参加者が自分のペースで進められるようになりました。',
+    switchedToHostPaced: '再びホストが進行します。参加者はあなたのスライドに従います。',
     signInToStart: 'サインインしてポールを発表',
     couldNotStart: 'セッションを開始できませんでした',
     errors: {

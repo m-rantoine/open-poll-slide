@@ -777,6 +777,10 @@ export const es: Locale = {
     inactiveTime: 'Tiempo inactivo',
     startHostPaced: 'Iniciar sesión con ritmo del anfitrión',
     startSelfPaced: 'Iniciar sesión con ritmo propio',
+    switchToSelfPaced: 'Cambiar a ritmo propio',
+    switchToHostPaced: 'Cambiar al ritmo del anfitrión',
+    switchedToSelfPaced: 'Los participantes ahora avanzan a su propio ritmo.',
+    switchedToHostPaced: 'Vuelve a llevar el ritmo. Los participantes siguen su diapositiva.',
     signInToStart: 'Inicia sesión para presentar encuestas',
     couldNotStart: 'No se pudo iniciar la sesión',
     errors: {

@@ -40,6 +40,8 @@ export type LiveActions = {
   endSession: () => Promise<void>;
   pauseSession: () => Promise<void>;
   resumeSession: () => Promise<void>;
+  /** Switch a running session between host-paced and self-paced. */
+  setMode: (mode: SessionRow['mode']) => Promise<void>;
 };
 
 export type LiveData = {
@@ -653,6 +655,17 @@ export function useLiveSession(sessionId: string | undefined, asHost: boolean): 
         if (err) throw err;
         bump('session');
         setSession((cur) => (cur ? { ...cur, status: 'paused' } : cur));
+      },
+      async setMode(mode) {
+        if (!sessionId) return;
+        const { error: err } = await getClient().rpc('set_session_mode', {
+          p_session: sessionId,
+          p_mode: mode,
+        });
+        if (err) throw err;
+        bump('session');
+        setSession((cur) => (cur ? { ...cur, mode } : cur));
+        void loadAll();
       },
       async resumeSession() {
         if (!sessionId) return;
