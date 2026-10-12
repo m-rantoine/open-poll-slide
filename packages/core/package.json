@@ -1,6 +1,6 @@
 {
   "name": "@rantoine/open-poll-slide-core",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Runtime and CLI for open-poll-slide, a fork of open-slide with live interactive polling sessions.",
   "type": "module",
   "exports": {
@@ -29,13 +29,18 @@
     "dist",
     "env.d.ts",
     "src/app",
+    "src/live-site.ts",
     "src/locale",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
     "skills",
     "supabase/migrations",
     "README.md"
   ],
   "scripts": {
     "build": "tsdown",
+    "check:package": "node scripts/check-package.mjs",
+    "prepublishOnly": "node scripts/check-package.mjs",
     "typecheck": "tsc --noEmit",
     "test:e2e": "pnpm run build && playwright test",
     "prepack": "pnpm build"

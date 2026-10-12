@@ -47,4 +47,6 @@ Filter to one package: `pnpm core <script>` / `pnpm cli <script>`.
 
 `pnpm release` builds `core` + `cli` and runs `changeset publish`. Triggered by the maintainer, not by agents.
 
+**Test the packed package before publishing core.** The monorepo has every source file, so a missing one only breaks installs. `pnpm publish` runs `scripts/check-package.mjs` (every relative import in a shipped `src/` file must resolve inside the package). Also `pnpm pack`, install the tarball into a project made by `open-slide init`, start `open-slide dev` and load a few pages.
+
 **Publish the CLI after every core release.** The CLI writes `^<core version at build>` into new projects, and for `0.x` versions a caret stays inside one minor (`^0.1.0` never reaches `0.5.0`). A CLI that was not republished keeps scaffolding old core releases. Build the CLI after bumping core, check `init` writes the new core version, then publish it.
