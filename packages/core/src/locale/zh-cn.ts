@@ -766,6 +766,12 @@ export const zhCN: Locale = {
     switchToHostPaced: '切换为主持人节奏',
     switchedToSelfPaced: '参与者现在可以按自己的节奏进行。',
     switchedToHostPaced: '由您重新主导，参与者将跟随您的幻灯片。',
+    missingKeysTitle: '缺少答案密钥',
+    missingKeysBody: {
+      one: '有 {count} 道题在幻灯片中设置了正确答案，但数据库中没有对应的密钥，因此不会批改其回答。请在项目中运行 `open-slide live keys`，然后开始新的会话。您也可以在演讲者视图中手动标记答案。',
+      other:
+        '有 {count} 道题在幻灯片中设置了正确答案，但数据库中没有对应的密钥，因此不会批改其回答。请在项目中运行 `open-slide live keys`，然后开始新的会话。您也可以在演讲者视图中手动标记答案。',
+    },
     signInToStart: '登录后演示投票',
     couldNotStart: '无法开始会话',
     errors: {

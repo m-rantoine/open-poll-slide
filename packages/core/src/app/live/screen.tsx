@@ -12,6 +12,7 @@ import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
 import { LiveProvider } from './live-context';
 import { joinUrl } from './lobby';
+import { MissingKeysNotice } from './missing-keys-notice';
 import { PacingToggle } from './pacing-toggle';
 import { PauseSessionButton } from './pause-session';
 import { siteFilter } from './site-sessions';
@@ -147,6 +148,11 @@ function Screen() {
             <div className="font-mono text-2xl font-bold tracking-[0.25em]">{session.code}</div>
           </div>
         )}
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 top-14 z-50 flex justify-center px-4">
+        <div className="pointer-events-auto">
+          <MissingKeysNotice data={data} />
+        </div>
       </div>
       {session.status === 'paused' && (
         <div className="absolute inset-0 z-40 grid place-items-center bg-black px-6 text-center text-white">

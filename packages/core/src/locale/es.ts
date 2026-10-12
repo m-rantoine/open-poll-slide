@@ -781,6 +781,12 @@ export const es: Locale = {
     switchToHostPaced: 'Cambiar al ritmo del anfitrión',
     switchedToSelfPaced: 'Los participantes ahora avanzan a su propio ritmo.',
     switchedToHostPaced: 'Vuelve a llevar el ritmo. Los participantes siguen su diapositiva.',
+    missingKeysTitle: 'Faltan las claves de respuesta',
+    missingKeysBody: {
+      one: '{count} pregunta tiene una respuesta correcta en la diapositiva, pero la base de datos no tiene su clave, así que no se calificarán sus respuestas. Ejecuta `open-slide live keys` en tu proyecto y luego inicia una sesión nueva. También puedes marcar las respuestas a mano desde el Presentador.',
+      other:
+        '{count} preguntas tienen una respuesta correcta en la diapositiva, pero la base de datos no tiene sus claves, así que no se calificarán sus respuestas. Ejecuta `open-slide live keys` en tu proyecto y luego inicia una sesión nueva. También puedes marcar las respuestas a mano desde el Presentador.',
+    },
     signInToStart: 'Inicia sesión para presentar encuestas',
     couldNotStart: 'No se pudo iniciar la sesión',
     errors: {

@@ -76,6 +76,8 @@ Sessions without a label (started before labels existed, or by a site that sets 
 pnpm exec open-slide live keys   # upload every `correct` in slides/ (run after adding or changing one)
 ```
 
+`open-slide build` and `open-slide preview` run this for you, so what you deploy always has its keys. It uploads only when the Supabase CLI is installed and linked to the same project as `SUPABASE_URL`; it never relinks and never fails the build. On a build machine without the CLI (a hosting provider's, for example) it prints a warning with the command to run by hand, so build where the CLI is, or run `live keys` yourself. Set `OPEN_SLIDE_SKIP_KEY_UPLOAD=1` to skip it. If a question still has a key in the slide but none in the database, the host sees an "Answer keys missing" notice on the Screen, the Presenter and the results page.
+
 `correct` must be an array of string literals for the command to read it. Keys marked live from the app are saved to the same table; running `live keys` again overwrites them with the values in your sources. Participants learn whether they were right only from the server: `submit_answer` returns the grade, and the participant screens show it once the host reveals results (`showResults`).
 
 ## Private decks

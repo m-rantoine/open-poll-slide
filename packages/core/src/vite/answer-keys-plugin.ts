@@ -103,7 +103,16 @@ export function findAnswerKeys(code: string): FoundAnswerKey[] {
   return found;
 }
 
-/** Blank out every answer key, keeping offsets and line numbers intact for later transforms. */
+/**
+ * Marks a question that has an answer key without revealing it, so the host can be warned when the
+ * database has none. It must fit in the space the key took, so offsets stay put.
+ */
+const KEY_MARKER = 'hasKey:!0';
+
+/**
+ * Blank out every answer key, keeping offsets and line numbers intact for later transforms. A
+ * `hasKey` marker stays where the key was.
+ */
 export function stripAnswerKeys(
   code: string,
   opts: { keepDragDrop?: boolean } = {},
@@ -115,7 +124,15 @@ export function stripAnswerKeys(
     let end = propEnd;
     const comma = /^\s*,/.exec(next.slice(end));
     if (comma) end += comma[0].length;
-    next = next.slice(0, start) + next.slice(start, end).replace(/[^\n]/g, ' ') + next.slice(end);
+    const original = next.slice(start, end);
+    const blanked = original.replace(/[^\n]/g, ' ');
+    const marker = comma ? `${KEY_MARKER},` : KEY_MARKER;
+    const keep =
+      original.length >= marker.length && !original.slice(0, marker.length).includes('\n');
+    next =
+      next.slice(0, start) +
+      (keep ? marker + blanked.slice(marker.length) : blanked) +
+      next.slice(end);
   }
   return next;
 }

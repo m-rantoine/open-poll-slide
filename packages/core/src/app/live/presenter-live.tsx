@@ -16,6 +16,7 @@ import { EndSessionButton } from './end-session';
 import { liveErrorMessage } from './errors';
 import { LiveProvider, useQuestionRegistry } from './live-context';
 import { useLockHotkey } from './lock-hotkey';
+import { MissingKeysNotice } from './missing-keys-notice';
 import { PacingToggle } from './pacing-toggle';
 import { PauseSessionButton } from './pause-session';
 import { QuestionPanel, ResultsPanel, StudentsPanel } from './presenter-panels';
@@ -105,6 +106,7 @@ function Inner({ sessionId }: { sessionId: string }) {
           <EndSessionButton data={data} />
         </div>
       </header>
+      <MissingKeysNotice data={data} className="mx-4 mt-3" />
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 px-6 pb-4 pt-3 lg:grid-cols-[3fr_2fr]">
         <section className="flex min-h-0 flex-col gap-3">

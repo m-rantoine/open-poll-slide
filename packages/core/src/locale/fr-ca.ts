@@ -789,6 +789,12 @@ export const frCA: Locale = {
     switchToHostPaced: 'Passer au rythme de l’animateur',
     switchedToSelfPaced: 'Les participants avancent maintenant à leur rythme.',
     switchedToHostPaced: 'Vous menez de nouveau. Les participants suivent votre diapositive.',
+    missingKeysTitle: 'Clés de correction manquantes',
+    missingKeysBody: {
+      one: '{count} question a une bonne réponse dans la diapositive, mais la base de données n’a pas de clé pour elle; ses réponses ne seront donc pas corrigées. Exécutez `open-slide live keys` dans votre projet, puis lancez une nouvelle session. Vous pouvez aussi marquer les réponses à la main depuis le Présentateur.',
+      other:
+        '{count} questions ont une bonne réponse dans la diapositive, mais la base de données n’a pas de clé pour elles; leurs réponses ne seront donc pas corrigées. Exécutez `open-slide live keys` dans votre projet, puis lancez une nouvelle session. Vous pouvez aussi marquer les réponses à la main depuis le Présentateur.',
+    },
     signInToStart: 'Connectez-vous pour présenter des sondages',
     couldNotStart: 'Impossible de lancer la session',
     errors: {

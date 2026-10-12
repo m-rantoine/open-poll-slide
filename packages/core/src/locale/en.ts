@@ -774,6 +774,12 @@ export const en: Locale = {
     switchToHostPaced: 'Switch to host-paced',
     switchedToSelfPaced: 'Participants can now go at their own pace.',
     switchedToHostPaced: 'You are leading again. Participants follow your slide.',
+    missingKeysTitle: 'Answer keys missing',
+    missingKeysBody: {
+      one: '{count} question has a correct answer in the slide, but the database has no key for it, so its answers will not be graded. Run `open-slide live keys` in your project, then start a new session. You can also mark answers by hand from the Presenter.',
+      other:
+        '{count} questions have a correct answer in the slide, but the database has no key for them, so their answers will not be graded. Run `open-slide live keys` in your project, then start a new session. You can also mark answers by hand from the Presenter.',
+    },
     signInToStart: 'Sign in to present polls',
     couldNotStart: 'Could not start the session',
     errors: {

@@ -780,6 +780,12 @@ export const ja: Locale = {
     switchToHostPaced: 'ホスト主導に切り替え',
     switchedToSelfPaced: '参加者が自分のペースで進められるようになりました。',
     switchedToHostPaced: '再びホストが進行します。参加者はあなたのスライドに従います。',
+    missingKeysTitle: '正解キーがありません',
+    missingKeysBody: {
+      one: '{count} 件の質問にスライド上の正解がありますが、データベースにキーがないため、回答は採点されません。プロジェクトで `open-slide live keys` を実行し、新しいセッションを開始してください。発表者ビューから手動で正誤を付けることもできます。',
+      other:
+        '{count} 件の質問にスライド上の正解がありますが、データベースにキーがないため、回答は採点されません。プロジェクトで `open-slide live keys` を実行し、新しいセッションを開始してください。発表者ビューから手動で正誤を付けることもできます。',
+    },
     signInToStart: 'サインインしてポールを発表',
     couldNotStart: 'セッションを開始できませんでした',
     errors: {

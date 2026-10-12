@@ -17,4 +17,6 @@ export async function build(opts: BuildOptions = {}): Promise<void> {
     },
   });
   await viteBuild(config);
+  const { syncAnswerKeys } = await import('./live-init.ts');
+  await syncAnswerKeys();
 }

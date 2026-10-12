@@ -766,6 +766,12 @@ export const zhTW: Locale = {
     switchToHostPaced: '切換為主持人節奏',
     switchedToSelfPaced: '參與者現在可以依自己的節奏進行。',
     switchedToHostPaced: '由您重新主導，參與者將跟隨您的投影片。',
+    missingKeysTitle: '缺少答案金鑰',
+    missingKeysBody: {
+      one: '有 {count} 道題在投影片中設定了正確答案，但資料庫中沒有對應的金鑰，因此不會批改其回答。請在專案中執行 `open-slide live keys`，然後開始新的工作階段。您也可以在講者檢視中手動標記答案。',
+      other:
+        '有 {count} 道題在投影片中設定了正確答案，但資料庫中沒有對應的金鑰，因此不會批改其回答。請在專案中執行 `open-slide live keys`，然後開始新的工作階段。您也可以在講者檢視中手動標記答案。',
+    },
     signInToStart: '登入後展示投票',
     couldNotStart: '無法開始工作階段',
     errors: {
