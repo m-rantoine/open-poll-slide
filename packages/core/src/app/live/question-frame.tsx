@@ -3,7 +3,7 @@ import { fieldsAttr } from '../lib/inspector/component-fields';
 import { LanguageScope, type PollLanguage } from '../lib/locale-store';
 import type { InteractiveQuestion } from '../lib/sdk';
 import { useIsActivePage } from '../lib/step-context';
-import { useLocale } from '../lib/use-locale';
+import { format, useLocale } from '../lib/use-locale';
 import { answeredCount, expectedCount, formatClock } from './derive';
 import { liveErrorMessage } from './errors';
 import { useLive, useRegisterQuestion } from './live-context';
@@ -118,6 +118,7 @@ function FrameInner({
   const isParticipant = view === 'participant';
   const controls = view === 'screen' && !mirror;
   const submitted = Boolean(data.mine[question.id]);
+  const points = st?.show_results ? data.mine[question.id]?.points : undefined;
   const remaining = st?.ends_at ? new Date(st.ends_at).getTime() - now : null;
   const countdown =
     state === 'open' && remaining !== null && remaining > 0 ? formatClock(remaining) : null;
@@ -217,6 +218,11 @@ function FrameInner({
         )}
         {submitted && (
           <span style={{ fontSize: 30, opacity: 0.8 }}>✓ {t.live.submittedSorting}</span>
+        )}
+        {points && (
+          <span style={{ fontSize: 30, fontWeight: 700 }}>
+            {format(t.live.score, { correct: points.correct, graded: points.total })}
+          </span>
         )}
         {state === 'ended' && !submitted && (
           <span style={{ fontSize: 30, opacity: 0.7 }}>{t.live.answerPeriodEnded}</span>

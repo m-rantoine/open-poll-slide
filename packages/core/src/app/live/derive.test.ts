@@ -16,6 +16,7 @@ import {
   questionsMissingKeys,
   rankStats,
   scaleStats,
+  splitWords,
   studentResults,
   wordCounts,
   zoneTiles,
@@ -139,6 +140,30 @@ describe('word clouds', () => {
       ['toronto', 'Toronto', 1],
     ]);
     expect(counts[0].userIds).toEqual(['u1', 'u2', 'u3']);
+  });
+
+  it('splits phrases into single words and drops symbols', () => {
+    expect(splitWords('Hello, world! (l\'eau) -- 3.5 "ok"')).toEqual([
+      'Hello',
+      'world',
+      "l'eau",
+      '3',
+      '5',
+      'ok',
+    ]);
+    const counts = wordCounts(
+      [
+        answer({ user_id: 'u1', question_id: 'p', option_id: 'a', answer_text: 'Big, big city!' }),
+        answer({ user_id: 'u2', question_id: 'p', option_id: 'b', answer_text: 'The big apple.' }),
+      ],
+      'p',
+    );
+    expect(counts.map((c) => [c.key, c.count])).toEqual([
+      ['big', 2],
+      ['apple', 1],
+      ['city', 1],
+      ['the', 1],
+    ]);
   });
 
   it('reports the host mark per word and leaves unmarked words null', () => {

@@ -781,6 +781,8 @@ export const en: Locale = {
         '{count} questions have a correct answer in the slide, but the database has no key for them, so their answers will not be graded. Run `open-slide live keys` in your project, then start a new session. You can also mark answers by hand from the Presenter.',
     },
     signInToStart: 'Sign in to present polls',
+    practiceSignIn: 'Sign in to check your answers',
+    practiceNoKey: 'No answer key is available for this question',
     couldNotStart: 'Could not start the session',
     errors: {
       question_closed: 'This question is closed.',

@@ -788,6 +788,8 @@ export const es: Locale = {
         '{count} preguntas tienen una respuesta correcta en la diapositiva, pero la base de datos no tiene sus claves, así que no se calificarán sus respuestas. Ejecuta `open-slide live keys` en tu proyecto y luego inicia una sesión nueva. También puedes marcar las respuestas a mano desde el Presentador.',
     },
     signInToStart: 'Inicia sesión para presentar encuestas',
+    practiceSignIn: 'Inicia sesión para comprobar tus respuestas',
+    practiceNoKey: 'No hay clave de respuestas para esta pregunta',
     couldNotStart: 'No se pudo iniciar la sesión',
     errors: {
       question_closed: 'Esta pregunta está cerrada.',

@@ -622,7 +622,10 @@ export function useDragDropParticipant(question: SortingQuestion) {
       .submitPlacements(question.id)
       .catch((e: unknown) => setFailure(liveErrorMessage(t, e)));
   };
-  return { state, placed, ok, submitted, interactive, engine, submit, failure };
+  const points = data?.states[question.id]?.show_results
+    ? data.mine[question.id]?.points
+    : undefined;
+  return { state, placed, ok, submitted, points, interactive, engine, submit, failure };
 }
 
 /** One blank's results as horizontal bars, like multiple choice; unchosen wrong tiles are left out. */
@@ -915,6 +918,11 @@ function DragDropInner({ question, children, style, ...rest }: DragDropProps) {
         {me.submitted && (
           <span style={{ fontSize: 30, opacity: 0.8 }}>✓ {t.live.submittedSorting}</span>
         )}
+        {me.points && (
+          <span style={{ fontSize: 30, fontWeight: 700 }}>
+            {format(t.live.score, { correct: me.points.correct, graded: me.points.total })}
+          </span>
+        )}
         {state === 'ended' && !me.submitted && (
           <span style={{ fontSize: 30, opacity: 0.7 }}>{t.live.answerPeriodEnded}</span>
         )}
@@ -1064,6 +1072,11 @@ export function DragDropCard({ question }: { question: SortingQuestion }) {
             )}
             {me.submitted && (
               <div style={{ fontSize: 20, opacity: 0.8 }}>✓ {t.live.submittedSorting}</div>
+            )}
+            {me.points && (
+              <div style={{ fontSize: 20, fontWeight: 700 }}>
+                {format(t.live.score, { correct: me.points.correct, graded: me.points.total })}
+              </div>
             )}
           </>
         )}

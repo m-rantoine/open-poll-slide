@@ -21,6 +21,8 @@ export type LiveContextValue = {
   data: LiveData;
   now: number;
   deckId: string;
+  /** A local session for trying questions out in Present; nothing is stored. */
+  practice: boolean;
 };
 
 type Registry = { add: (id: string) => void; remove: (id: string) => void };
@@ -46,6 +48,7 @@ export function LiveProvider({
   compact = false,
   data,
   deckId,
+  practice = false,
   children,
 }: {
   view: LiveContextValue['view'];
@@ -53,6 +56,7 @@ export function LiveProvider({
   compact?: boolean;
   data: LiveData;
   deckId: string;
+  practice?: boolean;
   children: ReactNode;
 }) {
   const [, setTick] = useState(0);
@@ -62,8 +66,8 @@ export function LiveProvider({
   }, []);
   const now = Date.now() + data.serverOffset;
   const value = useMemo(
-    () => ({ view, mirror, compact, data, now, deckId }),
-    [view, mirror, compact, data, now, deckId],
+    () => ({ view, mirror, compact, data, now, deckId, practice }),
+    [view, mirror, compact, data, now, deckId, practice],
   );
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;
 }

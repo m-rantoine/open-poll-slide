@@ -17,6 +17,8 @@ export type MyAnswer = {
   show_results: boolean;
   /** What the participant typed, for word-cloud questions. */
   answer_text?: string | null;
+  /** Practice mode: items placed correctly out of the answer key's size. */
+  points?: { correct: number; total: number };
 };
 
 export type MyPlacement = {
