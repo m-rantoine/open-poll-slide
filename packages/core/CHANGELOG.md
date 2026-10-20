@@ -1,5 +1,83 @@
 # @open-slide/core
 
+## 0.7.0
+
+### Minor Changes
+
+- [#5](https://github.com/m-rantoine/open-poll-slide/pull/5) [`468b840`](https://github.com/m-rantoine/open-poll-slide/commit/468b840a6dddf841647f16592c846a11d917748e) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Edit question and tool settings in the inspector: start locked, show results, scored, limits, labels, timer duration and style, clock style, and more. Load pages on demand so students download less. Rank tiles slide into place when moved, scale captions line up with the ratings, and a shadow and chevron mark the edge where a click changes slides. The clock and timer overlay can be dragged and shown full screen.
+
+- [#9](https://github.com/m-rantoine/open-poll-slide/pull/9) [`ed91262`](https://github.com/m-rantoine/open-poll-slide/commit/ed91262f055f92c7fb677dd15cf2d83912c5408b) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Upload answer keys automatically in `open-slide build` and `open-slide preview`, and warn the host when a question has a key in the slide but none in the database.
+
+- [#5](https://github.com/m-rantoine/open-poll-slide/pull/5) [`468b840`](https://github.com/m-rantoine/open-poll-slide/commit/468b840a6dddf841647f16592c846a11d917748e) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add laser drawing controls for color, width, shapes, erasing, and persistent trails.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`cf75f01`](https://github.com/m-rantoine/open-poll-slide/commit/cf75f01d441b3b04d02c90e582f4adb79b6e36f5) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Keep answer keys out of the browser bundle and session rows; add `open-slide live keys` to upload them to Supabase.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`8557a94`](https://github.com/m-rantoine/open-poll-slide/commit/8557a9443a88ac283db94dbb5942fc6abacbdb4f) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add an association question type: drag-and-drop matching where each zone holds one tile.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`c130f15`](https://github.com/m-rantoine/open-poll-slide/commit/c130f159d7f8417a7292993c628789f4a865d96f) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add a drag-and-drop sorting question (`DragDrop`, `DropZone`, `ItemPool`) scored one point per correctly placed tile.
+
+- [#1](https://github.com/m-rantoine/open-poll-slide/pull/1) [`713914c`](https://github.com/m-rantoine/open-poll-slide/commit/713914c6bd0fb611b3093ccb780790c04dc6293b) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add `open-slide live init` to create the live-session tables in Supabase, and read `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` from the environment.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`a65bd2b`](https://github.com/m-rantoine/open-poll-slide/commit/a65bd2b7a35a77a6986ee565e8ac2745b28828b2) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add pausing and resuming live sessions, a Rejoin list on the join page, and an Enter shortcut that locks or unlocks the current question.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`5d53728`](https://github.com/m-rantoine/open-poll-slide/commit/5d537287d66f85bc65c59cf30b6e4032aeb134f6) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Run every live-session view on the Open Slide Player, so slide transitions, laser, blackout and overview work in live sessions.
+
+- [#1](https://github.com/m-rantoine/open-poll-slide/pull/1) [`0a38d8c`](https://github.com/m-rantoine/open-poll-slide/commit/0a38d8c1bc7f5183ab05203598a7f9e2f0bdc1a6) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add live sessions: Supabase-backed host-paced and self-paced polls with Lobby, MultipleChoice and ClassResults slide components, screen/presenter/participant views, and a results dashboard.
+
+- [#5](https://github.com/m-rantoine/open-poll-slide/pull/5) [`85a1b5f`](https://github.com/m-rantoine/open-poll-slide/commit/85a1b5f901bf0653ac3b37005148b5b41ffc2461) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add scale, ranking, points, number and open-text question types.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`e002db6`](https://github.com/m-rantoine/open-poll-slide/commit/e002db6e98ce8833af3a6a9cfdfe9b1f519b4b20) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add a word-cloud question type and a per-question `scored` option; answers without a grade no longer count toward scores.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`cf75f01`](https://github.com/m-rantoine/open-poll-slide/commit/cf75f01d441b3b04d02c90e582f4adb79b6e36f5) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add a French (Canada) locale and translate the live-session screens.
+
+- [#1](https://github.com/m-rantoine/open-poll-slide/pull/1) [`b9d7336`](https://github.com/m-rantoine/open-poll-slide/commit/b9d73368b21c79006381915573195b696588fc7e) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add the `/create-poll-slide` skill for authoring decks with multiple-choice questions, a lobby and class results.
+
+- [#11](https://github.com/m-rantoine/open-poll-slide/pull/11) [`14aac52`](https://github.com/m-rantoine/open-poll-slide/commit/14aac52684282d14ee04cc85a6475b2b18617221) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Let signed-in users answer every poll type in plain Present and see right or wrong, checked on the server without saving anything.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`a86654c`](https://github.com/m-rantoine/open-poll-slide/commit/a86654ccaf09e09bd7e5c5e328e4484c77bf2523) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add private decks: `export const isPrivate` or `SLIDES_DEFAULT_AS_PRIVATE` hides decks from everyone except signed-in hosts, while sessions keep working.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`fa2cd5d`](https://github.com/m-rantoine/open-poll-slide/commit/fa2cd5db3d8e46d3cde0bd200bdeaa1167c8644c) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Poll components now live inside pages, scale to fit their space, and gain `columns` and `language` props editable in the inspector.
+
+- [#6](https://github.com/m-rantoine/open-poll-slide/pull/6) [`9950a18`](https://github.com/m-rantoine/open-poll-slide/commit/9950a188d5f42245871dfe25009417061275844a) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add a per-site label (`OPEN_SLIDE_SITE_LABEL`) so sites that share one database list, show and join only their own sessions. Needs the `20261013000100_site_label` migration.
+
+- [#7](https://github.com/m-rantoine/open-poll-slide/pull/7) [`f1434ec`](https://github.com/m-rantoine/open-poll-slide/commit/f1434ec5e623b14cc86727b5193354ccdc7dadf2) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Switch a running session between host-paced and self-paced from the host Screen, the Presenter or the results page. Needs the `20261014000100_switch_pacing` migration.
+
+- [#5](https://github.com/m-rantoine/open-poll-slide/pull/5) [`512a43c`](https://github.com/m-rantoine/open-poll-slide/commit/512a43c75505c3611441c0550182388e11438789) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add a step-by-step equation slide, break/countdown timer and clock slides with several looks (seconds can be hidden), and a clock and timer overlay (T and C) in every presenting view.
+
+### Patch Changes
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`aa94faa`](https://github.com/m-rantoine/open-poll-slide/commit/aa94faa29e46b95ba32e2d9dea82fba0e3bf9fab) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Hide the Themes tab from signed-out users and non-hosts when live sessions are configured.
+
+- [#5](https://github.com/m-rantoine/open-poll-slide/pull/5) [`468b840`](https://github.com/m-rantoine/open-poll-slide/commit/468b840a6dddf841647f16592c846a11d917748e) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Show the laser pointer's recent path as a fading five-second trail.
+
+- [#2](https://github.com/m-rantoine/open-poll-slide/pull/2) [`805dd8f`](https://github.com/m-rantoine/open-poll-slide/commit/805dd8f021e0e1d8805a31dd9103eef2d6021ffb) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Fix live sessions: slide components now share the app's live context, subscriptions survive remounts, and rapid next/previous presses no longer skip a slide.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`b9eb5db`](https://github.com/m-rantoine/open-poll-slide/commit/b9eb5db8d64510f7812311c677b9279af463709a) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Make the word-cloud and sorting components selectable in the inspector.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`bec6c5d`](https://github.com/m-rantoine/open-poll-slide/commit/bec6c5d6c72858ad4ad90dd84b1badcd8a9135ab) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Show participants a newly marked correct answer right away instead of after the next refresh.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`8a9a87a`](https://github.com/m-rantoine/open-poll-slide/commit/8a9a87a906ea0878aef12a883ac3955cbdca5568) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Add Sign in / Sign out to the homepage tabs and a /login page, and offer "Sign in to present polls" in the Present menu.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`1548503`](https://github.com/m-rantoine/open-poll-slide/commit/1548503f78aafd147ba6be074d4aa283669b80a1) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Keep the slide in a fixed place on phones and show answer controls below it, so page transitions are never interrupted.
+
+- [#3](https://github.com/m-rantoine/open-poll-slide/pull/3) [`3093369`](https://github.com/m-rantoine/open-poll-slide/commit/30933696e4242be0d465dd4c576342d4df0917cf) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Fix live-session presence reporting, keep host navigation ordered, and add a phone layout with large answer buttons for participants.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`413c7c0`](https://github.com/m-rantoine/open-poll-slide/commit/413c7c0b9531cc99d0544371acd3b39cd5638e12) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Show phone questions in the same style as the slide instead of a separate card.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`7e13cc6`](https://github.com/m-rantoine/open-poll-slide/commit/7e13cc6b9feea0c886bccd41ec1b7fece0606d97) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Center the slide on phones when there is no question card, and match the area around the slide and the answer card to the deck background.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`b0d43e9`](https://github.com/m-rantoine/open-poll-slide/commit/b0d43e9c960186b45aa71035c919c6a48ca82536) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Choose the stacked participant layout by screen shape (width at most 0.75x height) instead of screen width.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`cf75f01`](https://github.com/m-rantoine/open-poll-slide/commit/cf75f01d441b3b04d02c90e582f4adb79b6e36f5) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Fix live sessions: timers end questions, inactive time stops at session end, departed students no longer hold questions open, self-paced students resume their slide, and ending a session asks for confirmation.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`1878b31`](https://github.com/m-rantoine/open-poll-slide/commit/1878b310277dc3a7ec6d8b5af20443d7f03e8524) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Move the live answer progress bar next to the host controls and pulse the countdown red in the last 10 seconds.
+
+- [#4](https://github.com/m-rantoine/open-poll-slide/pull/4) [`83adc1f`](https://github.com/m-rantoine/open-poll-slide/commit/83adc1f0ad1a532cd0be03c98beeaabf5de48f47) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Let hosts move through a live session on touch devices with swipes and on-screen previous/next buttons.
+
+- [#10](https://github.com/m-rantoine/open-poll-slide/pull/10) [`91e8ef2`](https://github.com/m-rantoine/open-poll-slide/commit/91e8ef2736967dd9fe120f8ebb7cadbf956dc060) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Fix the package missing `src/live-site.ts`, which stopped `open-slide dev` from starting in installed projects (0.5.0 and 0.6.0). Check every shipped import before publishing.
+
+- [#11](https://github.com/m-rantoine/open-poll-slide/pull/11) [`14aac52`](https://github.com/m-rantoine/open-poll-slide/commit/14aac52684282d14ee04cc85a6475b2b18617221) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Split word cloud answers into single words and ignore punctuation.
+
 ## 2.0.1
 
 ### Patch Changes

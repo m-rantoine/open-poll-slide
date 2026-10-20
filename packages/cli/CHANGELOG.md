@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 0.3.0
+
+### Minor Changes
+
+- [#8](https://github.com/m-rantoine/open-poll-slide/pull/8) [`9b6b54a`](https://github.com/m-rantoine/open-poll-slide/commit/9b6b54a5b02c849cfb656932cfbf986658db2bf6) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Scaffold new projects with the current core release instead of the old 0.1.x one.
+
 ## 2.0.0
 
 ### Major Changes
