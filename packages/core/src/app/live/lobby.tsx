@@ -39,7 +39,7 @@ function LobbyInner({ title: titleProp, style, ...rest }: LobbyProps) {
   useQuestionRegistryFlag('lobby');
   const title = titleProp ?? t.live.welcome;
 
-  if (!live) {
+  if (!live || live.practice) {
     return (
       <div {...rest} style={{ ...frame, ...style }}>
         <h1 style={{ margin: 0, fontSize: u(120) }}>{title}</h1>

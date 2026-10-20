@@ -402,6 +402,7 @@ export function Slide() {
           onExit={() => setPlayMode(null)}
           controls
           slideId={presented.slideId}
+          questions={presented.slide.questions}
           onSwitchSlide={switchPresentedSlide}
           fullscreen={playMode === 'fullscreen'}
         />

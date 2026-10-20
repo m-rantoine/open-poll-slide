@@ -14,6 +14,13 @@ export function normalizeAnswer(text: string): string {
   return text.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
+export function splitWords(text: string): string[] {
+  return text
+    .split(/[^\p{L}\p{N}'’]+/u)
+    .map((w) => w.replace(/^['’]+|['’]+$/g, ''))
+    .filter(Boolean);
+}
+
 export type WordCount = {
   key: string;
   /** The spelling used most often, for display. */
@@ -32,11 +39,16 @@ export function wordCounts(
   const byKey = new Map<string, { forms: Map<string, number>; userIds: string[] }>();
   for (const a of answers) {
     if (a.question_id !== questionId) continue;
-    const entry = byKey.get(a.option_id) ?? { forms: new Map<string, number>(), userIds: [] };
-    const form = a.answer_text ?? a.option_id;
-    entry.forms.set(form, (entry.forms.get(form) ?? 0) + 1);
-    entry.userIds.push(a.user_id);
-    byKey.set(a.option_id, entry);
+    const seen = new Set<string>();
+    for (const form of splitWords(a.answer_text ?? a.option_id)) {
+      const key = form.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const entry = byKey.get(key) ?? { forms: new Map<string, number>(), userIds: [] };
+      entry.forms.set(form, (entry.forms.get(form) ?? 0) + 1);
+      entry.userIds.push(a.user_id);
+      byKey.set(key, entry);
+    }
   }
   return [...byKey.entries()]
     .map(([key, { forms, userIds }]) => ({

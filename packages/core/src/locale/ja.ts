@@ -787,6 +787,8 @@ export const ja: Locale = {
         '{count} 件の質問にスライド上の正解がありますが、データベースにキーがないため、回答は採点されません。プロジェクトで `open-slide live keys` を実行し、新しいセッションを開始してください。発表者ビューから手動で正誤を付けることもできます。',
     },
     signInToStart: 'サインインしてポールを発表',
+    practiceSignIn: 'サインインして答えを確認',
+    practiceNoKey: 'この質問には正解データがありません',
     couldNotStart: 'セッションを開始できませんでした',
     errors: {
       question_closed: 'この質問は締め切られました。',

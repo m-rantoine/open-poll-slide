@@ -4,11 +4,12 @@ import { type NavZone, useClickPageNavigation } from '@/lib/use-click-page-navig
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
 import type { DesignSystem } from '../lib/design';
-import type { Page } from '../lib/sdk';
+import type { InteractiveQuestion, Page } from '../lib/sdk';
 import type { EntryDirection, StepAggregate, StepController } from '../lib/step-context';
 import type { SlideTransition } from '../lib/transition';
 import { useIsMobile } from '../lib/use-is-mobile';
 import { usePrefersReducedMotion } from '../lib/use-prefers-reduced-motion';
+import { PracticeProvider } from '../live/practice';
 import { OverviewGrid } from './overview-grid';
 import { PresentBlackoutOverlay } from './present/blackout-overlay';
 import { PresentControlBar } from './present/control-bar';
@@ -43,6 +44,8 @@ type Props = {
   allowExit?: boolean;
   controls?: boolean;
   slideId?: string;
+  /** Lets signed-in users answer the deck's polls in Present, checked without storing anything. */
+  questions?: Record<string, InteractiveQuestion>;
   onSwitchSlide?: (slideId: string) => void;
   /**
    * When true, the Player enters the browser Fullscreen API on mount.
@@ -73,6 +76,7 @@ export function Player({
   allowExit = true,
   controls = false,
   slideId,
+  questions,
   onSwitchSlide,
   fullscreen = true,
   contained = false,
@@ -447,22 +451,24 @@ export function Player({
       )}
       style={design ? { background: design.palette.bg } : undefined}
     >
-      <SlideCanvas flat design={design}>
-        {/* Keyed per deck so a presenter-driven deck switch cuts instead of
+      <PracticeProvider deckId={controls ? slideId : undefined} questions={questions}>
+        <SlideCanvas flat design={design}>
+          {/* Keyed per deck so a presenter-driven deck switch cuts instead of
             animating a transition between two unrelated decks. */}
-        <SlideTransitionLayer
-          key={slideId}
-          pages={pages}
-          index={index}
-          total={pages.length}
-          moduleTransition={transition}
-          disabled={prefersReducedMotion}
-          stepControllerRef={stepControllerRef}
-          entryDirection={entryDirection}
-          controlledRevealed={controlledRevealed}
-          onStepAggregateChange={handleAggregateChange}
-        />
-      </SlideCanvas>
+          <SlideTransitionLayer
+            key={slideId}
+            pages={pages}
+            index={index}
+            total={pages.length}
+            moduleTransition={transition}
+            disabled={prefersReducedMotion}
+            stepControllerRef={stepControllerRef}
+            entryDirection={entryDirection}
+            controlledRevealed={controlledRevealed}
+            onStepAggregateChange={handleAggregateChange}
+          />
+        </SlideCanvas>
+      </PracticeProvider>
 
       {controls && !isMobile && <NavCue zone={navZone} edgeRatio={0.3} />}
       {controls && (

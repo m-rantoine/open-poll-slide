@@ -543,6 +543,10 @@ export type Database = {
           status: Database['public']['Enums']['session_status'];
         }[];
       };
+      check_answer: {
+        Args: { p_deck: string; p_question: string; p_type: string; p_value: Json };
+        Returns: Json;
+      };
       list_my_sessions: {
         Args: { p_site?: string };
         Returns: {

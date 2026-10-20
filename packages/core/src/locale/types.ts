@@ -806,6 +806,8 @@ export type Locale = {
     missingKeysTitle: string;
     missingKeysBody: Plural;
     signInToStart: string;
+    practiceSignIn: string;
+    practiceNoKey: string;
     couldNotStart: string;
     errors: {
       question_closed: string;

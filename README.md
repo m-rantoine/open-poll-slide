@@ -43,6 +43,39 @@ To add the fork to an existing project instead:
 pnpm add @open-slide/core@npm:@rantoine/open-poll-slide-core
 ```
 
+## Upgrade an existing project
+
+Projects made with an older release need the new package and, if they use live sessions, the new database migrations.
+
+1. **Update the packages.** The fork is installed under an alias with a `^0.x` range, and a caret on `0.x` never crosses a minor version, so re-add it instead of running `pnpm update`:
+
+   ```bash
+   pnpm add @open-slide/core@npm:@rantoine/open-poll-slide-core@latest
+   ```
+
+2. **Apply the migrations** (only if live sessions are set up). From the project root, with the same Supabase project as before:
+
+   ```bash
+   export SUPABASE_DB_PASSWORD=<your database password>
+   pnpm exec open-slide live init --project-ref <ref>
+   ```
+
+   This copies the new files into `supabase/migrations/` and applies the ones that are missing. It is safe to re-run, and leaving out `--host` and `--domain` keeps your current hosts and allowed domains. This release adds `20261019000100_check_answer.sql`, which creates `check_answer`.
+
+3. **Upload the answer keys** so practice mode can grade:
+
+   ```bash
+   pnpm exec open-slide live keys
+   ```
+
+4. **Restart `pnpm dev`** and rebuild your deployed site.
+
+What changes for your decks:
+
+- **Practice mode.** In plain **Present**, signed-in users can now answer every question type (multiple choice, word cloud, sorting, association, scale, ranking, points, number, open text) and see right or wrong. The answer is checked by the database against the deck's key and is never stored. Signed-out users, and projects without Supabase, see questions as inert, as before.
+- **Word clouds** split answers into single words and ignore punctuation and case.
+- Without step 2, answering in Present shows a database error because `check_answer` does not exist yet. Everything else keeps working.
+
 ## Why open-slide
 
 Slides are visual code. Agents are great at writing code. open-slide is the missing runtime that turns "make slides about X" into a polished, presentable deck — without you ever leaving the chat.

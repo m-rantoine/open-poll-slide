@@ -66,7 +66,7 @@ Sessions without a label (started before labels existed, or by a site that sets 
 - **Themes:** once live sessions are configured, the Themes tab (sidebar, mobile menu and command menu) is shown to hosts only. Signed-out visitors and participants do not see it; without live sessions everyone does.
 - **Language:** pick Français (Canada) or another language from the language menu; live-session screens follow it.
 - Every live view (host screen, participants, presenter preview) renders through the standard Player, so a deck's `transition` and step reveals behave as in **Present**. The host screen also gets the Present control bar (overview, blackout, laser, fullscreen) and keyboard shortcuts; participants in a host-paced session cannot navigate.
-- Plain **Present** never touches the database; questions render inert.
+- Plain **Present** is a practice mode: signed-in users can answer every question type and see right or wrong, checked by `check_answer` against the deck's answer key. Nothing is stored. Without live sessions or a signed-in user, questions render inert.
 
 ## Answer keys
 

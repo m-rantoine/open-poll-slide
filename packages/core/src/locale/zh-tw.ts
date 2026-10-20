@@ -773,6 +773,8 @@ export const zhTW: Locale = {
         '有 {count} 道題在投影片中設定了正確答案，但資料庫中沒有對應的金鑰，因此不會批改其回答。請在專案中執行 `open-slide live keys`，然後開始新的工作階段。您也可以在講者檢視中手動標記答案。',
     },
     signInToStart: '登入後展示投票',
+    practiceSignIn: '登入後檢查答案',
+    practiceNoKey: '此題沒有可用的答案',
     couldNotStart: '無法開始工作階段',
     errors: {
       question_closed: '此問題已關閉。',

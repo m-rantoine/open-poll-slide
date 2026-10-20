@@ -773,6 +773,8 @@ export const zhCN: Locale = {
         '有 {count} 道题在幻灯片中设置了正确答案，但数据库中没有对应的密钥，因此不会批改其回答。请在项目中运行 `open-slide live keys`，然后开始新的会话。您也可以在演讲者视图中手动标记答案。',
     },
     signInToStart: '登录后演示投票',
+    practiceSignIn: '登录后检查答案',
+    practiceNoKey: '此题没有可用的答案',
     couldNotStart: '无法开始会话',
     errors: {
       question_closed: '此问题已关闭。',

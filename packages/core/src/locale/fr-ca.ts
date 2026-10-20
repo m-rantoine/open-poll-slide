@@ -796,6 +796,8 @@ export const frCA: Locale = {
         '{count} questions ont une bonne réponse dans la diapositive, mais la base de données n’a pas de clé pour elles; leurs réponses ne seront donc pas corrigées. Exécutez `open-slide live keys` dans votre projet, puis lancez une nouvelle session. Vous pouvez aussi marquer les réponses à la main depuis le Présentateur.',
     },
     signInToStart: 'Connectez-vous pour présenter des sondages',
+    practiceSignIn: 'Connectez-vous pour vérifier vos réponses',
+    practiceNoKey: 'Aucune clé de correction n’est disponible pour cette question',
     couldNotStart: 'Impossible de lancer la session',
     errors: {
       question_closed: 'Cette question est fermée.',
