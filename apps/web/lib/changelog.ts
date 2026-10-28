@@ -54,22 +54,6 @@ export const eras: Era[] = [
     span: 'Oct 2026',
     releases: [
       {
-        line: '1.0',
-        version: '1.0.0',
-        date: '2026-10-28',
-        kind: 'major',
-        title: 'Built on open-slide 2.3',
-        summary:
-          'open-poll-slide now includes everything in open-slide 2.3.1, so live polls sit alongside the agent panel and comment mode.',
-        highlights: [
-          'Connect Claude Code or Codex and draft decks, apply comments or edit a page from the browser.',
-          'Press `C` for comment mode, then click an element or drag a region to pin a note.',
-          'Present mode fades to black on entry and exit, and a hint appears on the last slide.',
-        ],
-        docs: { label: 'Agent panel docs', href: '/docs/core-feature/agent' },
-        contributors: ['m-rantoine'],
-      },
-      {
         line: '0.7',
         version: '0.7.0',
         date: '2026-10-19',
