@@ -6,21 +6,17 @@ import { readCoreRelease } from './changelog-source';
 const core = readCoreRelease(fileURLToPath(new URL('../../../packages/core/', import.meta.url)));
 const UNLISTED = ['0.0.1', '1.0.0'];
 
-const inherited = eras
-  .slice(1)
-  .flatMap((era) =>
+const versionsIn = (list: typeof eras) =>
+  list.flatMap((era) =>
     era.releases.flatMap((release) => [
       release.version,
       ...(release.patches ?? []).map((patch) => patch.version),
     ]),
   );
 
-const onPage = eras.flatMap((era) =>
-  era.releases.flatMap((release) => [
-    release.version,
-    ...(release.patches ?? []).map((patch) => patch.version),
-  ]),
-);
+const own = versionsIn(eras.slice(0, 1));
+const inherited = versionsIn(eras.slice(1));
+const onPage = [...own, ...inherited];
 
 // Prereleases fold into the release they led up to, so only stable versions
 // need their own line on the page.
@@ -44,7 +40,9 @@ describe('changelog page data', () => {
   });
 
   it('lists each version once', () => {
-    const repeated = onPage.filter((version, i) => onPage.indexOf(version) !== i);
+    const repeated = [own, inherited].flatMap((list) =>
+      list.filter((version, i) => list.indexOf(version) !== i),
+    );
     expect(repeated).toEqual([]);
   });
 
