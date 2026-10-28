@@ -47,6 +47,33 @@ const shot = (name: string, height: number, alt: string): Shot => ({
 
 export const eras: Era[] = [
   {
+    id: 'poll',
+    label: 'open-poll-slide',
+    title: 'open-poll-slide',
+    blurb: 'A fork of open-slide that turns decks into live classroom polls.',
+    span: 'Oct 2026',
+    releases: [
+      {
+        line: '0.7',
+        version: '0.7.0',
+        date: '2026-10-19',
+        kind: 'feature',
+        title: 'Live polls in every deck',
+        summary:
+          'Slides can now ask the room. Start a host-paced or self-paced session, let students join with a code, and watch answers arrive on the screen, in the presenter view and in a results dashboard.',
+        highlights: [
+          'Eleven question types: multiple choice, word cloud, scale, ranking, points, number, open text, drag-and-drop sorting and association.',
+          'Pause and resume sessions, rejoin from the join page, and press Enter to lock or unlock the current question.',
+          'Set every question and tool option in the inspector, from timer length to scoring.',
+          'Answer keys stay out of the browser bundle, and `open-slide build` uploads them for you.',
+          'Signed-in users can practise every poll type in plain Present and see right or wrong.',
+          'Private decks, a laser with colours, shapes and trails, and a French (Canada) locale.',
+        ],
+        contributors: ['m-rantoine'],
+      },
+    ],
+  },
+  {
     id: 'v2',
     label: 'v2',
     title: 'open-slide 2',

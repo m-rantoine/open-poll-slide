@@ -6,6 +6,15 @@ import { readCoreRelease } from './changelog-source';
 const core = readCoreRelease(fileURLToPath(new URL('../../../packages/core/', import.meta.url)));
 const UNLISTED = ['0.0.1', '1.0.0'];
 
+const inherited = eras
+  .slice(1)
+  .flatMap((era) =>
+    era.releases.flatMap((release) => [
+      release.version,
+      ...(release.patches ?? []).map((patch) => patch.version),
+    ]),
+  );
+
 const onPage = eras.flatMap((era) =>
   era.releases.flatMap((release) => [
     release.version,
@@ -28,7 +37,8 @@ describe('changelog page data', () => {
 
   it('only lists versions that were published', () => {
     const unknown = onPage.filter(
-      (version) => !stable.includes(version) && !UNLISTED.includes(version),
+      (version) =>
+        !stable.includes(version) && !UNLISTED.includes(version) && !inherited.includes(version),
     );
     expect(unknown).toEqual([]);
   });
