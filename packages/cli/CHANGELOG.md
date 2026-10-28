@@ -1,5 +1,11 @@
 # @open-slide/cli
 
+## 1.0.0
+
+### Major Changes
+
+- Scaffold new projects with open-poll-slide core 1.0, which includes the agent panel and comment mode from open-slide 2.3.
+
 ## 0.3.0
 
 ### Minor Changes
