@@ -1,0 +1,52 @@
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+import { eras, latestVersion } from './changelog';
+import { readCoreRelease } from './changelog-source';
+
+const core = readCoreRelease(fileURLToPath(new URL('../../../packages/core/', import.meta.url)));
+const UNLISTED = ['0.0.1', '1.0.0'];
+
+const versionsIn = (list: typeof eras) =>
+  list.flatMap((era) =>
+    era.releases.flatMap((release) => [
+      release.version,
+      ...(release.patches ?? []).map((patch) => patch.version),
+    ]),
+  );
+
+const own = versionsIn(eras.slice(0, 1));
+const inherited = versionsIn(eras.slice(1));
+const onPage = [...own, ...inherited];
+
+// Prereleases fold into the release they led up to, so only stable versions
+// need their own line on the page.
+const stable = core.versions.filter((version) => !version.includes('-'));
+
+describe('changelog page data', () => {
+  it('covers every stable @open-slide/core release', () => {
+    const missing = stable.filter((version) => !onPage.includes(version));
+    expect(
+      missing,
+      `Missing from apps/web/lib/changelog.ts: ${missing.join(', ')}. Draft them with the changelog-entry skill.`,
+    ).toEqual([]);
+  });
+
+  it('only lists versions that were published', () => {
+    const unknown = onPage.filter(
+      (version) =>
+        !stable.includes(version) && !UNLISTED.includes(version) && !inherited.includes(version),
+    );
+    expect(unknown).toEqual([]);
+  });
+
+  it('lists each version once', () => {
+    const repeated = [own, inherited].flatMap((list) =>
+      list.filter((version, i) => list.indexOf(version) !== i),
+    );
+    expect(repeated).toEqual([]);
+  });
+
+  it('marks the published core version as latest', () => {
+    expect(latestVersion).toBe(core.version);
+  });
+});

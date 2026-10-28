@@ -20,6 +20,10 @@ export type OpenSlideLiveConfig = {
   siteLabel?: string;
 };
 
+export type OpenSlideAgentConfig = {
+  enabled?: boolean;
+};
+
 export type OpenSlideConfig = {
   base?: string;
   slidesDir?: string;
@@ -35,4 +39,5 @@ export type OpenSlideConfig = {
   locale?: Locale;
   build?: OpenSlideBuildConfig;
   live?: OpenSlideLiveConfig;
+  agent?: OpenSlideAgentConfig;
 };

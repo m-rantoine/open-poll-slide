@@ -15,6 +15,7 @@ import {
   Play,
   Presentation,
   Radio,
+  Sparkles,
   Terminal,
 } from 'lucide-react';
 import {
@@ -22,15 +23,19 @@ import {
   type RefObject,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { AgentToggleButton } from '@/components/agent/agent-dock';
+import { AgentPanel } from '@/components/agent/agent-panel';
+import { AgentPresence } from '@/components/agent/agent-presence';
 import { AssetView } from '@/components/asset-view';
 import { HistoryProvider } from '@/components/history-provider';
-import { CommentWidget } from '@/components/inspector/comment-widget';
+import { CommentLayer } from '@/components/inspector/comment-layer';
 import { InlineEditLayer } from '@/components/inspector/inline-text-editor';
 import { InspectOverlay } from '@/components/inspector/inspect-overlay';
 import {
@@ -41,6 +46,7 @@ import {
 } from '@/components/inspector/inspector-provider';
 import { SaveBar } from '@/components/inspector/save-bar';
 import { EditorSidebar } from '@/components/panel/editor-sidebar';
+import { ResizeHandle, useStoredWidth } from '@/components/panel/resize-handle';
 import { DesignProvider } from '@/components/style-panel/design-provider';
 import { DesignToggleButton } from '@/components/style-panel/style-panel';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -58,6 +64,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { setDockOpen, useAgentActivity, useAgentDock } from '@/lib/agent/use-agent';
 import { useFolders } from '@/lib/folders';
 import {
   hasModifier,
@@ -75,11 +82,18 @@ import { format, useLocale } from '@/lib/use-locale';
 import { useMediaQuery } from '@/lib/use-media-query';
 import { useWheelPageNavigation } from '@/lib/use-wheel-page-navigation';
 import { cn } from '@/lib/utils';
+import type { AgentTurnContext } from '../../agent/types';
 import { SlideCommandMenu } from '../components/command/slide-command-menu';
 import { PdfProgressToast, PptxProgressToast } from '../components/export-progress-toast';
 import { NotesDrawer } from '../components/notes-drawer';
 import { OverviewGrid } from '../components/overview-grid';
 import { openPresenterWindow, Player } from '../components/player';
+import {
+  afterPaint,
+  CURTAIN_FADE_MS,
+  PresentCurtain,
+  whenFullscreenSettled,
+} from '../components/present/curtain';
 import { SlideCanvas } from '../components/slide-canvas';
 import { isDeckWarmed, markDeckWarmed, SlidePreloadLayer } from '../components/slide-preload-layer';
 import { SlideTransitionLayer } from '../components/slide-transition-layer';
@@ -135,6 +149,13 @@ export function Slide() {
   const [designOpen, setDesignOpen] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const { open: agentOpen, toggle: toggleAgent } = useAgentDock();
+  useLayoutEffect(() => {
+    if (agentOpen) setDesignOpen(false);
+  }, [agentOpen]);
+  useLayoutEffect(() => {
+    if (designOpen) setDockOpen(false);
+  }, [designOpen]);
   const [, setWarmedTick] = useState(0);
   const handleAssetsWarmed = useCallback(() => {
     markDeckWarmed(slideId);
@@ -153,6 +174,55 @@ export function Slide() {
   const compactToolbar = useMediaQuery('(max-width: 1023.98px)');
   const narrowToolbar = useMediaQuery('(max-width: 639.98px)');
   const prefersReducedMotion = usePrefersReducedMotion();
+
+  // 'entering' darkens the editor before the Player mounts; 'leaving' keeps
+  // the editor dark after the Player unmounts, then fades it back in.
+  const [curtain, setCurtain] = useState<'entering' | 'leaving' | null>(null);
+  const curtainTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (curtainTimerRef.current) clearTimeout(curtainTimerRef.current);
+    },
+    [],
+  );
+  const present = useCallback(
+    (mode: 'window' | 'fullscreen') => {
+      if (prefersReducedMotion) {
+        setPlayMode(mode);
+        return;
+      }
+      if (curtainTimerRef.current) return;
+      setCurtain('entering');
+      // Fullscreen is requested when the Player mounts; the delay stays well
+      // inside the browser's transient user-activation window.
+      curtainTimerRef.current = setTimeout(() => {
+        curtainTimerRef.current = null;
+        setCurtain(null);
+        setPlayMode(mode);
+      }, CURTAIN_FADE_MS);
+    },
+    [prefersReducedMotion],
+  );
+  const exitPresent = useCallback(() => {
+    setPlayMode(null);
+    if (!prefersReducedMotion) setCurtain('leaving');
+  }, [prefersReducedMotion]);
+  useEffect(() => {
+    if (curtain !== 'leaving' || playMode) return;
+    let cancelPaint = () => {};
+    const reveal = () => {
+      cancelPaint = afterPaint(() => setCurtain(null));
+    };
+    if (!document.fullscreenElement) {
+      reveal();
+      return () => cancelPaint();
+    }
+    const cancelWait = whenFullscreenSettled(reveal);
+    return () => {
+      cancelWait();
+      cancelPaint();
+    };
+  }, [curtain, playMode]);
 
   const modulePages = useMemo(() => slide?.default ?? [], [slide]);
   const [pages, setPages] = useState<typeof modulePages>(modulePages);
@@ -197,6 +267,16 @@ export function Slide() {
     },
     [pageCount, setSearchParams],
   );
+
+  // While an agent writes this deck page by page, jump to each page as it
+  // lands so the user can follow along.
+  const agentActivity = useAgentActivity(slideId);
+  const agentWriting = agentActivity !== null;
+  const seenPageCount = useRef(pageCount);
+  useEffect(() => {
+    if (agentWriting && pageCount > seenPageCount.current) goTo(pageCount - 1);
+    seenPageCount.current = pageCount;
+  }, [agentWriting, pageCount, goTo]);
 
   const reorderPage = useCallback(
     async (from: number, to: number) => {
@@ -313,7 +393,7 @@ export function Slide() {
     // When showSlideUi is false the read-only <Player> is rendered and owns
     // keyboard navigation (including step-aware advance/retreat). Attaching this
     // page-nav handler too would race it and skip <Steps> reveals, so bail out.
-    if (playMode || !showSlideUi) return;
+    if (playMode || curtain || !showSlideUi) return;
     const onKey = (e: KeyboardEvent) => {
       if (
         isTypingTarget(e.target) ||
@@ -346,19 +426,21 @@ export function Slide() {
         return;
       }
       if (e.key === 'f' || e.key === 'F') {
-        setPlayMode('fullscreen');
+        present('fullscreen');
       } else if (e.key === 'Enter') {
-        setPlayMode('window');
+        present('window');
       } else if (e.key === 'p' || e.key === 'P') {
         if (slideId) openPresenterWindow(slideId);
-        setPlayMode('window');
+        present('window');
       } else if (import.meta.env.DEV && (e.key === 'd' || e.key === 'D')) {
         setDesignOpen((v) => !v);
+      } else if (import.meta.env.DEV && (e.key === 'a' || e.key === 'A')) {
+        toggleAgent();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [index, goTo, playMode, slideId, overviewOpen]);
+  }, [index, goTo, playMode, curtain, slideId, overviewOpen, toggleAgent, present]);
 
   if (error) {
     return (
@@ -399,8 +481,9 @@ export function Slide() {
           transition={presented.slide.transition}
           index={presented.index}
           onIndexChange={presentReady ? goTo : noop}
-          onExit={() => setPlayMode(null)}
+          onExit={exitPresent}
           controls
+          curtain={!prefersReducedMotion}
           slideId={presented.slideId}
           questions={presented.slide.questions}
           onSwitchSlide={switchPresentedSlide}
@@ -623,8 +706,11 @@ export function Slide() {
       <InspectorProvider
         slideId={slideId}
         pageIndex={index}
-        panelHidden={designOpen}
-        onPanelOpen={() => setDesignOpen(false)}
+        panelHidden={designOpen || agentOpen}
+        onPanelOpen={() => {
+          setDesignOpen(false);
+          setDockOpen(false);
+        }}
       >
         <SelectionReporter />
         <div className="flex h-dvh flex-col overflow-hidden bg-sidebar text-foreground">
@@ -743,6 +829,12 @@ export function Slide() {
                       />
                     )}
                     <DropdownMenuGroup>
+                      {narrowToolbar && import.meta.env.DEV && (
+                        <DropdownMenuItem onClick={toggleAgent}>
+                          <Sparkles />
+                          {t.agent.openTitle}
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => setCommandOpen(true)}>
                         <Terminal />
                         {t.commandMenu.trigger}
@@ -757,6 +849,7 @@ export function Slide() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
+              {import.meta.env.DEV && view === 'slides' && !narrowToolbar && <AgentToggleButton />}
               {view === 'slides' && !narrowToolbar && (
                 <DesignToggleButton active={designOpen} onToggle={() => setDesignOpen((v) => !v)} />
               )}
@@ -768,7 +861,7 @@ export function Slide() {
                     size="sm"
                     variant="brand"
                     aria-label={t.slide.present}
-                    onClick={() => setPlayMode(isMobile ? 'window' : 'fullscreen')}
+                    onClick={() => present(isMobile ? 'window' : 'fullscreen')}
                     className="rounded-r-none px-2.5 lg:px-3"
                   >
                     <Play className="size-3.5 fill-current" />
@@ -788,12 +881,12 @@ export function Slide() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-[200px]">
                       <DropdownMenuGroup>
-                        <DropdownMenuItem onClick={() => setPlayMode('window')}>
+                        <DropdownMenuItem onClick={() => present('window')}>
                           <Play />
                           {t.slide.presentInWindow}
                           <DropdownMenuShortcut>↵</DropdownMenuShortcut>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setPlayMode('fullscreen')}>
+                        <DropdownMenuItem onClick={() => present('fullscreen')}>
                           <Maximize />
                           {t.slide.presentFullscreen}
                           <DropdownMenuShortcut>F</DropdownMenuShortcut>
@@ -801,7 +894,7 @@ export function Slide() {
                         <DropdownMenuItem
                           onClick={() => {
                             if (slideId) openPresenterWindow(slideId);
-                            setPlayMode('window');
+                            present('window');
                           }}
                         >
                           <MonitorSpeaker />
@@ -859,6 +952,7 @@ export function Slide() {
                     ref={slideViewportRef}
                     data-inspector-root
                     data-slide-id={slideId}
+                    data-agent-provider={agentActivity?.provider}
                     className="relative min-h-0 min-w-0 flex-1 bg-background p-2 md:mx-2 md:mb-2 md:rounded-[10px] md:p-10 md:shadow-edge md:ring-1 md:ring-foreground/[0.06]"
                   >
                     <SlideViewportNavigation
@@ -880,7 +974,8 @@ export function Slide() {
                     <InspectOverlay />
                     <InlineEditLayer />
                     <SaveBar />
-                    {import.meta.env.DEV && <CommentWidget />}
+                    {import.meta.env.DEV && <CommentLayer />}
+                    {agentActivity && <AgentPresence activity={agentActivity} revision={pages} />}
                   </main>
                   {/* Mobile-only horizontal rail. Sits below the canvas and
                     pads its bottom for the iOS home indicator / Safari URL bar. */}
@@ -900,6 +995,17 @@ export function Slide() {
                   <EditorSidebar
                     designOpen={designOpen}
                     onCloseDesign={() => setDesignOpen(false)}
+                    agentOpen={agentOpen}
+                    agent={
+                      import.meta.env.DEV && (
+                        <SlideAgentDock
+                          slideId={slideId}
+                          slideTitle={title}
+                          pageNumber={index + 1}
+                          totalPages={pageCount}
+                        />
+                      )
+                    }
                   />
                 </div>
                 {import.meta.env.DEV && (
@@ -932,15 +1038,16 @@ export function Slide() {
               currentIndex={index}
               exporting={exporting}
               handlers={{
-                onPresentWindow: () => setPlayMode('window'),
-                onPresentFullscreen: () => setPlayMode('fullscreen'),
+                onPresentWindow: () => present('window'),
+                onPresentFullscreen: () => present('fullscreen'),
                 onPresenterView: () => {
                   if (slideId) openPresenterWindow(slideId);
-                  setPlayMode('window');
+                  present('window');
                 },
                 onCopyLink: copyLink,
                 onOverview: () => setOverviewOpen(true),
                 onToggleDesignPanel: () => setDesignOpen((v) => !v),
+                onToggleAgentPanel: toggleAgent,
                 onExportHtml: exportHtml,
                 onExportPdf: exportPdf,
                 onExportPptx: exportPptx,
@@ -950,6 +1057,7 @@ export function Slide() {
             />
           )}
         </div>
+        <PresentCurtain opaque={curtain !== null} className="fixed z-[1000]" />
       </InspectorProvider>
     </HistoryProvider>
   );
@@ -959,14 +1067,6 @@ const RAIL_WIDTH_STORAGE_KEY = 'open-slide:thumbnail-rail-width';
 const DEFAULT_RAIL_WIDTH = 264;
 const MIN_RAIL_WIDTH = 200;
 const MAX_RAIL_WIDTH = 480;
-
-function readStoredRailWidth(): number {
-  if (typeof window === 'undefined') return DEFAULT_RAIL_WIDTH;
-  const raw = window.localStorage.getItem(RAIL_WIDTH_STORAGE_KEY);
-  const parsed = raw == null ? Number.NaN : Number(raw);
-  if (!Number.isFinite(parsed)) return DEFAULT_RAIL_WIDTH;
-  return Math.min(MAX_RAIL_WIDTH, Math.max(MIN_RAIL_WIDTH, parsed));
-}
 
 function ResizableRail(props: {
   pages: SlideModule['default'];
@@ -979,103 +1079,26 @@ function ResizableRail(props: {
   onOverview?: () => void;
 }) {
   const t = useLocale();
-  const [width, setWidth] = useState<number>(readStoredRailWidth);
-  const [resizing, setResizing] = useState(false);
-  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(RAIL_WIDTH_STORAGE_KEY, String(width));
-  }, [width]);
-
-  useEffect(() => {
-    if (!resizing) return;
-    const prev = {
-      cursor: document.body.style.cursor,
-      userSelect: document.body.style.userSelect,
-    };
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    return () => {
-      document.body.style.cursor = prev.cursor;
-      document.body.style.userSelect = prev.userSelect;
-    };
-  }, [resizing]);
-
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = { startX: e.clientX, startWidth: width };
-    setResizing(true);
-  };
-
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current) return;
-    const delta = e.clientX - dragRef.current.startX;
-    const next = Math.min(
-      MAX_RAIL_WIDTH,
-      Math.max(MIN_RAIL_WIDTH, dragRef.current.startWidth + delta),
-    );
-    setWidth(next);
-  };
-
-  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-    dragRef.current = null;
-    setResizing(false);
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    const step = e.shiftKey ? 32 : 8;
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      e.stopPropagation();
-      setWidth((w) => Math.max(MIN_RAIL_WIDTH, w - step));
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      e.stopPropagation();
-      setWidth((w) => Math.min(MAX_RAIL_WIDTH, w + step));
-    } else if (e.key === 'Home') {
-      e.preventDefault();
-      e.stopPropagation();
-      setWidth(DEFAULT_RAIL_WIDTH);
-    }
-  };
+  const [width, setWidth] = useStoredWidth(
+    RAIL_WIDTH_STORAGE_KEY,
+    DEFAULT_RAIL_WIDTH,
+    MIN_RAIL_WIDTH,
+    MAX_RAIL_WIDTH,
+  );
 
   return (
     <div className="relative hidden shrink-0 md:block" style={{ width }}>
       <ThumbnailRail width={width} {...props} />
-      {/* biome-ignore lint/a11y/useSemanticElements: focusable resize handle (splitter pattern), not a static <hr> */}
-      <div
-        role="separator"
-        aria-orientation="vertical"
-        aria-label={t.thumbnailRail.resizeRail}
-        aria-valuenow={width}
-        aria-valuemin={MIN_RAIL_WIDTH}
-        aria-valuemax={MAX_RAIL_WIDTH}
-        tabIndex={0}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onKeyDown={onKeyDown}
-        onDoubleClick={() => setWidth(DEFAULT_RAIL_WIDTH)}
-        className={cn(
-          'group/resize absolute inset-y-0 right-0 z-20 w-1.5 translate-x-1/2 cursor-col-resize touch-none outline-none',
-          'focus-visible:bg-brand/20',
-        )}
-      >
-        <span
-          aria-hidden
-          className={cn(
-            'pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-brand opacity-0 transition-opacity duration-150',
-            'group-hover/resize:opacity-100 group-focus-visible/resize:opacity-100',
-            resizing && 'opacity-100',
-          )}
-        />
-      </div>
+      <ResizeHandle
+        width={width}
+        min={MIN_RAIL_WIDTH}
+        max={MAX_RAIL_WIDTH}
+        defaultWidth={DEFAULT_RAIL_WIDTH}
+        edge="right"
+        label={t.thumbnailRail.resizeRail}
+        onResize={setWidth}
+        className="right-0 translate-x-1/2"
+      />
     </div>
   );
 }
@@ -1119,6 +1142,39 @@ function EditorMenuItems({
       <DropdownMenuSeparator />
     </>
   );
+}
+
+function SlideAgentDock({
+  slideId,
+  slideTitle,
+  pageNumber,
+  totalPages,
+}: {
+  slideId: string;
+  slideTitle: string;
+  pageNumber: number;
+  totalPages: number;
+}) {
+  const { selected, comments } = useInspector();
+  const context = useMemo<AgentTurnContext>(
+    () => ({
+      slideId,
+      slideTitle,
+      pageNumber,
+      totalPages,
+      pendingComments: comments.length,
+      selection: selected
+        ? {
+            line: selected.line,
+            column: selected.column,
+            tagName: selected.anchor.tagName.toLowerCase(),
+            text: (selected.anchor.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 120),
+          }
+        : null,
+    }),
+    [slideId, slideTitle, pageNumber, totalPages, comments.length, selected],
+  );
+  return <AgentPanel context={context} onClose={() => setDockOpen(false)} />;
 }
 
 function AgentConnectedBadge() {
@@ -1192,13 +1248,14 @@ function SlideViewportNavigation({
   canPrev: boolean;
   canNext: boolean;
 }) {
-  const { active, inlineEdit } = useInspector();
+  const { mode, inlineEdit } = useInspector();
   const isMobile = useIsMobile();
   const editing = !!inlineEdit;
+  const browsing = mode === 'preview';
 
   useWheelPageNavigation({
     ref: targetRef,
-    enabled: !active && !editing,
+    enabled: browsing && !editing,
     canPrev,
     canNext,
     onPrev,
@@ -1210,7 +1267,7 @@ function SlideViewportNavigation({
   // zones). Interactive slide content keeps its tap via the hook's passthrough.
   useClickPageNavigation({
     ref: targetRef,
-    enabled: isMobile && !active && !editing,
+    enabled: isMobile && browsing && !editing,
     edgeRatio: 0.18,
     canPrev,
     canNext,
