@@ -46,5 +46,4 @@ jobs:
           pr-title: "chore: release packages"
           push-with-git-cli: true
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
