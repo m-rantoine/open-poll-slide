@@ -1,15 +1,18 @@
 ---
 name: launch-new-features
-description: Release open-poll-slide to npm — review the bot's "chore: release packages" PR, add the changelog page entry, run the pack check, merge. Use when the user wants to release, publish, ship, launch or cut a version of core or the CLI.
+description: Wrap up the current open-poll-slide feature branch and make it ready to ship — checks, tests, changeset, commit, push and PR. Use when the user types /launch-new-features, or says the feature is done, finished, ready, or asks to wrap up, ship or release it.
 ---
 
 # Launch new features
 
-Releases are automatic once the release PR merges: `.github/workflows/release.yml` runs `changesets/action` on every push to `main`. Merging the PR publishes. Never run `changeset version` or `pnpm release` locally, never edit versions or `CHANGELOG.md`, and do not merge the release PR yourself; the user does.
+Run from the feature branch. Stop and report on any failure; don't paper over it.
 
-1. **Check there is something to release.** `ls .changeset/*.md` (ignoring `README.md`). None means nothing to ship.
-2. **Find the release PR.** After the feature PRs are on `main`, the bot opens or updates "chore: release packages" (`changeset-release/main`). Use `gh pr list --search "chore: release packages"`. If it is missing, check the Release workflow run on `main`.
-3. **Review its diff.** The `CHANGELOG.md` diff is the source of truth. Confirm the bumps are right (core and CLI), and that the CLI is included whenever core is, because the CLI writes `^<core version>` into new projects.
-4. **Add the changelog page entry as the last commit on the release PR branch**, using the `changelog-entry` skill (`apps/web/lib/changelog.ts`). Run `pnpm exec vitest run apps/web/lib` to confirm. The bot force-pushes the branch when `main` moves, so add this right before merging.
-5. **Pack check before publishing core.** `pnpm pack` in `packages/core`, install the tarball into a project made by `open-slide init`, run `open-slide dev` and load a few pages. `pnpm publish` also runs `scripts/check-package.mjs`.
-6. **Hand over to the user** to merge the PR. After it merges, confirm the Release run succeeded and the versions are on npm (`npm view @rantoine/open-poll-slide-core version`, same for the CLI), and that a fresh `init` writes the new core range.
+1. **Preflight.** `git branch --show-current` must not be `main`. `git status --short` and `git log --oneline origin/main..HEAD` show what is being shipped. If nothing differs from `main`, say so and stop.
+2. **Checks.** `pnpm check:fix`, `pnpm typecheck`, `pnpm test`. Fix what fails (new locale keys missing in `fr-ca`, inspector hooks missing for a new prop, and so on) and rerun until green. Report any failure that isn't clearly caused by this branch.
+3. **Changeset.** If the diff touches `packages/core` or `packages/cli` and there is no new file in `.changeset/` yet, create one. Packages are `@rantoine/open-poll-slide-core` and `@rantoine/open-poll-slide-cli`. Pick the bump from the diff: `patch` fixes and polish, `minor` new public API or poll types, `major` breaking. State the bump and one-line description to the user before writing. Format: one present-tense line from the user's side, matching existing `.changeset/*.md`. `apps/*` and root-only changes need none. Never run `changeset version` or edit versions or `CHANGELOG.md`.
+4. **Commit and push.** Commit the changeset and any fixes (`git add` specific files, never `.idea/`). Then `git push -u origin <branch>`.
+5. **Open the PR** to `main` with `gh pr create`: a short title, a body summarising the change and the bump.
+6. **What happens next.** Tell the user:
+   - Merge the PR when ready.
+   - The Release workflow then opens or updates "chore: release packages". If this release adds a new minor or major, add the `/changelog` page entry (the `changelog-entry` skill) as the last commit on that PR, and run the pack-and-install check from `CLAUDE.md` before publishing core.
+   - Merging the release PR publishes core then the CLI to npm. That merge is theirs; never merge it or run `pnpm release` yourself.

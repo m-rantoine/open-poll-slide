@@ -1,21 +1,15 @@
 ---
 name: add-new-feature
-description: Make a change to the open-poll-slide fork (a feature, fix or polish) the right way — branch, code, inspector hooks, changeset, checks, PR. Use whenever the user wants to add, change or fix something in packages/core, packages/cli, apps/demo or apps/web, or says "add a feature", "fix this", "new poll type".
+description: Start work on a new feature, fix or change in the open-poll-slide fork by creating a branch off main. Use when the user types /add-new-feature, or says they want to start a new feature, fix or change. Takes an optional branch name.
 ---
 
 # Add a new feature
 
-1. **Branch.** From a clean `main`: `git checkout -b <short-name>`. Never work on `main`.
-2. **Read `CLAUDE.md` first.** Its hard rules apply: no comments unless the WHY is non-obvious, no casual dependencies, leave `components/ui` alone, never hand-edit versions or `CHANGELOG.md`.
-3. **Make the change.** New poll or tool prop, or new field on a question object: add it to `packages/core/src/app/lib/inspector/component-fields.ts` with labels in **every** locale (`en`, `es`, `fr-ca`, `ja`, `zh-cn`, `zh-tw`), and pass the values through `fieldsAttr`.
-4. **Add a changeset** when `packages/core` or `packages/cli` changed. Write the file in `.changeset/<kebab-name>.md`:
-   ```md
-   ---
-   "@rantoine/open-poll-slide-core": minor
-   ---
+This only starts the work. Building happens in the conversation afterwards, and `launch-new-features` wraps it up.
 
-   One present-tense line from the user's side.
-   ```
-   Package names are `@rantoine/open-poll-slide-core` and `@rantoine/open-poll-slide-cli`. Bump: `patch` fixes and polish, `minor` new public API, `major` breaking. `apps/*` and root tooling need none.
-5. **Verify.** `pnpm check:fix`, `pnpm typecheck`, `pnpm test`. To see it working, run `pnpm dev`.
-6. **Commit and open a PR** to `main`. Do not run `changeset version` or touch versions; releasing is the `launch-new-features` skill.
+1. **Name.** Use the argument as the branch name. If none was given, ask the user for one (short, kebab-case, e.g. `ranking-tie-breaks`). Strip a leading `feature/` or similar if they typed it; don't add prefixes.
+2. **Check the tree.** `git status --short`. If there are uncommitted changes (ignore untracked `.idea/`), tell the user and ask whether to carry them onto the new branch or stop. Never discard them.
+3. **Branch from an up-to-date `main`.** `git fetch origin`, then `git checkout -b <name> origin/main`. If already on a non-`main` branch with unmerged work, say so and ask before branching.
+4. **Hand over.** Say the branch is ready and remind them: commit as often as they like, then run `/launch-new-features` when happy.
+
+While they build, follow `CLAUDE.md`: no comments unless the WHY is non-obvious, no casual dependencies, leave `components/ui` alone, never hand-edit versions or `CHANGELOG.md`. A new prop on a poll or tool component, or new field on a question object, needs an entry in `packages/core/src/app/lib/inspector/component-fields.ts` with labels in every locale (`en`, `es`, `fr-ca`, `ja`, `zh-cn`, `zh-tw`) and must pass through `fieldsAttr`.
