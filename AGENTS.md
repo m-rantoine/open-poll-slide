@@ -50,3 +50,14 @@ Filter to one package: `pnpm core <script>` / `pnpm cli <script>`.
 **Test the packed package before publishing core.** The monorepo has every source file, so a missing one only breaks installs. `pnpm publish` runs `scripts/check-package.mjs` (every relative import in a shipped `src/` file must resolve inside the package). Also `pnpm pack`, install the tarball into a project made by `open-slide init`, start `open-slide dev` and load a few pages.
 
 **Publish the CLI after every core release.** The CLI writes `^<core version at build>` into new projects, and for `0.x` versions a caret stays inside one minor (`^0.1.0` never reaches `0.5.0`). A CLI that was not republished keeps scaffolding old core releases. Build the CLI after bumping core, check `init` writes the new core version, then publish it.
+
+<!-- BEGIN:turborepo-agent-rules -->
+
+# This is NOT the Turborepo you know
+
+Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
+
+Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
+
+This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
+<!-- END:turborepo-agent-rules -->

@@ -61,5 +61,5 @@ export type { MultipleChoiceProps } from './app/live/multiple-choice.tsx';
 export { MultipleChoice } from './app/live/multiple-choice.tsx';
 export type { WordCloudProps } from './app/live/word-cloud.tsx';
 export { WordCloud } from './app/live/word-cloud.tsx';
-export type { OpenSlideConfig, OpenSlideLiveConfig } from './config.ts';
+export type { OpenSlideAgentConfig, OpenSlideConfig, OpenSlideLiveConfig } from './config.ts';
 export type { Locale, Plural } from './locale/types.ts';
