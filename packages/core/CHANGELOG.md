@@ -4,7 +4,7 @@
 
 ### Major Changes
 
-- [`8bf004a`](https://github.com/m-rantoine/open-poll-slide/commit/8bf004ad591ff6798af6c37a73f5007e69210538) Thanks [@rjantoine](https://github.com/rjantoine)! - Merge open-slide 2.3.1: an in-app agent panel for Claude Code and Codex, a comment mode with pinned notes, fade-to-black entering and leaving present mode, and a last-slide hint.
+- [`8bf004a`](https://github.com/m-rantoine/open-poll-slide/commit/8bf004ad591ff6798af6c37a73f5007e69210538) Thanks [@m-rantoine](https://github.com/m-rantoine)! - Merge open-slide 2.3.1: an in-app agent panel for Claude Code and Codex, a comment mode with pinned notes, fade-to-black entering and leaving present mode, and a last-slide hint.
 
 ## 0.7.0
 
